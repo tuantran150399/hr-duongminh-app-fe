@@ -1,0 +1,29 @@
+{
+  "name": "erp-logistics-frontend-demo",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --webpack",
+    "build": "next build",
+    "export": "next build",
+    "build:static": "next build",
+    "postbuild": "powershell -NoProfile -Command \"if (Test-Path out) { Copy-Item web.config out\\web.config -Force }\"",
+    "start": "next start",
+    "lint": "eslint .",
+    "clean": "powershell -NoProfile -Command \"if (Test-Path .next) { Remove-Item -Recurse -Force .next }\""
+  },
+  "dependencies": {
+    "@ant-design/icons": "^5.3.7",
+    "@ant-design/nextjs-registry": "^1.0.2",
+    "@ant-design/v5-patch-for-react-19": "^1.0.3",
+    "antd": "^5.21.6",
+    "axios": "^1.7.7",
+    "next": "^16.2.4",
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1"
+  },
+  "devDependencies": {
+    "eslint": "^9.39.4",
+    "eslint-config-next": "^16.2.4"
+  }
+}
