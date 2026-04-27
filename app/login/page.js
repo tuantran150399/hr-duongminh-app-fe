@@ -1,6 +1,7 @@
 'use client';
 
-import { Button, Card, Form, Input, Typography, message } from 'antd';
+import { Button, Form, Input, Typography, message } from 'antd';
+import { MailOutlined, LockOutlined, GlobalOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import { login } from '@/services/authService';
 import { setToken } from '@/utils/auth';
@@ -13,50 +14,73 @@ export default function LoginPage() {
     try {
       const token = await login(values.username, values.password);
       setToken(token);
-      message.success('Logged in successfully');
+      message.success('Đăng nhập thành công');
       router.replace('/dashboard');
     } catch {
-      message.error('Login failed. Please check your credentials.');
+      message.error('Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.');
     }
   }
 
   return (
     <main className="login-page">
-      <Card className="login-card">
-        <Typography.Title level={2} className="brand-title">
-          ERP Logistics
+      <div className="login-card">
+        <Typography.Title level={1} className="login-brand-title">
+          HR LOGISTIC
         </Typography.Title>
-        <Typography.Paragraph className="muted-text">
-          Sign in to manage jobs, partners, and accounting.
-        </Typography.Paragraph>
+        <div className="login-brand-subtitle">
+          MAKE IT EASY
+        </div>
 
         <Form
           form={form}
+          className="login-form"
           layout="vertical"
           initialValues={{ username: 'admin', password: 'admin123' }}
           onFinish={handleSubmit}
         >
           <Form.Item
-            label="Username"
             name="username"
-            rules={[{ required: true, message: 'Please enter your username' }]}
+            rules={[{ required: true, message: 'Vui lòng nhập tên đăng nhập hoặc email' }]}
+            style={{ marginBottom: 16 }}
           >
-            <Input placeholder="admin" autoComplete="username" />
+            <Input 
+              size="large"
+              prefix={<MailOutlined style={{ color: '#727786', marginRight: 8 }} />} 
+              placeholder="Tên đăng nhập hoặc Email" 
+              autoComplete="username" 
+            />
           </Form.Item>
 
           <Form.Item
-            label="Password"
             name="password"
-            rules={[{ required: true, message: 'Please enter your password' }]}
+            rules={[{ required: true, message: 'Vui lòng nhập mật khẩu' }]}
+            style={{ marginBottom: 8 }}
           >
-            <Input.Password placeholder="admin123" autoComplete="current-password" />
+            <Input.Password 
+              size="large"
+              prefix={<LockOutlined style={{ color: '#727786', marginRight: 8 }} />} 
+              placeholder="Mật khẩu" 
+              autoComplete="current-password" 
+            />
           </Form.Item>
 
-          <Button type="primary" htmlType="submit" block>
-            Login
+          <div className="login-forgot">
+            <a href="#">Quên mật khẩu?</a>
+          </div>
+
+          <Button type="primary" htmlType="submit" className="login-btn" block>
+            ĐĂNG NHẬP
           </Button>
         </Form>
-      </Card>
+
+        <div className="login-footer">
+          <p>Phiên bản 1.0.2</p>
+          <div className="login-lang">
+            <GlobalOutlined />
+            <span>Tiếng Việt</span>
+          </div>
+        </div>
+      </div>
     </main>
   );
 }
