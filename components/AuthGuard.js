@@ -1,30 +1,23 @@
 'use client';
 
-
 import { Spin } from 'antd';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { getToken } from '@/utils/auth';
 
 export default function AuthGuard({ children }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [isClient, setIsClient] = useState(false);
-  const [checking, setChecking] = useState(true);
+  const token = getToken();
+  const isLoginPage = pathname === '/login';
 
   useEffect(() => {
-    setIsClient(true);
-    const token = getToken();
-
-    if (!token && pathname !== '/login') {
+    if (!token && !isLoginPage) {
       router.replace('/login');
-      return;
     }
+  }, [isLoginPage, router, token]);
 
-    setChecking(false);
-  }, [pathname, router]);
-
-  if (!isClient || checking) {
+  if (!token && !isLoginPage) {
     return (
       <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}>
         <Spin size="large" />
