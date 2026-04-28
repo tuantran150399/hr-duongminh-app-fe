@@ -5,6 +5,7 @@ import { AntdRegistry } from '@ant-design/nextjs-registry';
 import { ConfigProvider } from 'antd';
 import enUS from 'antd/locale/en_US';
 import viVN from 'antd/locale/vi_VN';
+import { StoreProvider } from '@/store/StoreProvider';
 
 const STORAGE_KEY = 'erp_logistics_language';
 
@@ -233,31 +234,33 @@ export function AppProviders({ children }) {
   };
 
   return (
-    <AntdRegistry>
-      <LanguageContext.Provider value={contextValue}>
-        <ConfigProvider
-          locale={antdLocales[language]}
-          theme={{
-            token: {
-              colorPrimary: '#0057c2',
-              colorBgBase: '#f9f9f9',
-              colorBgContainer: '#ffffff',
-              fontFamily: '"Inter", sans-serif',
-              borderRadius: 4
-            },
-            components: {
-              Button: {
+    <StoreProvider>
+      <AntdRegistry>
+        <LanguageContext.Provider value={contextValue}>
+          <ConfigProvider
+            locale={antdLocales[language]}
+            theme={{
+              token: {
                 colorPrimary: '#0057c2',
-                colorPrimaryHover: '#004398',
-                colorPrimaryActive: '#001a43'
+                colorBgBase: '#f9f9f9',
+                colorBgContainer: '#ffffff',
+                fontFamily: '"Inter", sans-serif',
+                borderRadius: 4
+              },
+              components: {
+                Button: {
+                  colorPrimary: '#0057c2',
+                  colorPrimaryHover: '#004398',
+                  colorPrimaryActive: '#001a43'
+                }
               }
-            }
-          }}
-        >
-          {children}
-        </ConfigProvider>
-      </LanguageContext.Provider>
-    </AntdRegistry>
+            }}
+          >
+            {children}
+          </ConfigProvider>
+        </LanguageContext.Provider>
+      </AntdRegistry>
+    </StoreProvider>
   );
 }
 

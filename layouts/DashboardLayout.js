@@ -2,56 +2,59 @@
 
 import { useEffect, useState } from 'react';
 import {
-  AppstoreOutlined,
-  BankOutlined,
   BellOutlined,
   CalendarOutlined,
-  DashboardOutlined,
   DownOutlined,
-  InboxOutlined,
   LogoutOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   QuestionCircleOutlined,
-  SettingOutlined,
-  TeamOutlined
+  UserOutlined
 } from '@ant-design/icons';
-import { Avatar, Button, Dropdown, Layout, Menu, Typography } from 'antd';
+import { Avatar, Button, Dropdown, Layout, Menu, Tooltip, Typography } from 'antd';
 import { usePathname, useRouter } from 'next/navigation';
 import { useLanguage } from '@/components/AppProviders';
 import AuthGuard from '@/components/AuthGuard';
-import { clearToken } from '@/utils/auth';
+import { clearAllTokens } from '@/utils/auth';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { logout, selectUser, selectUserPermissions } from '@/store/slices/authSlice';
+import { getAuthorizedMenuItems, APP_ROUTES } from '@/config/routes';
 
 const { Header, Content, Sider } = Layout;
 
 export default function DashboardLayout({ children }) {
   const pathname = usePathname();
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const [collapsed, setCollapsed] = useState(false);
   const [currentDateLabel, setCurrentDateLabel] = useState('');
   const { language, setLanguage, options, t } = useLanguage();
 
-  const menuItems = [
-    { key: '/dashboard', icon: <DashboardOutlined />, label: t('menu.dashboard') },
-    { key: '/jobs', icon: <InboxOutlined />, label: t('menu.jobs') },
-    { key: '/partners', icon: <TeamOutlined />, label: t('menu.partners') },
-    { key: '/accounting', icon: <BankOutlined />, label: t('menu.accounting') },
-    { key: '/users', icon: <SettingOutlined />, label: t('menu.settings') }
-  ];
+  // Lấy user và permissions từ Redux store
+  const user = useAppSelector(selectUser);
+  const userPermissions = useAppSelector(selectUserPermissions);
 
-  const selectedKey = menuItems.find(
-    (item) => pathname === item.key || pathname.startsWith(`${item.key}/`)
-  )?.key;
+  // Menu items được lọc theo permissions của user
+  const menuItems = getAuthorizedMenuItems(userPermissions, t);
 
-  const currentSection = menuItems.find((item) => item.key === selectedKey)?.label || t('menu.dashboard');
+  // Xác định menu item đang active
+  const selectedKey = APP_ROUTES.find(
+    (route) => pathname === route.path || pathname.startsWith(`${route.path}/`)
+  )?.path;
+
+  const currentSection =
+    menuItems.find((item) => item.key === selectedKey)?.label ||
+    t('menu.dashboard');
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      setCurrentDateLabel(new Intl.DateTimeFormat(language === 'vi' ? 'vi-VN' : 'en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-      }).format(new Date()));
+      setCurrentDateLabel(
+        new Intl.DateTimeFormat(language === 'vi' ? 'vi-VN' : 'en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric'
+        }).format(new Date())
+      );
     }, 0);
 
     return () => window.clearTimeout(timer);
@@ -62,7 +65,8 @@ export default function DashboardLayout({ children }) {
   }
 
   function handleLogout() {
-    clearToken();
+    dispatch(logout());
+    clearAllTokens();
     router.replace('/login');
   }
 
@@ -76,6 +80,28 @@ export default function DashboardLayout({ children }) {
       </span>
     )
   }));
+
+  // User dropdown menu (top-right avatar)
+  const userMenuItems = [
+    {
+      key: 'profile',
+      label: (
+        <span>
+          <strong>{user?.fullName || user?.username || 'User'}</strong>
+          <br />
+          <small style={{ color: '#888' }}>{user?.email || ''}</small>
+        </span>
+      ),
+      disabled: true
+    },
+    { type: 'divider' },
+    {
+      key: 'logout',
+      icon: <LogoutOutlined />,
+      label: t('common.signOut'),
+      danger: true
+    }
+  ];
 
   return (
     <AuthGuard>
@@ -171,14 +197,38 @@ export default function DashboardLayout({ children }) {
 
               <Button type="text" icon={<BellOutlined />} className="header-icon-btn" />
               <Button type="text" icon={<QuestionCircleOutlined />} className="header-icon-btn" />
-              <Button type="text" icon={<AppstoreOutlined />} className="header-icon-btn" />
+
               <div className="header-divider" />
-              <Avatar
-                size={34}
-                className="header-avatar"
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuDmQyJDXTGZKm4cYD-kWQElFA-NjsBpGesN0FGAh-X8nUPa7JFLJoKcigp6Yy96GXLwJry85JotHlnFNlQPa9-t9EPYjgcNVKp-gHwVM-wsXPmhL6CtnlHwUq8b8AaaqD7BvTI1GuoFPBFyfqs1G9Y83z_VnITvM0Bl0So8zJKJGLriPijG4UDrh-mdeY609K2wStGhmifATmCUhLgm4wrqP0LAduSGqPO87jON8IgoJ5CaQb3sONBi7i8YtOkT9KAPFV6ihdfGdfsU"
-                alt="Profile"
-              />
+
+              {/* Avatar + User dropdown */}
+              <Dropdown
+                menu={{
+                  items: userMenuItems,
+                  onClick: ({ key }) => {
+                    if (key === 'logout') handleLogout();
+                  }
+                }}
+                trigger={['click']}
+                placement="bottomRight"
+              >
+                <Tooltip
+                  title={user?.fullName || user?.username || ''}
+                  placement="bottomRight"
+                >
+                  <Avatar
+                    size={34}
+                    className="header-avatar"
+                    src={user?.avatarUrl || null}
+                    icon={!user?.avatarUrl ? <UserOutlined /> : undefined}
+                    alt={user?.fullName || 'Profile'}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    {!user?.avatarUrl && user?.fullName
+                      ? user.fullName.charAt(0).toUpperCase()
+                      : undefined}
+                  </Avatar>
+                </Tooltip>
+              </Dropdown>
             </div>
           </Header>
 

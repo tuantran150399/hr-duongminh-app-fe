@@ -1,5 +1,11 @@
 import axios from 'axios';
-import { clearToken, getToken, redirectToLogin } from '@/utils/auth';
+import {
+  clearAllTokens,
+  getRefreshToken,
+  getToken,
+  redirectToLogin,
+  setToken
+} from '@/utils/auth';
 
 function resolveApiBaseUrl() {
   const configuredBaseUrl =
@@ -31,6 +37,50 @@ const api = axios.create({
   timeout: 8000
 });
 
+// --------------------------------------------------------------------------
+// Refresh token logic
+// --------------------------------------------------------------------------
+
+let isRefreshing = false;
+let pendingQueue = []; // [{resolve, reject}]
+
+function processPendingQueue(error, token = null) {
+  pendingQueue.forEach(({ resolve, reject }) => {
+    if (error) {
+      reject(error);
+    } else {
+      resolve(token);
+    }
+  });
+  pendingQueue = [];
+}
+
+async function refreshAccessToken() {
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) throw new Error('No refresh token available');
+
+  // TODO: update endpoint when backend is ready
+  const response = await axios.post(
+    `${resolveApiBaseUrl()}/auth/refresh`,
+    { refreshToken },
+    { timeout: 8000 }
+  );
+
+  const newToken =
+    response.data?.accessToken ||
+    response.data?.access_token ||
+    response.data?.token;
+
+  if (!newToken) throw new Error('Refresh response did not include a token');
+
+  setToken(newToken);
+  return newToken;
+}
+
+// --------------------------------------------------------------------------
+// Request interceptor — attach Bearer token
+// --------------------------------------------------------------------------
+
 api.interceptors.request.use((config) => {
   const token = getToken();
 
@@ -41,12 +91,50 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// --------------------------------------------------------------------------
+// Response interceptor — handle 401 with refresh token retry
+// --------------------------------------------------------------------------
+
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      clearToken();
-      redirectToLogin();
+  async (error) => {
+    const originalRequest = error.config;
+
+    // Only attempt refresh on 401, and not for the refresh endpoint itself
+    // _retry flag prevents infinite retry loops
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !originalRequest.url?.includes('/auth/refresh')
+    ) {
+      if (isRefreshing) {
+        // Queue this request until the ongoing refresh resolves
+        return new Promise((resolve, reject) => {
+          pendingQueue.push({ resolve, reject });
+        })
+          .then((token) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return api(originalRequest);
+          })
+          .catch((err) => Promise.reject(err));
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        const newToken = await refreshAccessToken();
+        processPendingQueue(null, newToken);
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        return api(originalRequest);
+      } catch (refreshError) {
+        processPendingQueue(refreshError, null);
+        clearAllTokens();
+        redirectToLogin();
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
     }
 
     return Promise.reject(error);
