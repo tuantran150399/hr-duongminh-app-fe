@@ -30,23 +30,23 @@ function JobDetailContent() {
       .then((data) => {
         if (active) {
           setJob(data);
-          // Set initial form values (mocking some missing ones from API)
+          const raw = data.raw || {};
           form.setFieldsValue({
-            customerCode: data.customer || 'MST091238475',
-            salesperson: 'nguyenvana',
-            shipper: 'SUNSHINE TRADING CO., LTD',
-            consignee: 'AN BINH LOGISTICS VIETNAM',
-            agent: 'OCEAN LINK GLOBAL',
-            declarationNo: data.job_no || '103948572610',
-            businessType: 'kinhdoanh',
-            stream: 'vang',
-            coType: 'formE',
-            vessel: 'WAN HAI 517 / E082',
-            pol: data.origin || 'SHANGHAI',
-            pod: data.destination || 'CAT LAI',
-            cargoType: 'fcl',
-            containerStr: 'WHLU1234567 / S88231',
-            status: 'shipping'
+            customerCode: data.customer || '',
+            salesperson: raw.salespersonName || '',
+            shipper: raw.shipperName || raw.shipper || '',
+            consignee: raw.consigneeName || raw.consignee || '',
+            agent: raw.agentName || raw.agent || '',
+            declarationNo: data.job_no || raw.declarationNo || '',
+            businessType: raw.businessType || '',
+            stream: raw.customsChannel || '',
+            coType: raw.coType || '',
+            vessel: raw.vessel || '',
+            pol: data.origin || raw.pol || '',
+            pod: data.destination || raw.pod || '',
+            cargoType: raw.cargoType || '',
+            containerStr: raw.containerNo || raw.container || '',
+            status: raw.status || data.status || ''
           });
         }
       })

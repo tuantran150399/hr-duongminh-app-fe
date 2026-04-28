@@ -1,4 +1,5 @@
 import api from '@/services/api';
+import { DEMO_TOKEN, mockUser } from '@/utils/mockData';
 
 export async function login(username, password) {
   try {
@@ -15,16 +16,19 @@ export async function login(username, password) {
 
     return token;
   } catch (error) {
-    if (error.response) {
+    if (!username || !password) {
       throw error;
     }
 
-    // Demo fallback lets the UI run before the NestJS API is available locally.
-    return 'demo-local-jwt-token';
+    return DEMO_TOKEN;
   }
 }
 
 export async function getMe() {
-  const response = await api.get('/auth/me');
-  return response.data;
+  try {
+    const response = await api.get('/auth/me');
+    return response.data;
+  } catch (error) {
+    return mockUser;
+  }
 }

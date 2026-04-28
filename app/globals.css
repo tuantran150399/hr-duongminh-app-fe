@@ -426,6 +426,7 @@ a {
   background: rgba(255, 255, 255, 0.86) !important;
   backdrop-filter: blur(18px);
   box-shadow: 18px 0 50px rgba(15, 23, 42, 0.05);
+  overflow: hidden;
 }
 
 .sider-brand {
@@ -455,6 +456,7 @@ a {
   align-items: center;
   margin: 6px 14px;
   padding-inline: 14px !important;
+  width: calc(100% - 28px);
   height: 44px;
   line-height: 44px;
   color: #4b5565;
@@ -485,6 +487,12 @@ a {
 
 .sider-menu .ant-menu-item-selected::after {
   display: none;
+}
+
+.sider-menu,
+.sider-menu.ant-menu,
+.dashboard-sider .ant-layout-sider-children {
+  overflow: hidden;
 }
 
 .sider-cta {
@@ -546,6 +554,44 @@ a {
 
 .header-actions {
   gap: 10px;
+}
+
+.header-language-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 58px;
+  height: 38px;
+  padding-inline: 10px !important;
+  border-radius: 12px;
+  color: #334155 !important;
+}
+
+.header-language-btn:hover {
+  background: #eef4fb !important;
+}
+
+.header-language-current {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.language-menu-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.language-emoji {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.header-language-flag {
+  font-size: 18px;
+  line-height: 1;
 }
 
 .header-date-pill {

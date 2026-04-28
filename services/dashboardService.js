@@ -1,6 +1,6 @@
 import api from '@/services/api';
-import { dashboardStats } from '@/utils/mockData';
 import { extractPaginatedItems } from '@/utils/apiMappers';
+import { getMockDashboardStats } from '@/utils/mockData';
 
 export async function getDashboardStats() {
   try {
@@ -29,7 +29,7 @@ export async function getDashboardStats() {
       totalCost,
       profit: totalRevenue - totalCost
     };
-  } catch {
-    return dashboardStats;
-  }
+  } catch (error) {
+    return getMockDashboardStats();
+  };
 }

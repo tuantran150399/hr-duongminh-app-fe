@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   AppstoreOutlined,
   BankOutlined,
   BellOutlined,
   CalendarOutlined,
   DashboardOutlined,
+  DownOutlined,
   InboxOutlined,
   LogoutOutlined,
   MenuFoldOutlined,
@@ -15,36 +16,46 @@ import {
   SettingOutlined,
   TeamOutlined
 } from '@ant-design/icons';
-import { Avatar, Button, Layout, Menu, Typography } from 'antd';
+import { Avatar, Button, Dropdown, Layout, Menu, Typography } from 'antd';
 import { usePathname, useRouter } from 'next/navigation';
+import { useLanguage } from '@/components/AppProviders';
 import AuthGuard from '@/components/AuthGuard';
 import { clearToken } from '@/utils/auth';
 
 const { Header, Content, Sider } = Layout;
 
-const menuItems = [
-  { key: '/dashboard', icon: <DashboardOutlined />, label: 'Dashboard' },
-  { key: '/jobs', icon: <InboxOutlined />, label: 'Jobs' },
-  { key: '/partners', icon: <TeamOutlined />, label: 'Partners' },
-  { key: '/accounting', icon: <BankOutlined />, label: 'Accounting' },
-  { key: '/users', icon: <SettingOutlined />, label: 'Settings' }
-];
-
 export default function DashboardLayout({ children }) {
   const pathname = usePathname();
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
+  const [currentDateLabel, setCurrentDateLabel] = useState('');
+  const { language, setLanguage, options, t } = useLanguage();
+
+  const menuItems = [
+    { key: '/dashboard', icon: <DashboardOutlined />, label: t('menu.dashboard') },
+    { key: '/jobs', icon: <InboxOutlined />, label: t('menu.jobs') },
+    { key: '/partners', icon: <TeamOutlined />, label: t('menu.partners') },
+    { key: '/accounting', icon: <BankOutlined />, label: t('menu.accounting') },
+    { key: '/users', icon: <SettingOutlined />, label: t('menu.settings') }
+  ];
 
   const selectedKey = menuItems.find(
     (item) => pathname === item.key || pathname.startsWith(`${item.key}/`)
   )?.key;
 
-  const currentSection = menuItems.find((item) => item.key === selectedKey)?.label || 'Dashboard';
-  const currentDateLabel = new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  }).format(new Date());
+  const currentSection = menuItems.find((item) => item.key === selectedKey)?.label || t('menu.dashboard');
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setCurrentDateLabel(new Intl.DateTimeFormat(language === 'vi' ? 'vi-VN' : 'en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      }).format(new Date()));
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [language]);
 
   function handleMenuClick({ key }) {
     router.push(key);
@@ -54,6 +65,17 @@ export default function DashboardLayout({ children }) {
     clearToken();
     router.replace('/login');
   }
+
+  const currentLanguage = options.find((item) => item.key === language) || options[0];
+  const languageMenuItems = options.map((item) => ({
+    key: item.key,
+    label: (
+      <span className="language-menu-item">
+        <span className="language-emoji">{item.emoji}</span>
+        <span>{item.key === 'en' ? t('header.english') : t('header.vietnamese')}</span>
+      </span>
+    )
+  }));
 
   return (
     <AuthGuard>
@@ -77,7 +99,7 @@ export default function DashboardLayout({ children }) {
             ) : null}
           </div>
 
-          <div className="sider-section-label">{collapsed ? 'NAV' : 'Navigation'}</div>
+          <div className="sider-section-label">{collapsed ? 'NAV' : t('menu.navigation')}</div>
 
           <Menu
             theme="light"
@@ -96,7 +118,7 @@ export default function DashboardLayout({ children }) {
               onClick={handleLogout}
               className="sider-logout-btn"
             >
-              {collapsed ? '' : 'Sign out'}
+              {collapsed ? '' : t('common.signOut')}
             </Button>
           </div>
         </Sider>
@@ -112,7 +134,7 @@ export default function DashboardLayout({ children }) {
               />
 
               <div className="header-context">
-                <span className="header-eyebrow">Workspace</span>
+                <span className="header-eyebrow">{t('common.workspace')}</span>
                 <Typography.Title level={5} className="header-title">
                   {currentSection}
                 </Typography.Title>
@@ -122,8 +144,31 @@ export default function DashboardLayout({ children }) {
             <div className="header-actions">
               <div className="header-date-pill">
                 <CalendarOutlined />
-                <span>{currentDateLabel}</span>
+                <span suppressHydrationWarning>{currentDateLabel}</span>
               </div>
+
+              <Dropdown
+                menu={{
+                  items: languageMenuItems,
+                  selectable: true,
+                  selectedKeys: [language],
+                  onClick: ({ key }) => setLanguage(key)
+                }}
+                trigger={['click']}
+              >
+                <Button
+                  type="text"
+                  className="header-language-btn"
+                  aria-label={t('header.language')}
+                  title={t('header.language')}
+                >
+                  <span className="header-language-current" aria-hidden="true">
+                    <span className="header-language-flag">{currentLanguage.emoji}</span>
+                  </span>
+                  <DownOutlined />
+                </Button>
+              </Dropdown>
+
               <Button type="text" icon={<BellOutlined />} className="header-icon-btn" />
               <Button type="text" icon={<QuestionCircleOutlined />} className="header-icon-btn" />
               <Button type="text" icon={<AppstoreOutlined />} className="header-icon-btn" />

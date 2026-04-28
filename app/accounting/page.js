@@ -1,6 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import {
+  CalendarOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  DownloadOutlined,
+  FileAddOutlined,
+  FilterOutlined,
+  RiseOutlined,
+  SearchOutlined,
+  WalletOutlined
+} from '@ant-design/icons';
 import {
   Breadcrumb,
   Button,
@@ -17,19 +27,11 @@ import {
   Table,
   Tabs,
   Typography,
+  Alert,
   message
 } from 'antd';
-import {
-  CalendarOutlined,
-  CheckCircleOutlined,
-  ClockCircleOutlined,
-  DownloadOutlined,
-  FileAddOutlined,
-  FilterOutlined,
-  RiseOutlined,
-  SearchOutlined,
-  WalletOutlined
-} from '@ant-design/icons';
+import { useEffect, useMemo, useState } from 'react';
+import { useLanguage } from '@/components/AppProviders';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { getAccountingCost, getAccountingRevenue } from '@/services/accountingService';
 import { formatCurrency } from '@/utils/format';
@@ -44,25 +46,12 @@ const statusAppearance = {
   Pending: 'status-warning'
 };
 
-const tabMeta = {
-  revenue: {
-    title: 'Revenue',
-    description: 'Customer invoices, payment collection, and aging.',
-    createLabel: 'Create Invoice'
-  },
-  cost: {
-    title: 'Cost',
-    description: 'Vendor costs, approvals, and settlement tracking.',
-    createLabel: 'Add Cost Entry'
-  }
-};
-
 function safeNumber(value) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function buildExportContent(rows, format) {
+function buildExportContent(rows, format, headers) {
   const exportRows = rows.map((row) => ({
     job_no: row.job_no,
     amount: safeNumber(row.amount),
@@ -70,7 +59,6 @@ function buildExportContent(rows, format) {
     date: row.date
   }));
 
-  const headers = ['Job Number', 'Amount', 'Status', 'Date'];
   const values = exportRows.map((row) => [row.job_no, row.amount, row.status, row.date]);
 
   if (format === 'excel') {
@@ -106,6 +94,7 @@ function downloadBlob(blob, filename) {
 }
 
 export default function AccountingPage() {
+  const { t } = useLanguage();
   const [revenue, setRevenue] = useState([]);
   const [cost, setCost] = useState([]);
   const [revenuePagination, setRevenuePagination] = useState({ current: 1, pageSize: 6 });
@@ -115,6 +104,23 @@ export default function AccountingPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateRange, setDateRange] = useState(null);
+  const [loadError, setLoadError] = useState('');
+
+  const tabMeta = useMemo(
+    () => ({
+      revenue: {
+        title: t('accounting.revenue'),
+        description: t('accounting.revenueDescription'),
+        createLabel: t('accounting.createInvoice')
+      },
+      cost: {
+        title: t('accounting.cost'),
+        description: t('accounting.costDescription'),
+        createLabel: t('accounting.addCostEntry')
+      }
+    }),
+    [t]
+  );
 
   useEffect(() => {
     let active = true;
@@ -137,6 +143,9 @@ export default function AccountingPage() {
           total: costResult.meta?.total || costItems.length
         }));
       })
+      .catch(() => {
+        if (active) setLoadError('Unable to load accounting data from the backend.');
+      })
       .finally(() => {
         if (active) setLoading(false);
       });
@@ -151,10 +160,7 @@ export default function AccountingPage() {
   const statusOptions = ['all', ...Array.from(new Set(activeRows.map((item) => item.status)))];
 
   const filteredRows = activeRows.filter((item) => {
-    const matchesSearch =
-      !searchTerm ||
-      item.job_no?.toLowerCase().includes(searchTerm.toLowerCase());
-
+    const matchesSearch = !searchTerm || item.job_no?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
 
     let matchesDate = true;
@@ -228,28 +234,31 @@ export default function AccountingPage() {
     updateCurrentPagination({ current: 1 });
   }
 
-  function handleTabChange(key) {
-    setActiveTab(key);
-  }
-
   function exportRows(format) {
     if (!filteredRows.length) {
-      message.info('There is no data to export for the current view.');
+      message.info(t('common.noDataToExport'));
       return;
     }
 
-    const { blob, extension } = buildExportContent(filteredRows, format);
+    const headers = [
+      t('accounting.jobNumber'),
+      t('accounting.amount'),
+      t('accounting.status'),
+      t('accounting.date')
+    ];
+
+    const { blob, extension } = buildExportContent(filteredRows, format, headers);
     downloadBlob(blob, `accounting-${activeTab}.${extension}`);
-    message.success(`Exported ${filteredRows.length} rows.`);
+    message.success(t('common.exportSuccess', { count: filteredRows.length }));
   }
 
   function handleCreateAction() {
-    message.info(`${tabMeta[activeTab].createLabel} is ready for the next implementation step.`);
+    message.info(t('common.underPreparation', { label: tabMeta[activeTab].createLabel }));
   }
 
   const columns = [
     {
-      title: 'Job Number',
+      title: t('accounting.jobNumber'),
       dataIndex: 'job_no',
       key: 'job_no',
       sorter: (a, b) => String(a.job_no).localeCompare(String(b.job_no)),
@@ -257,13 +266,13 @@ export default function AccountingPage() {
         <div className="accounting-job-cell">
           <span className="accounting-job-number">{value}</span>
           <span className="accounting-job-subcopy">
-            {activeTab === 'revenue' ? 'Receivable record' : 'Payable record'}
+            {activeTab === 'revenue' ? t('accounting.receivableRecord') : t('accounting.payableRecord')}
           </span>
         </div>
       )
     },
     {
-      title: 'Amount',
+      title: t('accounting.amount'),
       dataIndex: 'amount',
       key: 'amount',
       align: 'right',
@@ -271,7 +280,7 @@ export default function AccountingPage() {
       render: (value) => <span className="accounting-amount-cell">{formatCurrency(value)}</span>
     },
     {
-      title: 'Status',
+      title: t('accounting.status'),
       dataIndex: 'status',
       key: 'status',
       filters: statusOptions
@@ -286,23 +295,23 @@ export default function AccountingPage() {
       )
     },
     {
-      title: 'Date',
+      title: t('accounting.date'),
       dataIndex: 'date',
       key: 'date',
       sorter: (a, b) => new Date(a.date) - new Date(b.date),
       render: (value) => <span className="accounting-date-cell">{value}</span>
     },
     {
-      title: 'Actions',
+      title: t('accounting.actions'),
       key: 'actions',
       align: 'right',
       render: (_, record) => (
         <Space size="small">
           <Button type="link" className="table-inline-action">
-            View
+            {t('accounting.view')}
           </Button>
           <Button type="link" className="table-inline-action">
-            {record.status === 'Paid' ? 'Receipt' : 'Remind'}
+            {record.status === 'Paid' ? t('accounting.receipt') : t('accounting.remind')}
           </Button>
         </Space>
       )
@@ -314,7 +323,7 @@ export default function AccountingPage() {
       key: 'revenue',
       label: (
         <span className="accounting-tab-label">
-          Revenue
+          {t('accounting.revenue')}
           <span className="accounting-tab-count">{revenue.length}</span>
         </span>
       )
@@ -323,7 +332,7 @@ export default function AccountingPage() {
       key: 'cost',
       label: (
         <span className="accounting-tab-label">
-          Cost
+          {t('accounting.cost')}
           <span className="accounting-tab-count">{cost.length}</span>
         </span>
       )
@@ -337,19 +346,19 @@ export default function AccountingPage() {
           <div className="accounting-hero-copy">
             <Breadcrumb
               items={[
-                { title: 'Operations' },
-                { title: 'Finance' },
-                { title: 'Accounting dashboard' }
+                { title: t('accounting.breadcrumb1') },
+                { title: t('accounting.breadcrumb2') },
+                { title: t('accounting.breadcrumb3') }
               ]}
               className="accounting-breadcrumb"
             />
             <div className="accounting-title-row">
               <div>
                 <Typography.Title level={1} className="page-title accounting-title">
-                  Accounting
+                  {t('accounting.title')}
                 </Typography.Title>
                 <Typography.Paragraph className="accounting-subtitle">
-                  Track receivables, payables, and cash collection from one operational workspace.
+                  {t('accounting.subtitle')}
                 </Typography.Paragraph>
               </div>
             </div>
@@ -364,10 +373,10 @@ export default function AccountingPage() {
               allowClear
             />
             <Button icon={<DownloadOutlined />} onClick={() => exportRows('csv')}>
-              Export CSV
+              {t('common.exportCsv')}
             </Button>
             <Button icon={<DownloadOutlined />} onClick={() => exportRows('excel')}>
-              Export Excel
+              {t('common.exportExcel')}
             </Button>
             <Button type="primary" icon={<FileAddOutlined />} onClick={handleCreateAction}>
               {tabMeta[activeTab].createLabel}
@@ -379,25 +388,27 @@ export default function AccountingPage() {
           <Col xs={24} md={12} xl={6}>
             <Card className="accounting-summary-card accent-blue">
               <Statistic
-                title={activeTab === 'revenue' ? 'Total Revenue' : 'Total Cost'}
+                title={activeTab === 'revenue' ? t('accounting.totalRevenue') : t('accounting.totalCost')}
                 value={totalAmount}
                 formatter={(value) => formatCurrency(value)}
                 prefix={<WalletOutlined />}
               />
-              <div className="summary-meta">Across {filteredRows.length} finance records</div>
+              <div className="summary-meta">{t('accounting.acrossRecords', { count: filteredRows.length })}</div>
             </Card>
           </Col>
 
           <Col xs={24} md={12} xl={6}>
             <Card className="accounting-summary-card accent-green">
               <Statistic
-                title="Paid / Settled"
+                title={t('accounting.paidSettled')}
                 value={paidAmount}
                 formatter={(value) => formatCurrency(value)}
                 prefix={<CheckCircleOutlined />}
               />
               <div className="summary-meta">
-                {totalAmount ? `${Math.round((paidAmount / totalAmount) * 100)}% of tracked value` : 'No paid records yet'}
+                {totalAmount
+                  ? t('accounting.trackedValue', { percent: Math.round((paidAmount / totalAmount) * 100) })
+                  : t('accounting.noPaidRecords')}
               </div>
             </Card>
           </Col>
@@ -405,25 +416,23 @@ export default function AccountingPage() {
           <Col xs={24} md={12} xl={6}>
             <Card className="accounting-summary-card accent-amber">
               <Statistic
-                title="Outstanding"
+                title={t('accounting.outstanding')}
                 value={outstandingAmount}
                 formatter={(value) => formatCurrency(value)}
                 prefix={<ClockCircleOutlined />}
               />
               <div className="summary-meta">
-                {filteredRows.filter((item) => item.status !== 'Paid').length} open records need follow-up
+                {t('accounting.openRecords', {
+                  count: filteredRows.filter((item) => item.status !== 'Paid').length
+                })}
               </div>
             </Card>
           </Col>
 
           <Col xs={24} md={12} xl={6}>
             <Card className="accounting-summary-card accent-slate">
-              <Statistic
-                title="Draft Items"
-                value={draftCount}
-                prefix={<RiseOutlined />}
-              />
-              <div className="summary-meta">Drafts are excluded from settled cash flow</div>
+              <Statistic title={t('accounting.draftItems')} value={draftCount} prefix={<RiseOutlined />} />
+              <div className="summary-meta">{t('accounting.draftsExcluded')}</div>
             </Card>
           </Col>
         </Row>
@@ -431,22 +440,18 @@ export default function AccountingPage() {
         <Row gutter={[16, 16]} className="accounting-insight-grid">
           <Col xs={24} xl={16}>
             <Card className="accounting-main-card">
+              {loadError ? <Alert type="error" showIcon message={loadError} style={{ marginBottom: 16 }} /> : null}
               <div className="accounting-card-toolbar">
                 <div>
                   <Typography.Title level={4} className="accounting-section-title">
-                    Invoice operations
+                    {t('accounting.invoiceOperations')}
                   </Typography.Title>
                   <Typography.Paragraph className="accounting-section-copy">
                     {tabMeta[activeTab].description}
                   </Typography.Paragraph>
                 </div>
 
-                <Tabs
-                  activeKey={activeTab}
-                  items={tabItems}
-                  onChange={handleTabChange}
-                  className="accounting-tabs"
-                />
+                <Tabs activeKey={activeTab} items={tabItems} onChange={setActiveTab} className="accounting-tabs" />
               </div>
 
               <div className="accounting-filter-row">
@@ -454,7 +459,7 @@ export default function AccountingPage() {
                   value={searchTerm}
                   onChange={(event) => updateSearch(event.target.value)}
                   prefix={<SearchOutlined />}
-                  placeholder="Search by job number"
+                  placeholder={t('common.searchByJobNumber')}
                   className="accounting-search-input"
                   allowClear
                 />
@@ -466,17 +471,17 @@ export default function AccountingPage() {
                   suffixIcon={<FilterOutlined />}
                   options={statusOptions.map((status) => ({
                     value: status,
-                    label: status === 'all' ? 'All statuses' : status
+                    label: status === 'all' ? t('common.allStatuses') : status
                   }))}
                 />
 
-                <Button onClick={resetFilters}>Reset filters</Button>
+                <Button onClick={resetFilters}>{t('common.resetFilters')}</Button>
               </div>
 
               <div className="accounting-table-shell">
                 <div className="accounting-table-meta">
-                  <span>{filteredRows.length} records in view</span>
-                  <span>Page {currentPagination.current} of {totalPages}</span>
+                  <span>{t('accounting.recordsInView', { count: filteredRows.length })}</span>
+                  <span>{t('accounting.pageOf', { current: currentPagination.current, total: totalPages })}</span>
                 </div>
 
                 <Table
@@ -487,7 +492,11 @@ export default function AccountingPage() {
                   locale={{
                     emptyText: (
                       <Empty
-                        description={`No ${activeTab} records match the current filters.`}
+                        description={
+                          activeTab === 'revenue'
+                            ? t('accounting.noRevenueRecords')
+                            : t('accounting.noCostRecords')
+                        }
                         image={Empty.PRESENTED_IMAGE_SIMPLE}
                       />
                     )
@@ -498,7 +507,12 @@ export default function AccountingPage() {
                     total: filteredRows.length,
                     showSizeChanger: false,
                     showQuickJumper: false,
-                    showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} records`
+                    showTotal: (total, range) =>
+                      t('accounting.rowRange', {
+                        start: range[0],
+                        end: range[1],
+                        total
+                      })
                   }}
                   onChange={(pagination) => {
                     updateCurrentPagination({
@@ -517,10 +531,10 @@ export default function AccountingPage() {
               <div className="accounting-side-card-header">
                 <div>
                   <Typography.Title level={4} className="accounting-section-title">
-                    Status distribution
+                    {t('accounting.statusDistribution')}
                   </Typography.Title>
                   <Typography.Paragraph className="accounting-section-copy">
-                    A quick view of where cash flow is concentrated.
+                    {t('accounting.statusDistributionCopy')}
                   </Typography.Paragraph>
                 </div>
               </div>
@@ -545,18 +559,15 @@ export default function AccountingPage() {
                     </div>
                   ))
                 ) : (
-                  <Empty
-                    description="No chart data available"
-                    image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  />
+                  <Empty description={t('accounting.noChartData')} image={Empty.PRESENTED_IMAGE_SIMPLE} />
                 )}
               </div>
 
               <div className="accounting-note-card">
                 <CalendarOutlined />
                 <div>
-                  <strong>Review cadence</strong>
-                  <span>Use the date range filter to review period-end collections and vendor settlement trends.</span>
+                  <strong>{t('accounting.reviewCadenceTitle')}</strong>
+                  <span>{t('accounting.reviewCadenceCopy')}</span>
                 </div>
               </div>
             </Card>

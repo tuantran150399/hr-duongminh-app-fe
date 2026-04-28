@@ -1,6 +1,6 @@
 'use client';
 
-import { Card, Table, Tag } from 'antd';
+import { Alert, Card, Table, Tag } from 'antd';
 import { useEffect, useState } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { getPartners } from '@/services/partnerService';
@@ -8,6 +8,7 @@ import { getPartners } from '@/services/partnerService';
 export default function PartnersPage() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -15,6 +16,9 @@ export default function PartnersPage() {
     getPartners()
       .then((items) => {
         if (active) setData(items);
+      })
+      .catch(() => {
+        if (active) setError('Unable to load partners from the backend.');
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -39,6 +43,7 @@ export default function PartnersPage() {
   return (
     <DashboardLayout>
       <h1 className="page-title">Partners</h1>
+      {error ? <Alert type="error" showIcon message={error} style={{ marginBottom: 16 }} /> : null}
       <Card className="table-card">
         <Table
           rowKey="id"

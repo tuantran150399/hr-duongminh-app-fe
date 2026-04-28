@@ -1,7 +1,14 @@
 import api from '@/services/api';
-import { jobFinancials, jobs } from '@/utils/mockData';
 import { extractPaginatedItems, normalizeEntry, normalizeJob } from '@/utils/apiMappers';
 import { getPartnersMap } from '@/services/partnerService';
+import {
+  buildMockPaginatedResponse,
+  getMockCostByJob,
+  getMockPartnersMap,
+  getMockProfitSummary,
+  getMockRevenueByJob,
+  mockJobs
+} from '@/utils/mockData';
 
 export async function getJobs() {
   try {
@@ -12,11 +19,17 @@ export async function getJobs() {
     const { items, meta } = extractPaginatedItems(response.data);
 
     return {
-      items: items.map((job) => normalizeJob(job, partnersById)),
+      items: items.map((job) => normalizeJob(job, partnersById)).filter(Boolean),
       meta
     };
-  } catch {
-    return { items: jobs, meta: null };
+  } catch (error) {
+    const partnersById = getMockPartnersMap();
+    const { items, meta } = buildMockPaginatedResponse(mockJobs, 1, 50);
+
+    return {
+      items: items.map((job) => normalizeJob(job, partnersById)).filter(Boolean),
+      meta
+    };
   }
 }
 
@@ -31,8 +44,8 @@ export async function getJobById(id) {
     ]);
 
     const normalizedJob = normalizeJob(jobResponse.data, partnersById);
-    const revenue = Array.isArray(revenueResponse.data) ? revenueResponse.data.map(normalizeEntry) : [];
-    const cost = Array.isArray(costResponse.data) ? costResponse.data.map(normalizeEntry) : [];
+    const revenue = Array.isArray(revenueResponse.data) ? revenueResponse.data.map(normalizeEntry).filter(Boolean) : [];
+    const cost = Array.isArray(costResponse.data) ? costResponse.data.map(normalizeEntry).filter(Boolean) : [];
     const profitSummary = profitResponse.data || null;
 
     return {
@@ -42,9 +55,16 @@ export async function getJobById(id) {
       profitSummary,
       raw: jobResponse.data
     };
-  } catch {
-    const job = jobs.find((item) => item.id === id);
-    const financials = jobFinancials[id] || { revenue: [], cost: [] };
-    return job ? { ...job, ...financials } : null;
+  } catch (error) {
+    const partnersById = getMockPartnersMap();
+    const job = mockJobs.find((item) => String(item.id) === String(id)) || mockJobs[0];
+
+    return {
+      ...normalizeJob(job, partnersById),
+      revenue: getMockRevenueByJob(job.id).map(normalizeEntry).filter(Boolean),
+      cost: getMockCostByJob(job.id).map(normalizeEntry).filter(Boolean),
+      profitSummary: getMockProfitSummary(job.id),
+      raw: job
+    };
   }
 }

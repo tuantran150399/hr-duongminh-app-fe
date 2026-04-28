@@ -8,7 +8,8 @@
     "export": "next build",
     "build:static": "next build",
     "postbuild": "powershell -NoProfile -Command \"if (Test-Path out) { Copy-Item web.config out\\web.config -Force }\"",
-    "start": "next start",
+    "start": "npx serve@latest out -l 3000",
+    "start:static": "npx serve@latest out -l 3000",
     "lint": "eslint .",
     "clean": "powershell -NoProfile -Command \"if (Test-Path .next) { Remove-Item -Recurse -Force .next }\""
   },

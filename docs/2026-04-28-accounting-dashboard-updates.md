@@ -107,3 +107,180 @@ Production artifact prepared:
 ## Recommended Next Step
 
 Add a dedicated production build script so future builds do not accidentally use `.env.local` when generating the deployable static output.
+
+## Additional Update: Language Switcher
+
+Date: `2026-04-28`
+
+### Added functionality
+
+Files:
+- `components/AppProviders.js`
+- `layouts/DashboardLayout.js`
+- `app/accounting/page.js`
+- `app/login/page.js`
+- `app/layout.js`
+- `app/globals.css`
+
+Changes:
+- Added a lightweight frontend language system with local storage persistence
+- Added a language switcher in the header using Ant Design
+- Added country flags for:
+  - `English` -> `🇺🇸`
+  - `Tiếng Việt` -> `🇻🇳`
+- Added Ant Design locale switching for:
+  - DatePicker
+  - pagination and other Ant Design texts
+- Connected translations for key UI areas:
+  - header
+  - sidebar menu
+  - login page
+  - accounting dashboard
+
+### Behavior
+
+- The selected language is saved in browser local storage
+- The selected language is restored on the next visit
+- The app updates the document language attribute dynamically
+
+### Current scope
+
+Currently supported languages:
+- English
+- Vietnamese
+
+Current translated screens:
+- shared dashboard layout
+- login page
+- accounting page
+
+### Validation
+
+Completed after language feature update:
+- `npm run lint`
+- production-safe build with:
+
+```powershell
+$env:NEXT_PUBLIC_API_URL='https://api.hr.duongminhvn.com/api/v1'; npm run build
+```
+
+## Additional Update: Local Static Start
+
+Date: `2026-04-28`
+
+### Problem
+
+Because the project uses:
+
+```js
+output: 'export'
+```
+
+`next start` does not work for local preview anymore.
+
+### Change
+
+File:
+- `package.json`
+
+Updated scripts:
+
+```json
+"start": "npx serve@latest out -l 3000",
+"start:static": "npx serve@latest out -l 3000"
+```
+
+### Local usage
+
+Use:
+
+```powershell
+npm run build
+npm run start
+```
+
+Then open:
+
+```text
+http://localhost:3000
+```
+
+## Additional Update: Language Trigger Flag
+
+Date: `2026-04-28`
+
+### Change
+
+Files:
+- `layouts/DashboardLayout.js`
+- `app/globals.css`
+
+Updated the header language switcher trigger so it now displays the selected country flag directly.
+
+Before:
+- globe icon
+- text code like `VN`
+
+Now:
+- the active country flag only
+- cleaner Ant Design header action styling
+- dropdown options still show both flag and language name
+
+## Additional Update: Production Data and Hydration Fix
+
+Date: `2026-04-28`
+
+### Change
+
+Files:
+- `components/AppProviders.js`
+- `layouts/DashboardLayout.js`
+- `services/*.js`
+- `app/dashboard/page.js`
+- `app/jobs/page.js`
+- `app/jobs/detail/page.js`
+- `app/accounting/page.js`
+- `app/partners/page.js`
+
+Updates:
+- Removed mock-data fallbacks from frontend API services.
+- Removed the demo local JWT fallback.
+- Reworked the jobs page to use backend data only.
+- Added visible error states when backend calls fail.
+- Deferred browser-only language and date values until after hydration to prevent React hydration error `#418`.
+
+## Additional Update: Temporary Demo Data Fallback
+
+Date: `2026-04-28`
+
+### Reason
+
+Production backend routes are currently unstable and can return `500` on data endpoints such as:
+
+- `/jobs`
+- `/accounting/revenue`
+- `/accounting/cost`
+
+To keep the frontend usable for demo and review purposes, the frontend service layer was switched back to hard-data fallback mode.
+
+### Files
+
+- `utils/mockData.js`
+- `services/authService.js`
+- `services/dashboardService.js`
+- `services/jobService.js`
+- `services/accountingService.js`
+- `services/partnerService.js`
+
+### Behavior
+
+- Frontend still calls the real backend first.
+- If the API fails, the app falls back to a shared demo dataset.
+- Login also falls back to a demo token when backend login is unavailable.
+- Dashboard, jobs, partners, accounting, and job detail continue rendering with demo data.
+
+### Deployment Note
+
+This is a temporary safety mode for demo continuity.
+
+When backend APIs are stable again, these fallbacks should be removed or moved behind an explicit demo-mode flag.

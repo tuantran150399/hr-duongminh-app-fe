@@ -1,23 +1,25 @@
 'use client';
 
+import { GlobalOutlined, LockOutlined, MailOutlined } from '@ant-design/icons';
 import { Button, Form, Input, Typography, message } from 'antd';
-import { MailOutlined, LockOutlined, GlobalOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
+import { useLanguage } from '@/components/AppProviders';
 import { login } from '@/services/authService';
 import { setToken } from '@/utils/auth';
 
 export default function LoginPage() {
   const router = useRouter();
   const [form] = Form.useForm();
+  const { language, t } = useLanguage();
 
   async function handleSubmit(values) {
     try {
       const token = await login(values.username, values.password);
       setToken(token);
-      message.success('Đăng nhập thành công');
+      message.success(t('login.loginSuccess'));
       router.replace('/dashboard');
     } catch {
-      message.error('Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.');
+      message.error(t('login.loginError'));
     }
   }
 
@@ -27,57 +29,55 @@ export default function LoginPage() {
         <Typography.Title level={1} className="login-brand-title">
           HR LOGISTIC
         </Typography.Title>
-        <div className="login-brand-subtitle">
-          MAKE IT EASY
-        </div>
+        <div className="login-brand-subtitle">MAKE IT EASY</div>
 
         <Form
           form={form}
           className="login-form"
           layout="vertical"
-          initialValues={{ username: 'admin', password: 'admin123' }}
+          initialValues={{ username: 'admin', password: 'Admin@123' }}
           onFinish={handleSubmit}
         >
           <Form.Item
             name="username"
-            rules={[{ required: true, message: 'Vui lòng nhập tên đăng nhập hoặc email' }]}
+            rules={[{ required: true, message: t('login.usernameRequired') }]}
             style={{ marginBottom: 16 }}
           >
-            <Input 
+            <Input
               size="large"
-              prefix={<MailOutlined style={{ color: '#727786', marginRight: 8 }} />} 
-              placeholder="Tên đăng nhập hoặc Email" 
-              autoComplete="username" 
+              prefix={<MailOutlined style={{ color: '#727786', marginRight: 8 }} />}
+              placeholder={t('login.usernamePlaceholder')}
+              autoComplete="username"
             />
           </Form.Item>
 
           <Form.Item
             name="password"
-            rules={[{ required: true, message: 'Vui lòng nhập mật khẩu' }]}
+            rules={[{ required: true, message: t('login.passwordRequired') }]}
             style={{ marginBottom: 8 }}
           >
-            <Input.Password 
+            <Input.Password
               size="large"
-              prefix={<LockOutlined style={{ color: '#727786', marginRight: 8 }} />} 
-              placeholder="Mật khẩu" 
-              autoComplete="current-password" 
+              prefix={<LockOutlined style={{ color: '#727786', marginRight: 8 }} />}
+              placeholder={t('login.passwordPlaceholder')}
+              autoComplete="current-password"
             />
           </Form.Item>
 
           <div className="login-forgot">
-            <a href="#">Quên mật khẩu?</a>
+            <a href="#">{t('login.forgotPassword')}</a>
           </div>
 
           <Button type="primary" htmlType="submit" className="login-btn" block>
-            ĐĂNG NHẬP
+            {t('login.signIn')}
           </Button>
         </Form>
 
         <div className="login-footer">
-          <p>Phiên bản 1.0.2</p>
+          <p>{t('login.version')}</p>
           <div className="login-lang">
             <GlobalOutlined />
-            <span>Tiếng Việt</span>
+            <span>{language === 'vi' ? t('header.vietnamese') : t('header.english')}</span>
           </div>
         </div>
       </div>
