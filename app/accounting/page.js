@@ -1,318 +1,341 @@
 'use client';
 
 import {
-  CalendarOutlined,
-  CheckCircleOutlined,
-  ClockCircleOutlined,
-  DownloadOutlined,
-  FileAddOutlined,
-  FilterOutlined,
-  RiseOutlined,
-  SearchOutlined,
-  WalletOutlined
-} from '@ant-design/icons';
-import {
-  Breadcrumb,
+  Alert,
   Button,
   Card,
   Col,
   DatePicker,
   Empty,
+  Form,
   Input,
-  Progress,
+  InputNumber,
+  Modal,
+  Popconfirm,
   Row,
   Select,
   Space,
   Statistic,
   Table,
   Tabs,
+  Tag,
   Typography,
-  Alert,
   message
 } from 'antd';
+import {
+  CheckCircleOutlined,
+  FileAddOutlined,
+  StopOutlined,
+  UploadOutlined,
+  WalletOutlined
+} from '@ant-design/icons';
 import { useEffect, useMemo, useState } from 'react';
-import { useLanguage } from '@/components/AppProviders';
 import DashboardLayout from '@/layouts/DashboardLayout';
-import { getAccountingCost, getAccountingRevenue } from '@/services/accountingService';
+import {
+  createCostEntry,
+  createRevenueEntry,
+  getAccountingCost,
+  getAccountingRevenue,
+  postCostEntry,
+  postRevenueEntry,
+  updateCostPaymentStatus,
+  updateRevenuePaymentStatus,
+  voidCostEntry,
+  voidRevenueEntry
+} from '@/services/accountingService';
+import { getJobs } from '@/services/jobService';
+import { getPartners } from '@/services/partnerService';
 import { formatCurrency } from '@/utils/format';
 
-const { RangePicker } = DatePicker;
-
-const statusAppearance = {
-  Paid: 'status-success',
-  Issued: 'status-info',
-  Draft: 'status-muted',
-  Approved: 'status-emerald',
-  Pending: 'status-warning'
+const statusColor = {
+  Draft: 'default',
+  Posted: 'green',
+  Voided: 'red',
+  Reversed: 'orange',
+  Closed: 'blue',
+  Paid: 'green',
+  Partial: 'gold',
+  Unpaid: 'red'
 };
+
+const paymentOptions = [
+  { value: 'UNPAID', label: 'Unpaid' },
+  { value: 'PARTIAL', label: 'Partial' },
+  { value: 'PAID', label: 'Paid' }
+];
 
 function safeNumber(value) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function buildExportContent(rows, format, headers) {
-  const exportRows = rows.map((row) => ({
-    job_no: row.job_no,
-    amount: safeNumber(row.amount),
-    status: row.status,
-    date: row.date
-  }));
-
-  const values = exportRows.map((row) => [row.job_no, row.amount, row.status, row.date]);
-
-  if (format === 'excel') {
-    const content = [headers, ...values]
-      .map((line) => line.join('\t'))
-      .join('\n');
-
-    return {
-      blob: new Blob([content], { type: 'application/vnd.ms-excel;charset=utf-8;' }),
-      extension: 'xls'
-    };
-  }
-
-  const content = [headers, ...values]
-    .map((line) => line.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(','))
-    .join('\n');
-
-  return {
-    blob: new Blob([content], { type: 'text/csv;charset=utf-8;' }),
-    extension: 'csv'
-  };
+function toDateString(value) {
+  return value?.format ? value.format('YYYY-MM-DD') : value || undefined;
 }
 
-function downloadBlob(blob, filename) {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+function cleanPayload(values) {
+  const amount = Number(values.amount || 0);
+  const exchangeRate = Number(values.exchangeRate || 1);
+  const localAmount = values.localAmount === undefined || values.localAmount === null
+    ? amount * exchangeRate
+    : Number(values.localAmount);
+
+  const payload = {
+    ...values,
+    amount,
+    exchangeRate,
+    localAmount,
+    docDate: toDateString(values.docDate),
+    dueDate: toDateString(values.dueDate)
+  };
+
+  return Object.fromEntries(
+    Object.entries(payload).filter(([, value]) => value !== undefined && value !== null && value !== '')
+  );
 }
 
 export default function AccountingPage() {
-  const { t } = useLanguage();
+  const [form] = Form.useForm();
   const [revenue, setRevenue] = useState([]);
   const [cost, setCost] = useState([]);
-  const [revenuePagination, setRevenuePagination] = useState({ current: 1, pageSize: 6 });
-  const [costPagination, setCostPagination] = useState({ current: 1, pageSize: 6 });
-  const [loading, setLoading] = useState(true);
+  const [jobs, setJobs] = useState([]);
+  const [partners, setPartners] = useState([]);
   const [activeTab, setActiveTab] = useState('revenue');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [dateRange, setDateRange] = useState(null);
   const [loadError, setLoadError] = useState('');
 
-  const tabMeta = useMemo(
-    () => ({
-      revenue: {
-        title: t('accounting.revenue'),
-        description: t('accounting.revenueDescription'),
-        createLabel: t('accounting.createInvoice')
-      },
-      cost: {
-        title: t('accounting.cost'),
-        description: t('accounting.costDescription'),
-        createLabel: t('accounting.addCostEntry')
-      }
-    }),
-    [t]
-  );
+  async function loadData() {
+    setLoading(true);
+    setLoadError('');
+
+    try {
+      const [revenueResult, costResult, jobsResult, partnerItems] = await Promise.all([
+        getAccountingRevenue(),
+        getAccountingCost(),
+        getJobs(),
+        getPartners()
+      ]);
+
+      setRevenue(revenueResult.items || []);
+      setCost(costResult.items || []);
+      setJobs(jobsResult.items || []);
+      setPartners(partnerItems.filter((partner) => partner.isActive));
+    } catch {
+      setLoadError('Unable to load accounting data from the backend.');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
-    let active = true;
+    const timer = setTimeout(() => {
+      loadData();
+    }, 0);
 
-    Promise.all([getAccountingRevenue(), getAccountingCost()])
-      .then(([revenueResult, costResult]) => {
-        if (!active) return;
-
-        const revenueItems = revenueResult.items || [];
-        const costItems = costResult.items || [];
-
-        setRevenue(revenueItems);
-        setCost(costItems);
-        setRevenuePagination((current) => ({
-          ...current,
-          total: revenueResult.meta?.total || revenueItems.length
-        }));
-        setCostPagination((current) => ({
-          ...current,
-          total: costResult.meta?.total || costItems.length
-        }));
-      })
-      .catch(() => {
-        if (active) setLoadError('Unable to load accounting data from the backend.');
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
+    return () => clearTimeout(timer);
   }, []);
 
   const activeRows = activeTab === 'revenue' ? revenue : cost;
-  const currentPagination = activeTab === 'revenue' ? revenuePagination : costPagination;
-  const statusOptions = ['all', ...Array.from(new Set(activeRows.map((item) => item.status)))];
+  const statusOptions = useMemo(
+    () => ['all', ...Array.from(new Set(activeRows.map((row) => row.status).filter(Boolean)))],
+    [activeRows]
+  );
 
-  const filteredRows = activeRows.filter((item) => {
-    const matchesSearch = !searchTerm || item.job_no?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
+  const filteredRows = useMemo(() => {
+    const keyword = search.trim().toLowerCase();
 
-    let matchesDate = true;
-    if (dateRange?.length === 2) {
-      const recordDate = new Date(item.date);
-      const startDate = dateRange[0].toDate();
-      const endDate = dateRange[1].toDate();
+    return activeRows.filter((row) => {
+      const matchesSearch = !keyword || [row.job_no, row.description, row.currency, row.status, row.paymentStatus]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(keyword));
+      const matchesStatus = statusFilter === 'all' || row.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [activeRows, search, statusFilter]);
 
-      startDate.setHours(0, 0, 0, 0);
-      endDate.setHours(23, 59, 59, 999);
-      matchesDate = recordDate >= startDate && recordDate <= endDate;
+  const jobOptions = useMemo(
+    () => jobs.map((job) => ({ value: job.backendId, label: `${job.job_no} - ${job.customer}` })),
+    [jobs]
+  );
+
+  const vendorOptions = useMemo(
+    () =>
+      partners
+        .filter((partner) => ['VENDOR', 'AGENT', 'CARRIER', 'BOTH'].includes(partner.partnerType))
+        .map((partner) => ({ value: partner.backendId, label: `${partner.code} - ${partner.name}` })),
+    [partners]
+  );
+
+  const totalAmount = filteredRows.reduce((sum, row) => sum + safeNumber(row.amount), 0);
+  const postedAmount = filteredRows
+    .filter((row) => row.status === 'Posted')
+    .reduce((sum, row) => sum + safeNumber(row.amount), 0);
+  const draftCount = filteredRows.filter((row) => row.status === 'Draft').length;
+  const openPaymentAmount = filteredRows
+    .filter((row) => row.paymentStatus !== 'Paid')
+    .reduce((sum, row) => sum + safeNumber(row.amount), 0);
+
+  function openCreateModal() {
+    form.resetFields();
+    form.setFieldsValue({
+      currency: 'VND',
+      exchangeRate: 1
+    });
+    setModalOpen(true);
+  }
+
+  async function submitEntry(values) {
+    setSaving(true);
+
+    try {
+      const payload = cleanPayload(values);
+      if (activeTab === 'revenue') {
+        delete payload.vendorId;
+        await createRevenueEntry(payload);
+      } else {
+        await createCostEntry(payload);
+      }
+      message.success(activeTab === 'revenue' ? 'Revenue entry created.' : 'Cost entry created.');
+      setModalOpen(false);
+      await loadData();
+    } catch (err) {
+      message.error(err?.response?.data?.message || 'Unable to create accounting entry.');
+    } finally {
+      setSaving(false);
     }
+  }
 
-    return matchesSearch && matchesStatus && matchesDate;
-  });
-
-  const totalAmount = filteredRows.reduce((sum, item) => sum + safeNumber(item.amount), 0);
-  const paidAmount = filteredRows
-    .filter((item) => item.status === 'Paid')
-    .reduce((sum, item) => sum + safeNumber(item.amount), 0);
-  const outstandingAmount = filteredRows
-    .filter((item) => item.status !== 'Paid')
-    .reduce((sum, item) => sum + safeNumber(item.amount), 0);
-  const draftCount = filteredRows.filter((item) => item.status === 'Draft').length;
-
-  const statusSummary = statusOptions
-    .filter((status) => status !== 'all')
-    .map((status) => {
-      const amount = filteredRows
-        .filter((item) => item.status === status)
-        .reduce((sum, item) => sum + safeNumber(item.amount), 0);
-
-      return {
-        status,
-        amount,
-        percent: totalAmount ? Math.round((amount / totalAmount) * 100) : 0
-      };
-    })
-    .filter((item) => item.amount > 0);
-
-  const totalPages = Math.max(1, Math.ceil(filteredRows.length / currentPagination.pageSize));
-
-  function updateCurrentPagination(nextPagination) {
-    if (activeTab === 'revenue') {
-      setRevenuePagination((current) => ({ ...current, ...nextPagination }));
-      return;
+  async function handlePost(record) {
+    try {
+      if (activeTab === 'revenue') {
+        await postRevenueEntry(record.backendId);
+      } else {
+        await postCostEntry(record.backendId);
+      }
+      message.success('Entry posted.');
+      await loadData();
+    } catch (err) {
+      message.error(err?.response?.data?.message || 'Unable to post entry.');
     }
-
-    setCostPagination((current) => ({ ...current, ...nextPagination }));
   }
 
-  function resetFilters() {
-    setSearchTerm('');
-    setStatusFilter('all');
-    setDateRange(null);
-    updateCurrentPagination({ current: 1 });
-  }
-
-  function updateSearch(value) {
-    setSearchTerm(value);
-    updateCurrentPagination({ current: 1 });
-  }
-
-  function updateStatus(value) {
-    setStatusFilter(value);
-    updateCurrentPagination({ current: 1 });
-  }
-
-  function updateDateRange(value) {
-    setDateRange(value);
-    updateCurrentPagination({ current: 1 });
-  }
-
-  function exportRows(format) {
-    if (!filteredRows.length) {
-      message.info(t('common.noDataToExport'));
-      return;
+  async function handleVoid(record) {
+    try {
+      if (activeTab === 'revenue') {
+        await voidRevenueEntry(record.backendId, 'Voided from Phase 1 frontend testing.');
+      } else {
+        await voidCostEntry(record.backendId, 'Voided from Phase 1 frontend testing.');
+      }
+      message.success('Entry voided.');
+      await loadData();
+    } catch (err) {
+      message.error(err?.response?.data?.message || 'Unable to void entry.');
     }
-
-    const headers = [
-      t('accounting.jobNumber'),
-      t('accounting.amount'),
-      t('accounting.status'),
-      t('accounting.date')
-    ];
-
-    const { blob, extension } = buildExportContent(filteredRows, format, headers);
-    downloadBlob(blob, `accounting-${activeTab}.${extension}`);
-    message.success(t('common.exportSuccess', { count: filteredRows.length }));
   }
 
-  function handleCreateAction() {
-    message.info(t('common.underPreparation', { label: tabMeta[activeTab].createLabel }));
+  async function handlePaymentStatus(record, paymentStatus) {
+    try {
+      if (activeTab === 'revenue') {
+        await updateRevenuePaymentStatus(record.backendId, paymentStatus);
+      } else {
+        await updateCostPaymentStatus(record.backendId, paymentStatus);
+      }
+      message.success('Payment status updated.');
+      await loadData();
+    } catch (err) {
+      message.error(err?.response?.data?.message || 'Unable to update payment status.');
+    }
   }
 
   const columns = [
     {
-      title: t('accounting.jobNumber'),
+      title: 'Job No.',
       dataIndex: 'job_no',
       key: 'job_no',
-      sorter: (a, b) => String(a.job_no).localeCompare(String(b.job_no)),
-      render: (value) => (
-        <div className="accounting-job-cell">
-          <span className="accounting-job-number">{value}</span>
-          <span className="accounting-job-subcopy">
-            {activeTab === 'revenue' ? t('accounting.receivableRecord') : t('accounting.payableRecord')}
-          </span>
-        </div>
-      )
+      width: 170,
+      sorter: (a, b) => String(a.job_no).localeCompare(String(b.job_no))
     },
+    { title: 'Description', dataIndex: 'description', key: 'description' },
     {
-      title: t('accounting.amount'),
+      title: 'Amount',
       dataIndex: 'amount',
       key: 'amount',
       align: 'right',
+      width: 160,
       sorter: (a, b) => safeNumber(a.amount) - safeNumber(b.amount),
-      render: (value) => <span className="accounting-amount-cell">{formatCurrency(value)}</span>
+      render: (value) => <strong>{formatCurrency(value)}</strong>
     },
     {
-      title: t('accounting.status'),
+      title: 'Currency',
+      dataIndex: 'currency',
+      key: 'currency',
+      width: 110
+    },
+    {
+      title: 'Financial Status',
       dataIndex: 'status',
       key: 'status',
-      filters: statusOptions
-        .filter((status) => status !== 'all')
-        .map((status) => ({ text: status, value: status })),
-      onFilter: (value, record) => record.status === value,
-      sorter: (a, b) => String(a.status).localeCompare(String(b.status)),
-      render: (value) => (
-        <span className={`accounting-status-pill ${statusAppearance[value] || 'status-muted'}`}>
-          {value}
-        </span>
+      width: 150,
+      render: (value) => <Tag color={statusColor[value] || 'default'}>{value}</Tag>
+    },
+    {
+      title: 'Payment',
+      dataIndex: 'paymentStatus',
+      key: 'paymentStatus',
+      width: 150,
+      render: (value, record) => (
+        <Select
+          value={value === '-' ? 'UNPAID' : String(value).toUpperCase()}
+          options={paymentOptions}
+          size="small"
+          disabled={record.status === 'Voided'}
+          onChange={(nextValue) => handlePaymentStatus(record, nextValue)}
+          style={{ width: 120 }}
+        />
       )
     },
     {
-      title: t('accounting.date'),
+      title: 'Doc Date',
       dataIndex: 'date',
       key: 'date',
-      sorter: (a, b) => new Date(a.date) - new Date(b.date),
-      render: (value) => <span className="accounting-date-cell">{value}</span>
+      width: 140
     },
     {
-      title: t('accounting.actions'),
+      title: 'Due Date',
+      dataIndex: 'dueDate',
+      key: 'dueDate',
+      width: 140
+    },
+    {
+      title: 'Actions',
       key: 'actions',
-      align: 'right',
+      width: 160,
       render: (_, record) => (
-        <Space size="small">
-          <Button type="link" className="table-inline-action">
-            {t('accounting.view')}
-          </Button>
-          <Button type="link" className="table-inline-action">
-            {record.status === 'Paid' ? t('accounting.receipt') : t('accounting.remind')}
-          </Button>
+        <Space>
+          <Popconfirm title="Post this draft entry?" okText="Post" onConfirm={() => handlePost(record)}>
+            <Button
+              icon={<UploadOutlined />}
+              disabled={record.status !== 'Draft'}
+              title="Post"
+            />
+          </Popconfirm>
+          <Popconfirm
+            title="Void this accounting entry?"
+            okText="Void"
+            okButtonProps={{ danger: true }}
+            onConfirm={() => handleVoid(record)}
+          >
+            <Button
+              danger
+              icon={<StopOutlined />}
+              disabled={record.status === 'Voided'}
+              title="Void"
+            />
+          </Popconfirm>
         </Space>
       )
     }
@@ -321,258 +344,172 @@ export default function AccountingPage() {
   const tabItems = [
     {
       key: 'revenue',
-      label: (
-        <span className="accounting-tab-label">
-          {t('accounting.revenue')}
-          <span className="accounting-tab-count">{revenue.length}</span>
-        </span>
-      )
+      label: `Revenue (${revenue.length})`
     },
     {
       key: 'cost',
-      label: (
-        <span className="accounting-tab-label">
-          {t('accounting.cost')}
-          <span className="accounting-tab-count">{cost.length}</span>
-        </span>
-      )
+      label: `Cost (${cost.length})`
     }
   ];
 
   return (
     <DashboardLayout>
       <div className="accounting-page">
-        <div className="accounting-hero">
-          <div className="accounting-hero-copy">
-            <Breadcrumb
-              items={[
-                { title: t('accounting.breadcrumb1') },
-                { title: t('accounting.breadcrumb2') },
-                { title: t('accounting.breadcrumb3') }
-              ]}
-              className="accounting-breadcrumb"
-            />
-            <div className="accounting-title-row">
-              <div>
-                <Typography.Title level={1} className="page-title accounting-title">
-                  {t('accounting.title')}
-                </Typography.Title>
-                <Typography.Paragraph className="accounting-subtitle">
-                  {t('accounting.subtitle')}
-                </Typography.Paragraph>
-              </div>
-            </div>
+        <div className="page-header">
+          <div>
+            <Typography.Title level={1} className="page-title">Accounting</Typography.Title>
+            <Typography.Paragraph className="page-subtitle">
+              Revenue, cost, posting, voiding, and payment tracking per job.
+            </Typography.Paragraph>
           </div>
-
-          <div className="accounting-hero-actions">
-            <RangePicker
-              className="accounting-range-filter"
-              value={dateRange}
-              onChange={updateDateRange}
-              format="DD/MM/YYYY"
-              allowClear
-            />
-            <Button icon={<DownloadOutlined />} onClick={() => exportRows('csv')}>
-              {t('common.exportCsv')}
-            </Button>
-            <Button icon={<DownloadOutlined />} onClick={() => exportRows('excel')}>
-              {t('common.exportExcel')}
-            </Button>
-            <Button type="primary" icon={<FileAddOutlined />} onClick={handleCreateAction}>
-              {tabMeta[activeTab].createLabel}
-            </Button>
-          </div>
+          <Button type="primary" icon={<FileAddOutlined />} onClick={openCreateModal}>
+            {activeTab === 'revenue' ? 'Create Revenue' : 'Create Cost'}
+          </Button>
         </div>
+
+        {loadError ? <Alert type="error" showIcon message={loadError} style={{ marginBottom: 16 }} /> : null}
 
         <Row gutter={[16, 16]} className="accounting-summary-grid">
           <Col xs={24} md={12} xl={6}>
-            <Card className="accounting-summary-card accent-blue">
-              <Statistic
-                title={activeTab === 'revenue' ? t('accounting.totalRevenue') : t('accounting.totalCost')}
-                value={totalAmount}
-                formatter={(value) => formatCurrency(value)}
-                prefix={<WalletOutlined />}
-              />
-              <div className="summary-meta">{t('accounting.acrossRecords', { count: filteredRows.length })}</div>
+            <Card>
+              <Statistic title={activeTab === 'revenue' ? 'Total Revenue' : 'Total Cost'} value={totalAmount} formatter={formatCurrency} prefix={<WalletOutlined />} />
             </Card>
           </Col>
-
           <Col xs={24} md={12} xl={6}>
-            <Card className="accounting-summary-card accent-green">
-              <Statistic
-                title={t('accounting.paidSettled')}
-                value={paidAmount}
-                formatter={(value) => formatCurrency(value)}
-                prefix={<CheckCircleOutlined />}
-              />
-              <div className="summary-meta">
-                {totalAmount
-                  ? t('accounting.trackedValue', { percent: Math.round((paidAmount / totalAmount) * 100) })
-                  : t('accounting.noPaidRecords')}
-              </div>
+            <Card>
+              <Statistic title="Posted" value={postedAmount} formatter={formatCurrency} prefix={<CheckCircleOutlined />} />
             </Card>
           </Col>
-
           <Col xs={24} md={12} xl={6}>
-            <Card className="accounting-summary-card accent-amber">
-              <Statistic
-                title={t('accounting.outstanding')}
-                value={outstandingAmount}
-                formatter={(value) => formatCurrency(value)}
-                prefix={<ClockCircleOutlined />}
-              />
-              <div className="summary-meta">
-                {t('accounting.openRecords', {
-                  count: filteredRows.filter((item) => item.status !== 'Paid').length
-                })}
-              </div>
+            <Card>
+              <Statistic title="Open Payment" value={openPaymentAmount} formatter={formatCurrency} />
             </Card>
           </Col>
-
           <Col xs={24} md={12} xl={6}>
-            <Card className="accounting-summary-card accent-slate">
-              <Statistic title={t('accounting.draftItems')} value={draftCount} prefix={<RiseOutlined />} />
-              <div className="summary-meta">{t('accounting.draftsExcluded')}</div>
+            <Card>
+              <Statistic title="Draft Items" value={draftCount} />
             </Card>
           </Col>
         </Row>
 
-        <Row gutter={[16, 16]} className="accounting-insight-grid">
-          <Col xs={24} xl={16}>
-            <Card className="accounting-main-card">
-              {loadError ? <Alert type="error" showIcon message={loadError} style={{ marginBottom: 16 }} /> : null}
-              <div className="accounting-card-toolbar">
-                <div>
-                  <Typography.Title level={4} className="accounting-section-title">
-                    {t('accounting.invoiceOperations')}
-                  </Typography.Title>
-                  <Typography.Paragraph className="accounting-section-copy">
-                    {tabMeta[activeTab].description}
-                  </Typography.Paragraph>
-                </div>
+        <Card className="table-card" style={{ marginTop: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
+            <Tabs
+              activeKey={activeTab}
+              items={tabItems}
+              onChange={(key) => {
+                setActiveTab(key);
+                setStatusFilter('all');
+                setSearch('');
+              }}
+            />
+            <Space wrap>
+              <Input.Search
+                allowClear
+                value={search}
+                placeholder="Search job, description, status"
+                onChange={(event) => setSearch(event.target.value)}
+                style={{ width: 280 }}
+              />
+              <Select
+                value={statusFilter}
+                onChange={setStatusFilter}
+                style={{ width: 160 }}
+                options={statusOptions.map((status) => ({
+                  value: status,
+                  label: status === 'all' ? 'All statuses' : status
+                }))}
+              />
+            </Space>
+          </div>
 
-                <Tabs activeKey={activeTab} items={tabItems} onChange={setActiveTab} className="accounting-tabs" />
-              </div>
+          <Table
+            rowKey="id"
+            loading={loading}
+            columns={columns}
+            dataSource={filteredRows}
+            scroll={{ x: 1180 }}
+            locale={{ emptyText: <Empty description="No accounting records found." image={Empty.PRESENTED_IMAGE_SIMPLE} /> }}
+            pagination={{ pageSize: 10, showSizeChanger: true }}
+          />
+        </Card>
 
-              <div className="accounting-filter-row">
-                <Input
-                  value={searchTerm}
-                  onChange={(event) => updateSearch(event.target.value)}
-                  prefix={<SearchOutlined />}
-                  placeholder={t('common.searchByJobNumber')}
-                  className="accounting-search-input"
-                  allowClear
-                />
-
-                <Select
-                  value={statusFilter}
-                  onChange={updateStatus}
-                  className="accounting-status-filter"
-                  suffixIcon={<FilterOutlined />}
-                  options={statusOptions.map((status) => ({
-                    value: status,
-                    label: status === 'all' ? t('common.allStatuses') : status
-                  }))}
-                />
-
-                <Button onClick={resetFilters}>{t('common.resetFilters')}</Button>
-              </div>
-
-              <div className="accounting-table-shell">
-                <div className="accounting-table-meta">
-                  <span>{t('accounting.recordsInView', { count: filteredRows.length })}</span>
-                  <span>{t('accounting.pageOf', { current: currentPagination.current, total: totalPages })}</span>
-                </div>
-
-                <Table
-                  rowKey="id"
-                  loading={loading}
-                  columns={columns}
-                  dataSource={filteredRows}
-                  locale={{
-                    emptyText: (
-                      <Empty
-                        description={
-                          activeTab === 'revenue'
-                            ? t('accounting.noRevenueRecords')
-                            : t('accounting.noCostRecords')
-                        }
-                        image={Empty.PRESENTED_IMAGE_SIMPLE}
-                      />
-                    )
-                  }}
-                  pagination={{
-                    current: currentPagination.current,
-                    pageSize: currentPagination.pageSize,
-                    total: filteredRows.length,
-                    showSizeChanger: false,
-                    showQuickJumper: false,
-                    showTotal: (total, range) =>
-                      t('accounting.rowRange', {
-                        start: range[0],
-                        end: range[1],
-                        total
-                      })
-                  }}
-                  onChange={(pagination) => {
-                    updateCurrentPagination({
-                      current: pagination.current,
-                      pageSize: pagination.pageSize
-                    });
-                  }}
-                  className="accounting-table"
-                />
-              </div>
-            </Card>
-          </Col>
-
-          <Col xs={24} xl={8}>
-            <Card className="accounting-side-card">
-              <div className="accounting-side-card-header">
-                <div>
-                  <Typography.Title level={4} className="accounting-section-title">
-                    {t('accounting.statusDistribution')}
-                  </Typography.Title>
-                  <Typography.Paragraph className="accounting-section-copy">
-                    {t('accounting.statusDistributionCopy')}
-                  </Typography.Paragraph>
-                </div>
-              </div>
-
-              <div className="accounting-status-chart">
-                {statusSummary.length ? (
-                  statusSummary.map((item) => (
-                    <div key={item.status} className="accounting-chart-row">
-                      <div className="accounting-chart-label-row">
-                        <span className={`accounting-status-pill ${statusAppearance[item.status] || 'status-muted'}`}>
-                          {item.status}
-                        </span>
-                        <span className="accounting-chart-value">{formatCurrency(item.amount)}</span>
-                      </div>
-                      <Progress
-                        percent={item.percent}
-                        showInfo={false}
-                        strokeColor="#0057c2"
-                        trailColor="#e9eef6"
-                        size={['100%', 10]}
-                      />
-                    </div>
-                  ))
-                ) : (
-                  <Empty description={t('accounting.noChartData')} image={Empty.PRESENTED_IMAGE_SIMPLE} />
-                )}
-              </div>
-
-              <div className="accounting-note-card">
-                <CalendarOutlined />
-                <div>
-                  <strong>{t('accounting.reviewCadenceTitle')}</strong>
-                  <span>{t('accounting.reviewCadenceCopy')}</span>
-                </div>
-              </div>
-            </Card>
-          </Col>
-        </Row>
+        <Modal
+          title={activeTab === 'revenue' ? 'Create Revenue Entry' : 'Create Cost Entry'}
+          open={modalOpen}
+          onCancel={() => setModalOpen(false)}
+          onOk={() => form.submit()}
+          confirmLoading={saving}
+          destroyOnHidden
+          width={760}
+        >
+          <Form form={form} layout="vertical" onFinish={submitEntry}>
+            <Form.Item name="jobId" label="Job No." rules={[{ required: true, message: 'Job is required.' }]}>
+              <Select showSearch optionFilterProp="label" options={jobOptions} placeholder="Select job" />
+            </Form.Item>
+            {activeTab === 'cost' ? (
+              <Form.Item name="vendorId" label="Vendor / Agent" rules={[{ required: true, message: 'Vendor is required for cost entries.' }]}>
+                <Select showSearch optionFilterProp="label" options={vendorOptions} placeholder="Select vendor" />
+              </Form.Item>
+            ) : null}
+            <Form.Item name="description" label="Description" rules={[{ required: true, message: 'Description is required.' }]}>
+              <Input placeholder="Accounting description" />
+            </Form.Item>
+            <Row gutter={16}>
+              <Col xs={24} md={8}>
+                <Form.Item name="currency" label="Currency" rules={[{ required: true, message: 'Currency is required.' }]}>
+                  <Select
+                    options={[
+                      { value: 'VND', label: 'VND' },
+                      { value: 'USD', label: 'USD' },
+                      { value: 'EUR', label: 'EUR' }
+                    ]}
+                  />
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={8}>
+                <Form.Item name="amount" label="Amount" rules={[{ required: true, message: 'Amount is required.' }]}>
+                  <InputNumber min={0} precision={2} style={{ width: '100%' }} />
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={8}>
+                <Form.Item name="exchangeRate" label="Exchange Rate" rules={[{ required: true, message: 'Exchange rate is required.' }]}>
+                  <InputNumber min={0} precision={2} style={{ width: '100%' }} />
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={8}>
+                <Form.Item name="localAmount" label="Local Amount">
+                  <InputNumber min={0} precision={2} style={{ width: '100%' }} />
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={8}>
+                <Form.Item name="docDate" label="Document Date">
+                  <DatePicker format="DD/MM/YYYY" style={{ width: '100%' }} />
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={8}>
+                <Form.Item name="dueDate" label="Due Date">
+                  <DatePicker format="DD/MM/YYYY" style={{ width: '100%' }} />
+                </Form.Item>
+              </Col>
+            </Row>
+            <Row gutter={16}>
+              <Col xs={24} md={12}>
+                <Form.Item name="refNumber" label="Reference No.">
+                  <Input placeholder="Reference number" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={12}>
+                <Form.Item name="invoiceNumber" label="Invoice No.">
+                  <Input placeholder="Invoice number" />
+                </Form.Item>
+              </Col>
+            </Row>
+            <Form.Item name="notes" label="Notes">
+              <Input.TextArea rows={3} placeholder="Notes" />
+            </Form.Item>
+          </Form>
+        </Modal>
       </div>
     </DashboardLayout>
   );

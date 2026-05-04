@@ -35,7 +35,7 @@ export default function LoginPage() {
           form={form}
           className="login-form"
           layout="vertical"
-          initialValues={{ username: 'admin', password: 'Admin@123' }}
+          initialValues={{ username: 'api.tester', password: 'ApiTest@123' }}
           onFinish={handleSubmit}
         >
           <Form.Item

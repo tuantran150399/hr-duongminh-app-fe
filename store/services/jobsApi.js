@@ -1,18 +1,7 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 import { axiosBaseQuery } from '@/store/axiosBaseQuery';
+import { extractPaginatedItems } from '@/utils/apiMappers';
 
-/**
- * Jobs API slice — RTK Query
- *
- * TODO: Cập nhật endpoint URL khi backend sẵn sàng.
- *
- * Hooks được sinh tự động:
- *   useGetJobsQuery(params?)           — danh sách jobs (có phân trang)
- *   useGetJobByIdQuery(id)             — chi tiết 1 job
- *   useCreateJobMutation()             — tạo job mới
- *   useUpdateJobMutation()             — cập nhật job
- *   useDeleteJobMutation()             — xoá job
- */
 export const jobsApi = createApi({
   reducerPath: 'jobsApi',
   baseQuery: axiosBaseQuery,
@@ -24,6 +13,7 @@ export const jobsApi = createApi({
         method: 'GET',
         params
       }),
+      transformResponse: (response) => extractPaginatedItems(response),
       providesTags: (result) =>
         result?.items
           ? [

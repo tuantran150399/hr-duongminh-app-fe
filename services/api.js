@@ -59,7 +59,6 @@ async function refreshAccessToken() {
   const refreshToken = getRefreshToken();
   if (!refreshToken) throw new Error('No refresh token available');
 
-  // TODO: update endpoint when backend is ready
   const response = await axios.post(
     `${resolveApiBaseUrl()}/auth/refresh`,
     { refreshToken },

@@ -48,13 +48,15 @@ http://localhost:3003/api/v1
 To change it, create `.env.local`:
 
 ```bash
-NEXT_PUBLIC_API_BASE_URL=http://localhost:3003/api/v1
+NEXT_PUBLIC_API_URL=http://localhost:3003/api/v1
 ```
 
 Implemented endpoint calls:
 
 - `POST /auth/login`
+- `POST /auth/refresh`
 - `GET /auth/me`
+- `GET /dashboard/stats`
 - `GET /jobs`
 - `GET /jobs/:id`
 - `GET /accounting/revenue/job/:jobId`
@@ -70,7 +72,7 @@ The frontend is mapped to the NestJS backend in `hr-app-localsetup`, where:
 - API prefix is `/api/v1`
 - CORS already allows `http://localhost:3000`
 
-If the API is not running, the app falls back to mock data so the UI remains navigable.
+The app now reads these pages from the backend. If the API is unavailable, protected pages show an error instead of falling back to local mock data.
 
 ## Dev Note
 
@@ -80,7 +82,7 @@ This project uses webpack for `npm run dev` to avoid intermittent Turbopack chun
 
 The login form is prefilled with:
 
-- Username: `admin`
-- Password: `admin123`
+- Username: `api.tester`
+- Password: `ApiTest@123`
 
-When the backend is unavailable, login stores a demo local JWT token.
+These credentials match the seeded backend test account.

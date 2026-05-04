@@ -33,7 +33,9 @@ const dictionary = {
       jobs: 'Jobs',
       partners: 'Partners',
       accounting: 'Accounting',
-      settings: 'Settings',
+      settings: 'Users & Roles',
+      branches: 'Branches',
+      audit: 'Audit Logs',
       navigation: 'Navigation'
     },
     login: {
@@ -115,7 +117,9 @@ const dictionary = {
       jobs: 'Lô hàng',
       partners: 'Đối tác',
       accounting: 'Kế toán',
-      settings: 'Cài đặt',
+      settings: 'Người dùng & quyền',
+      branches: 'Chi nhánh',
+      audit: 'Nhật ký',
       navigation: 'Điều hướng'
     },
     login: {
@@ -177,8 +181,8 @@ const dictionary = {
 };
 
 const languageOptions = [
-  { key: 'en', flag: 'US', emoji: '🇺🇸' },
-  { key: 'vi', flag: 'VN', emoji: '🇻🇳' }
+  { key: 'en', flag: 'US', emoji: 'US' },
+  { key: 'vi', flag: 'VN', emoji: 'VN' }
 ];
 
 const antdLocales = {
@@ -201,10 +205,7 @@ function createTranslator(language) {
       current = current?.[key];
     }
 
-    if (!current) {
-      return path;
-    }
-
+    if (!current) return path;
     return typeof current === 'string' ? interpolate(current, params) : current;
   };
 }
@@ -221,7 +222,6 @@ export function AppProviders({ children }) {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-
     window.localStorage.setItem(STORAGE_KEY, language);
     document.documentElement.lang = language;
   }, [language]);
@@ -266,10 +266,8 @@ export function AppProviders({ children }) {
 
 export function useLanguage() {
   const context = useContext(LanguageContext);
-
   if (!context) {
     throw new Error('useLanguage must be used within AppProviders.');
   }
-
   return context;
 }

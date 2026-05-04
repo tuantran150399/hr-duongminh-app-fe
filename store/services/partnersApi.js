@@ -1,18 +1,7 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 import { axiosBaseQuery } from '@/store/axiosBaseQuery';
+import { extractPaginatedItems } from '@/utils/apiMappers';
 
-/**
- * Partners API slice — RTK Query
- *
- * TODO: Cập nhật endpoint URL khi backend sẵn sàng.
- *
- * Hooks được sinh tự động:
- *   useGetPartnersQuery(params?)       — danh sách partners
- *   useGetPartnerByIdQuery(id)         — chi tiết 1 partner
- *   useCreatePartnerMutation()         — tạo partner mới
- *   useUpdatePartnerMutation()         — cập nhật partner
- *   useDeletePartnerMutation()         — xoá partner
- */
 export const partnersApi = createApi({
   reducerPath: 'partnersApi',
   baseQuery: axiosBaseQuery,
@@ -24,6 +13,7 @@ export const partnersApi = createApi({
         method: 'GET',
         params
       }),
+      transformResponse: (response) => extractPaginatedItems(response),
       providesTags: (result) =>
         result?.items
           ? [
