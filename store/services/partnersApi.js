@@ -4,7 +4,7 @@ import { extractPaginatedItems } from '@/utils/apiMappers';
 
 export const partnersApi = createApi({
   reducerPath: 'partnersApi',
-  baseQuery: axiosBaseQuery,
+  baseQuery: axiosBaseQuery(),
   tagTypes: ['Partner'],
   endpoints: (builder) => ({
     getPartners: builder.query({
@@ -17,9 +17,9 @@ export const partnersApi = createApi({
       providesTags: (result) =>
         result?.items
           ? [
-              ...result.items.map(({ id }) => ({ type: 'Partner', id })),
-              { type: 'Partner', id: 'LIST' }
-            ]
+            ...result.items.map(({ id }) => ({ type: 'Partner', id })),
+            { type: 'Partner', id: 'LIST' }
+          ]
           : [{ type: 'Partner', id: 'LIST' }]
     }),
 

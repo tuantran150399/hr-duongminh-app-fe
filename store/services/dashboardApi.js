@@ -3,7 +3,7 @@ import { axiosBaseQuery } from '@/store/axiosBaseQuery';
 
 export const dashboardApi = createApi({
   reducerPath: 'dashboardApi',
-  baseQuery: axiosBaseQuery,
+  baseQuery: axiosBaseQuery(),
   tagTypes: ['Dashboard'],
   endpoints: (builder) => ({
     getDashboardStats: builder.query({

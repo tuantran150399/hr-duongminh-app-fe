@@ -1076,3 +1076,64 @@ a {
     width: 100%;
   }
 }
+
+/* ============================
+   Reusable: PageHeader Component
+   ============================ */
+.page-header-component {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 24px;
+  gap: 16px;
+}
+
+.page-header-left {
+  min-width: 0;
+}
+
+.page-header-breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #414755;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.page-header-crumb-sep {
+  font-size: 10px !important;
+}
+
+.page-header-crumb-link {
+  color: inherit;
+  cursor: pointer;
+}
+
+.page-header-crumb-link:hover {
+  color: #0057c2;
+  text-decoration: underline;
+}
+
+.page-header-crumb-current {
+  color: #1b1b1b;
+}
+
+.page-header-title {
+  margin: 0 !important;
+  font-size: 20px !important;
+  font-weight: 600 !important;
+  color: #1b1b1b !important;
+}
+
+.page-header-subtitle {
+  margin: 4px 0 0 0;
+  font-size: 14px;
+  color: #414755;
+}
+
+.page-header-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}

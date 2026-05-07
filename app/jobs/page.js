@@ -4,42 +4,27 @@ import {
   Alert,
   Button,
   Card,
-  Col,
-  DatePicker,
   Empty,
-  Input,
-  Row,
-  Select,
   Space,
   Table,
-  Tag,
   Typography
 } from 'antd';
 import {
   DownloadOutlined,
   PlusOutlined,
   ReloadOutlined,
-  SearchOutlined,
   SettingOutlined
 } from '@ant-design/icons';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/layouts/DashboardLayout';
-import { getJobs } from '@/services/jobService';
-
-const { RangePicker } = DatePicker;
-const { Text } = Typography;
-
-const statusColor = {
-  New: 'default',
-  InProgress: 'processing',
-  'In Progress': 'processing',
-  Completed: 'success',
-  Closed: 'success',
-  Pending: 'warning',
-  Cancelled: 'error',
-  Canceled: 'error'
-};
+import PageHeader from '@/components/PageHeader';
+import StatusTag from '@/components/StatusTag';
+import FilterCard from '@/components/FilterCard';
+import { useGetJobsQuery } from '@/store/services/jobsApi';
+import { normalizeJob } from '@/utils/apiMappers';
+import { useGetPartnersQuery } from '@/store/services/partnersApi';
+import { normalizePartner } from '@/utils/apiMappers';
 
 function formatDisplayDate(value) {
   if (!value) return '-';
@@ -101,43 +86,36 @@ function ExpandedRow({ record }) {
 
 export default function JobsPage() {
   const router = useRouter();
-  const [jobs, setJobs] = useState([]);
-  const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateRange, setDateRange] = useState(null);
 
-  useEffect(() => {
-    let active = true;
+  // RTK Query — lấy jobs và partners
+  const { data: jobsData, isLoading: jobsLoading, error: jobsError, refetch } = useGetJobsQuery();
+  const { data: partnersData } = useGetPartnersQuery();
 
-    getJobs()
-      .then((result) => {
-        if (!active) return;
-        const items = result.items || [];
-        setJobs(items);
-        setPagination((current) => ({
-          ...current,
-          current: result.meta?.page || 1,
-          pageSize: result.meta?.limit || current.pageSize,
-          total: result.meta?.total || items.length
-        }));
-      })
-      .catch(() => {
-        if (active) setError('Unable to load jobs from the backend.');
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
+  // Build partners map từ RTK Query cache
+  const partnersById = useMemo(() => {
+    const partners = partnersData?.items || [];
+    return partners.reduce((result, raw) => {
+      const partner = normalizePartner(raw);
+      if (partner) result[partner.backendId] = partner;
+      return result;
+    }, {});
+  }, [partnersData]);
 
-    return () => {
-      active = false;
-    };
-  }, []);
+  // Normalize jobs với partners map
+  const jobs = useMemo(() => {
+    const rawItems = jobsData?.items || [];
+    return rawItems.map((job) => normalizeJob(job, partnersById)).filter(Boolean);
+  }, [jobsData, partnersById]);
 
   const statusOptions = useMemo(
-    () => ['all', ...Array.from(new Set(jobs.map((item) => item.status).filter(Boolean)))],
+    () => [
+      { value: 'all', label: 'All statuses' },
+      ...Array.from(new Set(jobs.map((item) => item.status).filter(Boolean)))
+        .map((status) => ({ value: status, label: status }))
+    ],
     [jobs]
   );
 
@@ -185,11 +163,7 @@ export default function JobsPage() {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      filters: statusOptions
-        .filter((status) => status !== 'all')
-        .map((status) => ({ text: status, value: status })),
-      onFilter: (value, record) => record.status === value,
-      render: (value) => <Tag color={statusColor[value] || 'default'}>{value || '-'}</Tag>
+      render: (value) => <StatusTag value={value} />
     },
     {
       title: 'Origin',
@@ -215,93 +189,63 @@ export default function JobsPage() {
     }
   ];
 
+  const errorMessage = jobsError
+    ? 'Unable to load jobs from the backend.'
+    : '';
+
+  function handleReset() {
+    setSearchTerm('');
+    setStatusFilter('all');
+    setDateRange(null);
+  }
+
   return (
     <DashboardLayout>
-      <div className="shipment-page-header">
-        <div>
-          <h2>Jobs</h2>
-          <p>Manage logistics jobs from live backend data.</p>
-        </div>
-        <div className="shipment-page-actions">
-          <Button icon={<DownloadOutlined />}>Export</Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => router.push('/jobs/create')}>
-            Create Job
-          </Button>
-        </div>
-      </div>
-
-      <Card style={{ borderRadius: 8, marginBottom: 24, border: '1px solid #e2e2e2' }}>
-        <Row gutter={[16, 16]} align="bottom">
-          <Col xs={24} md={8}>
-            <Text style={{ color: '#414755', fontSize: 14, fontWeight: 500 }}>Search</Text>
-            <Input
-              allowClear
-              prefix={<SearchOutlined />}
-              placeholder="Job number or customer"
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              size="large"
-            />
-          </Col>
-          <Col xs={24} md={6}>
-            <Text style={{ color: '#414755', fontSize: 14, fontWeight: 500 }}>Status</Text>
-            <Select
-              value={statusFilter}
-              onChange={setStatusFilter}
-              size="large"
-              style={{ width: '100%' }}
-              options={statusOptions.map((status) => ({
-                value: status,
-                label: status === 'all' ? 'All statuses' : status
-              }))}
-            />
-          </Col>
-          <Col xs={24} md={7}>
-            <Text style={{ color: '#414755', fontSize: 14, fontWeight: 500 }}>Date Range</Text>
-            <RangePicker
-              value={dateRange}
-              onChange={setDateRange}
-              size="large"
-              style={{ width: '100%' }}
-              format="DD/MM/YYYY"
-            />
-          </Col>
-          <Col xs={24} md={3}>
-            <Button
-              block
-              size="large"
-              onClick={() => {
-                setSearchTerm('');
-                setStatusFilter('all');
-                setDateRange(null);
-              }}
-            >
-              Reset
+      <PageHeader
+        title="Jobs"
+        subtitle="Manage logistics jobs from live backend data."
+        actions={
+          <>
+            <Button icon={<DownloadOutlined />}>Export</Button>
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => router.push('/jobs/create')}>
+              Create Job
             </Button>
-          </Col>
-        </Row>
-      </Card>
+          </>
+        }
+      />
+
+      <FilterCard
+        searchValue={searchTerm}
+        onSearchChange={(event) => setSearchTerm(event.target.value)}
+        searchPlaceholder="Job number or customer"
+        statusValue={statusFilter}
+        onStatusChange={setStatusFilter}
+        statusOptions={statusOptions}
+        dateRange={dateRange}
+        onDateRangeChange={setDateRange}
+        onReset={handleReset}
+      />
 
       <Card style={{ borderRadius: 8, overflow: 'hidden' }}>
-        {error ? <Alert type="error" showIcon message={error} style={{ margin: 16 }} /> : null}
+        {errorMessage ? <Alert type="error" showIcon message={errorMessage} style={{ margin: 16 }} /> : null}
         <div className="shipment-toolbar">
-          <span className="shipment-toolbar-total">Total: {pagination.total || filteredJobs.length} jobs</span>
+          <span className="shipment-toolbar-total">Total: {filteredJobs.length} jobs</span>
           <Space>
-            <ReloadOutlined style={{ color: '#727786' }} />
+            <ReloadOutlined style={{ color: '#727786', cursor: 'pointer' }} onClick={refetch} />
             <SettingOutlined style={{ color: '#727786' }} />
           </Space>
         </div>
 
         <Table
           rowKey="id"
-          loading={loading}
+          loading={jobsLoading}
           columns={columns}
           dataSource={filteredJobs}
           locale={{
-            emptyText: <Empty description={error ? 'Backend data is unavailable.' : 'No jobs found.'} />
+            emptyText: <Empty description={errorMessage ? 'Backend data is unavailable.' : 'No jobs found.'} />
           }}
           pagination={{
-            ...pagination,
+            pageSize: 10,
             total: filteredJobs.length,
             showSizeChanger: false,
             showTotal: (total, range) => `Showing ${range[0]}-${range[1]} of ${total}`

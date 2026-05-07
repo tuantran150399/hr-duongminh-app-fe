@@ -6,33 +6,42 @@ import api from '@/services/api';
  *
  * Trả về format mà RTK Query yêu cầu: { data } hoặc { error }.
  *
- * @param {string | { url, method, data, params, headers }} args
- * @returns {{ data } | { error: { status, data } }}
+ * Sử dụng:
+ *   import { axiosBaseQuery } from '@/store/axiosBaseQuery';
+ *
+ *   createApi({
+ *     baseQuery: axiosBaseQuery(),
+ *     ...
+ *   })
+ *
+ * @returns {Function} baseQuery function cho RTK Query
  */
-export async function axiosBaseQuery(args) {
-  const request =
-    typeof args === 'string'
-      ? { url: args, method: 'GET' }
-      : args;
+export function axiosBaseQuery() {
+  return async (args) => {
+    const request =
+      typeof args === 'string'
+        ? { url: args, method: 'GET' }
+        : args;
 
-  const { url, method = 'GET', data, params, headers } = request;
+    const { url, method = 'GET', data, params, headers } = request;
 
-  try {
-    const response = await api({
-      url,
-      method,
-      data,
-      params,
-      headers
-    });
+    try {
+      const response = await api({
+        url,
+        method,
+        data,
+        params,
+        headers
+      });
 
-    return { data: response.data };
-  } catch (error) {
-    return {
-      error: {
-        status: error.response?.status ?? 'FETCH_ERROR',
-        data: error.response?.data ?? error.message
-      }
-    };
-  }
+      return { data: response.data };
+    } catch (error) {
+      return {
+        error: {
+          status: error.response?.status ?? 'FETCH_ERROR',
+          data: error.response?.data ?? error.message
+        }
+      };
+    }
+  };
 }

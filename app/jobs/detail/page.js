@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, useMemo, useState } from 'react';
 import {
   Alert,
   Button,
@@ -17,7 +17,6 @@ import {
   Spin,
   Statistic,
   Table,
-  Typography,
   message
 } from 'antd';
 import {
@@ -25,79 +24,31 @@ import {
   CopyOutlined,
   CompassOutlined,
   FileTextOutlined,
-  RightOutlined,
   StopOutlined
 } from '@ant-design/icons';
-import dayjs from 'dayjs';
 import { useSearchParams, useRouter } from 'next/navigation';
 import DashboardLayout from '@/layouts/DashboardLayout';
-import { cancelJob, copyJob, getJobById, updateJob } from '@/services/jobService';
-import { getPartners } from '@/services/partnerService';
-import { getBranches, getUsers } from '@/services/adminService';
+import PageHeader from '@/components/PageHeader';
+import {
+  useGetJobByIdQuery,
+  useUpdateJobMutation,
+  useCopyJobMutation,
+  useCancelJobMutation
+} from '@/store/services/jobsApi';
+import { useGetPartnersQuery } from '@/store/services/partnersApi';
+import { useGetUsersQuery, useGetBranchesQuery } from '@/store/services/adminApi';
+import { normalizePartner } from '@/utils/apiMappers';
+import { cleanPayload, convertDateFields, toDatePickerValue } from '@/utils/formUtils';
 import { formatCurrency } from '@/utils/format';
-
-const { Title } = Typography;
-
-const jobTypeOptions = [
-  { value: 'IMPORT', label: 'Import' },
-  { value: 'EXPORT', label: 'Export' },
-  { value: 'DOMESTIC', label: 'Domestic' }
-];
-
-const shipmentModeOptions = [
-  { value: 'SEA_FCL', label: 'Sea FCL' },
-  { value: 'SEA_LCL', label: 'Sea LCL' },
-  { value: 'AIR', label: 'Air' },
-  { value: 'ROAD', label: 'Road' },
-  { value: 'RAIL', label: 'Rail' }
-];
-
-const statusOptions = [
-  { value: 'DRAFT', label: 'Draft' },
-  { value: 'IN_PROGRESS', label: 'In Progress' },
-  { value: 'CLOSED', label: 'Closed' },
-  { value: 'CANCELLED', label: 'Cancelled' }
-];
-
-const customsLaneOptions = [
-  { value: 'GREEN', label: 'Green' },
-  { value: 'YELLOW', label: 'Yellow' },
-  { value: 'RED', label: 'Red' }
-];
-
-const cargoTypeOptions = [
-  { value: 'FCL', label: 'FCL' },
-  { value: 'LCL', label: 'LCL' },
-  { value: 'AIR', label: 'Air' },
-  { value: 'BULK', label: 'Bulk cargo' }
-];
-
-function toDateString(value) {
-  return value?.format ? value.format('YYYY-MM-DD') : value || undefined;
-}
-
-function toDatePickerValue(value) {
-  if (!value) return undefined;
-  const parsed = dayjs(value);
-  return parsed.isValid() ? parsed : undefined;
-}
-
-function cleanPayload(values) {
-  const payload = {
-    ...values,
-    etd: toDateString(values.etd),
-    eta: toDateString(values.eta),
-    atd: toDateString(values.atd),
-    ata: toDateString(values.ata),
-    actualDeliveryDate: toDateString(values.actualDeliveryDate)
-  };
-
-  delete payload.jobCode;
-
-  return Object.fromEntries(
-    Object.entries(payload).filter(([, value]) => value !== undefined && value !== null && value !== '')
-  );
-}
+import {
+  jobTypeOptions,
+  shipmentModeOptions,
+  jobStatusOptions,
+  customsLaneOptions,
+  cargoTypeOptions,
+  TERMINAL_STATUSES,
+  JOB_DATE_FIELDS
+} from '@/config/jobConstants';
 
 function buildCopyPayload(rawJob) {
   return {
@@ -140,82 +91,30 @@ function JobDetailContent() {
   const searchParams = useSearchParams();
   const jobId = searchParams.get('id');
   const [form] = Form.useForm();
-  const [job, setJob] = useState(null);
-  const [partners, setPartners] = useState([]);
-  const [branches, setBranches] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(Boolean(jobId));
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
+  const [formLoaded, setFormLoaded] = useState(false);
 
-  async function loadJob() {
-    if (!jobId) {
-      setError('Missing job id.');
-      setLoading(false);
-      return;
-    }
+  // RTK Query hooks
+  const {
+    data: jobData,
+    isLoading: jobLoading,
+    error: jobError,
+    refetch: refetchJob
+  } = useGetJobByIdQuery(jobId, { skip: !jobId });
 
-    setLoading(true);
-    setError('');
+  const { data: partnersData } = useGetPartnersQuery();
+  const { data: branchesData } = useGetBranchesQuery();
+  const { data: usersData } = useGetUsersQuery();
 
-    try {
-      const [jobData, partnerItems, branchItems, userItems] = await Promise.all([
-        getJobById(jobId),
-        getPartners(),
-        getBranches(),
-        getUsers()
-      ]);
-      const raw = jobData.raw || {};
-      setJob(jobData);
-      setPartners(partnerItems);
-      setBranches(branchItems);
-      setUsers(userItems);
-      form.setFieldsValue({
-        jobCode: raw.jobCode || jobData.job_no,
-        jobType: raw.jobType,
-        shipmentMode: raw.shipmentMode,
-        status: raw.status,
-        partnerId: raw.partnerId,
-        branchId: raw.branchId,
-        assignedUserId: raw.assignedUserId,
-        agentId: raw.agentId,
-        shipper: raw.shipper,
-        consignee: raw.consignee,
-        declarationNo: raw.declarationNo,
-        businessType: raw.businessType,
-        customsLane: raw.customsLane,
-        cargoType: raw.cargoType,
-        containerNo: raw.containerNo,
-        sealNo: raw.sealNo,
-        notes: raw.notes,
-        vesselName: raw.vesselName,
-        voyageNo: raw.voyageNo,
-        pol: raw.pol,
-        pod: raw.pod,
-        origin: raw.origin,
-        destination: raw.destination,
-        etd: toDatePickerValue(raw.etd),
-        eta: toDatePickerValue(raw.eta),
-        atd: toDatePickerValue(raw.atd),
-        ata: toDatePickerValue(raw.ata),
-        actualDeliveryDate: toDatePickerValue(raw.actualDeliveryDate)
-      });
-    } catch {
-      setError('Unable to load this job from the backend.');
-    } finally {
-      setLoading(false);
-    }
-  }
+  const [updateJob] = useUpdateJobMutation();
+  const [copyJob] = useCopyJobMutation();
+  const [cancelJob] = useCancelJobMutation();
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      loadJob();
-    }, 0);
-
-    return () => clearTimeout(timer);
-    // loadJob intentionally stays outside the dependency list because it is reused by save/cancel handlers.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jobId]);
+  // Build dropdown options
+  const partners = useMemo(() => {
+    const items = partnersData?.items || [];
+    return items.map(normalizePartner).filter(Boolean);
+  }, [partnersData]);
 
   const partnerOptions = useMemo(
     () => partners.map((item) => ({ value: item.backendId, label: `${item.code} - ${item.name}` })),
@@ -231,65 +130,67 @@ function JobDetailContent() {
   );
 
   const branchOptions = useMemo(
-    () => branches.map((item) => ({ value: item.backendId, label: `${item.code} - ${item.name}` })),
-    [branches]
+    () =>
+      (branchesData || []).map((item) => ({
+        value: item.backendId,
+        label: `${item.code} - ${item.name}`
+      })),
+    [branchesData]
   );
 
   const userOptions = useMemo(
-    () => users.map((item) => ({ value: item.backendId, label: item.fullName || item.username })),
-    [users]
+    () =>
+      (usersData || []).map((item) => ({
+        value: item.backendId,
+        label: item.fullName || item.username
+      })),
+    [usersData]
   );
 
-  async function onFinish(values) {
-    setSaving(true);
-
-    try {
-      await updateJob(jobId, cleanPayload(values));
-      message.success('Job updated.');
-      await loadJob();
-    } catch (err) {
-      message.error(err?.response?.data?.message || 'Unable to update job.');
-    } finally {
-      setSaving(false);
-    }
+  // Populate form when job data loads
+  const raw = jobData || {};
+  if (jobData && !formLoaded && !jobLoading) {
+    const formValues = {
+      jobCode: raw.jobCode || raw.job_no,
+      jobType: raw.jobType,
+      shipmentMode: raw.shipmentMode,
+      status: raw.status,
+      partnerId: raw.partnerId,
+      branchId: raw.branchId,
+      assignedUserId: raw.assignedUserId,
+      agentId: raw.agentId,
+      shipper: raw.shipper,
+      consignee: raw.consignee,
+      declarationNo: raw.declarationNo,
+      businessType: raw.businessType,
+      customsLane: raw.customsLane,
+      cargoType: raw.cargoType,
+      containerNo: raw.containerNo,
+      sealNo: raw.sealNo,
+      notes: raw.notes,
+      vesselName: raw.vesselName,
+      voyageNo: raw.voyageNo,
+      pol: raw.pol,
+      pod: raw.pod,
+      origin: raw.origin,
+      destination: raw.destination,
+      etd: toDatePickerValue(raw.etd),
+      eta: toDatePickerValue(raw.eta),
+      atd: toDatePickerValue(raw.atd),
+      ata: toDatePickerValue(raw.ata),
+      actualDeliveryDate: toDatePickerValue(raw.actualDeliveryDate)
+    };
+    form.setFieldsValue(formValues);
+    setFormLoaded(true);
   }
 
-  async function handleCopyJob() {
-    if (!job?.raw) return;
+  const isTerminal = TERMINAL_STATUSES.includes(raw.status);
 
-    try {
-      await copyJob(jobId, buildCopyPayload(job.raw));
-      message.success('Job copied.');
-      router.push('/jobs');
-    } catch (err) {
-      message.error(err?.response?.data?.message || 'Unable to copy job.');
-    }
-  }
-
-  async function handleCancelJob() {
-    try {
-      await cancelJob(jobId);
-      message.success('Job cancelled.');
-      await loadJob();
-    } catch (err) {
-      message.error(err?.response?.data?.message || 'Unable to cancel job.');
-    }
-  }
-
-  if (loading) {
-    return (
-      <DashboardLayout>
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 360 }}>
-          <Spin size="large" />
-        </div>
-      </DashboardLayout>
-    );
-  }
-
-  const revenueTotal = (job?.revenue || []).reduce((total, item) => total + Number(item.amount || 0), 0);
-  const costTotal = (job?.cost || []).reduce((total, item) => total + Number(item.amount || 0), 0);
-  const profitTotal = Number(job?.profitSummary?.profit ?? revenueTotal - costTotal);
-  const isTerminal = ['CLOSED', 'CANCELLED'].includes(job?.raw?.status);
+  const revenueEntries = raw.revenueEntries || raw.revenue || [];
+  const costEntries = raw.costEntries || raw.cost || [];
+  const revenueTotal = revenueEntries.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const costTotal = costEntries.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const profitTotal = Number(raw.profitSummary?.profit ?? revenueTotal - costTotal);
 
   const entryColumns = [
     { title: 'Description', dataIndex: 'description', key: 'description' },
@@ -304,43 +205,92 @@ function JobDetailContent() {
     }
   ];
 
+  async function onFinish(values) {
+    setSaving(true);
+
+    try {
+      const payload = cleanPayload(convertDateFields(values, JOB_DATE_FIELDS));
+      delete payload.jobCode;
+      await updateJob({ id: jobId, ...payload }).unwrap();
+      message.success('Job updated.');
+      setFormLoaded(false);
+      refetchJob();
+    } catch (err) {
+      message.error(err?.data?.message || 'Unable to update job.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleCopyJob() {
+    if (!jobData) return;
+
+    try {
+      await copyJob({ id: jobId, ...buildCopyPayload(raw) }).unwrap();
+      message.success('Job copied.');
+      router.push('/jobs');
+    } catch (err) {
+      message.error(err?.data?.message || 'Unable to copy job.');
+    }
+  }
+
+  async function handleCancelJob() {
+    try {
+      await cancelJob(jobId).unwrap();
+      message.success('Job cancelled.');
+      setFormLoaded(false);
+      refetchJob();
+    } catch (err) {
+      message.error(err?.data?.message || 'Unable to cancel job.');
+    }
+  }
+
+  if (jobLoading) {
+    return (
+      <DashboardLayout>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 360 }}>
+          <Spin size="large" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  const errorMessage = !jobId ? 'Missing job id.' : jobError ? 'Unable to load this job from the backend.' : '';
+
   return (
     <DashboardLayout>
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-        <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 16 }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#414755', fontSize: 12, marginBottom: 4 }}>
-              <a onClick={() => router.push('/jobs')} style={{ color: 'inherit', cursor: 'pointer' }}>Jobs</a>
-              <RightOutlined style={{ fontSize: 10 }} />
-              <span style={{ color: '#1b1b1b' }}>{job?.job_no || 'Job detail'}</span>
-            </div>
-            <Title level={2} style={{ margin: 0, fontSize: 24, fontWeight: 600, color: '#1b1b1b' }}>
-              Job {job?.job_no || ''}
-            </Title>
-          </div>
-          <Space wrap>
-            <Button onClick={() => router.push('/jobs')}>Back</Button>
-            <Popconfirm title="Copy this job?" okText="Copy" onConfirm={handleCopyJob}>
-              <Button icon={<CopyOutlined />}>Copy</Button>
-            </Popconfirm>
-            <Popconfirm
-              title="Cancel this job?"
-              description="Cancelled jobs cannot be edited by the backend business rules."
-              okText="Cancel Job"
-              okButtonProps={{ danger: true }}
-              onConfirm={handleCancelJob}
-            >
-              <Button danger icon={<StopOutlined />} disabled={isTerminal}>
-                Cancel Job
+        <PageHeader
+          title={`Job ${raw.jobCode || raw.job_no || ''}`}
+          breadcrumbs={[
+            { label: 'Jobs', path: '/jobs' },
+            { label: raw.jobCode || raw.job_no || 'Job detail' }
+          ]}
+          actions={
+            <Space wrap>
+              <Button onClick={() => router.push('/jobs')}>Back</Button>
+              <Popconfirm title="Copy this job?" okText="Copy" onConfirm={handleCopyJob}>
+                <Button icon={<CopyOutlined />}>Copy</Button>
+              </Popconfirm>
+              <Popconfirm
+                title="Cancel this job?"
+                description="Cancelled jobs cannot be edited by the backend business rules."
+                okText="Cancel Job"
+                okButtonProps={{ danger: true }}
+                onConfirm={handleCancelJob}
+              >
+                <Button danger icon={<StopOutlined />} disabled={isTerminal}>
+                  Cancel Job
+                </Button>
+              </Popconfirm>
+              <Button type="primary" loading={saving} disabled={isTerminal} onClick={() => form.submit()}>
+                Save
               </Button>
-            </Popconfirm>
-            <Button type="primary" loading={saving} disabled={isTerminal} onClick={() => form.submit()}>
-              Save
-            </Button>
-          </Space>
-        </div>
+            </Space>
+          }
+        />
 
-        {error ? <Alert type="error" showIcon message={error} style={{ marginBottom: 16 }} /> : null}
+        {errorMessage ? <Alert type="error" showIcon message={errorMessage} style={{ marginBottom: 16 }} /> : null}
 
         <Form form={form} layout="vertical" onFinish={onFinish}>
           <Row gutter={[24, 24]}>
@@ -433,12 +383,12 @@ function JobDetailContent() {
                     <Col xs={24} md={8}><Statistic title="Profit" value={profitTotal} formatter={formatCurrency} /></Col>
                   </Row>
                   <Descriptions column={1} size="small" bordered>
-                    <Descriptions.Item label="Backend profit status">{job?.profitSummary?.status || 'Cannot verify from frontend only'}</Descriptions.Item>
+                    <Descriptions.Item label="Backend profit status">{raw.profitSummary?.status || 'Cannot verify from frontend only'}</Descriptions.Item>
                   </Descriptions>
-                  <Title level={5} style={{ marginTop: 20 }}>Revenue</Title>
-                  <Table rowKey="id" columns={entryColumns} dataSource={job?.revenue || []} pagination={false} size="small" />
-                  <Title level={5} style={{ marginTop: 20 }}>Cost</Title>
-                  <Table rowKey="id" columns={entryColumns} dataSource={job?.cost || []} pagination={false} size="small" />
+                  <h4 style={{ marginTop: 20 }}>Revenue</h4>
+                  <Table rowKey="id" columns={entryColumns} dataSource={revenueEntries} pagination={false} size="small" />
+                  <h4 style={{ marginTop: 20 }}>Cost</h4>
+                  <Table rowKey="id" columns={entryColumns} dataSource={costEntries} pagination={false} size="small" />
                 </Card>
               </Space>
             </Col>
@@ -452,7 +402,7 @@ function JobDetailContent() {
                   <Select options={shipmentModeOptions} size="large" disabled={isTerminal} />
                 </Form.Item>
                 <Form.Item name="status" label="Status">
-                  <Select options={statusOptions} size="large" disabled={isTerminal} />
+                  <Select options={jobStatusOptions} size="large" disabled={isTerminal} />
                 </Form.Item>
                 <Row gutter={16}>
                   <Col span={12}>

@@ -10,102 +10,45 @@ import {
   Row,
   Select,
   Space,
-  Typography,
   message
 } from 'antd';
-import { BankOutlined, CompassOutlined, FileTextOutlined, RightOutlined } from '@ant-design/icons';
-import { useEffect, useMemo, useState } from 'react';
+import { BankOutlined, CompassOutlined, FileTextOutlined } from '@ant-design/icons';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/layouts/DashboardLayout';
-import { createJob } from '@/services/jobService';
-import { getPartners } from '@/services/partnerService';
-import { getBranches, getUsers } from '@/services/adminService';
-
-const { Title } = Typography;
-
-const jobTypeOptions = [
-  { value: 'IMPORT', label: 'Import' },
-  { value: 'EXPORT', label: 'Export' },
-  { value: 'DOMESTIC', label: 'Domestic' }
-];
-
-const shipmentModeOptions = [
-  { value: 'SEA_FCL', label: 'Sea FCL' },
-  { value: 'SEA_LCL', label: 'Sea LCL' },
-  { value: 'AIR', label: 'Air' },
-  { value: 'ROAD', label: 'Road' },
-  { value: 'RAIL', label: 'Rail' }
-];
-
-const statusOptions = [
-  { value: 'DRAFT', label: 'Draft' },
-  { value: 'IN_PROGRESS', label: 'In Progress' },
-  { value: 'CLOSED', label: 'Closed' },
-  { value: 'CANCELLED', label: 'Cancelled' }
-];
-
-const customsLaneOptions = [
-  { value: 'GREEN', label: 'Green' },
-  { value: 'YELLOW', label: 'Yellow' },
-  { value: 'RED', label: 'Red' }
-];
-
-const cargoTypeOptions = [
-  { value: 'FCL', label: 'FCL' },
-  { value: 'LCL', label: 'LCL' },
-  { value: 'AIR', label: 'Air' },
-  { value: 'BULK', label: 'Bulk cargo' }
-];
-
-function toDateString(value) {
-  return value?.format ? value.format('YYYY-MM-DD') : value || undefined;
-}
-
-function cleanPayload(values) {
-  const payload = {
-    ...values,
-    etd: toDateString(values.etd),
-    eta: toDateString(values.eta),
-    atd: toDateString(values.atd),
-    ata: toDateString(values.ata),
-    actualDeliveryDate: toDateString(values.actualDeliveryDate)
-  };
-
-  return Object.fromEntries(
-    Object.entries(payload).filter(([, value]) => value !== undefined && value !== null && value !== '')
-  );
-}
+import PageHeader from '@/components/PageHeader';
+import { useCreateJobMutation } from '@/store/services/jobsApi';
+import { useGetPartnersQuery } from '@/store/services/partnersApi';
+import { useGetUsersQuery, useGetBranchesQuery } from '@/store/services/adminApi';
+import { normalizePartner } from '@/utils/apiMappers';
+import { cleanPayload, convertDateFields } from '@/utils/formUtils';
+import {
+  jobTypeOptions,
+  shipmentModeOptions,
+  jobStatusOptions,
+  customsLaneOptions,
+  cargoTypeOptions,
+  JOB_DATE_FIELDS
+} from '@/config/jobConstants';
 
 export default function CreateJobPage() {
   const router = useRouter();
   const [form] = Form.useForm();
-  const [partners, setPartners] = useState([]);
-  const [branches, setBranches] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [loadingOptions, setLoadingOptions] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    let active = true;
+  // RTK Query hooks
+  const { data: partnersData, isLoading: partnersLoading } = useGetPartnersQuery();
+  const { data: branchesData, isLoading: branchesLoading } = useGetBranchesQuery();
+  const { data: usersData, isLoading: usersLoading } = useGetUsersQuery();
+  const [createJob] = useCreateJobMutation();
 
-    Promise.all([getPartners(), getBranches(), getUsers()])
-      .then(([partnerItems, branchItems, userItems]) => {
-        if (!active) return;
-        setPartners(partnerItems.filter((partner) => partner.isActive));
-        setBranches(branchItems.filter((branch) => branch.isActive));
-        setUsers(userItems.filter((user) => user.isActive));
-      })
-      .catch(() => {
-        message.error('Unable to load partner, branch, or user options.');
-      })
-      .finally(() => {
-        if (active) setLoadingOptions(false);
-      });
+  const loadingOptions = partnersLoading || branchesLoading || usersLoading;
 
-    return () => {
-      active = false;
-    };
-  }, []);
+  // Build options từ RTK Query cache
+  const partners = useMemo(() => {
+    const items = partnersData?.items || [];
+    return items.map(normalizePartner).filter((p) => p?.isActive);
+  }, [partnersData]);
 
   const partnerOptions = useMemo(
     () => partners.map((item) => ({ value: item.backendId, label: `${item.code} - ${item.name}` })),
@@ -121,24 +64,31 @@ export default function CreateJobPage() {
   );
 
   const branchOptions = useMemo(
-    () => branches.map((item) => ({ value: item.backendId, label: `${item.code} - ${item.name}` })),
-    [branches]
+    () =>
+      (branchesData || [])
+        .filter((b) => b.isActive)
+        .map((item) => ({ value: item.backendId, label: `${item.code} - ${item.name}` })),
+    [branchesData]
   );
 
   const userOptions = useMemo(
-    () => users.map((item) => ({ value: item.backendId, label: item.fullName || item.username })),
-    [users]
+    () =>
+      (usersData || [])
+        .filter((u) => u.isActive)
+        .map((item) => ({ value: item.backendId, label: item.fullName || item.username })),
+    [usersData]
   );
 
   async function onFinish(values) {
     setSaving(true);
 
     try {
-      await createJob(cleanPayload(values));
+      const payload = cleanPayload(convertDateFields(values, JOB_DATE_FIELDS));
+      await createJob(payload).unwrap();
       message.success('Job created.');
       router.push('/jobs');
     } catch (err) {
-      message.error(err?.response?.data?.message || 'Unable to create job.');
+      message.error(err?.data?.message || 'Unable to create job.');
     } finally {
       setSaving(false);
     }
@@ -147,22 +97,21 @@ export default function CreateJobPage() {
   return (
     <DashboardLayout>
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-        <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 16 }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#414755', fontSize: 12, marginBottom: 4 }}>
-              <a onClick={() => router.push('/jobs')} style={{ color: 'inherit', cursor: 'pointer' }}>Jobs</a>
-              <RightOutlined style={{ fontSize: 10 }} />
-              <span style={{ color: '#1b1b1b' }}>Create</span>
-            </div>
-            <Title level={2} style={{ margin: 0, fontSize: 24, fontWeight: 600, color: '#1b1b1b' }}>Create Job</Title>
-          </div>
-          <Space>
-            <Button onClick={() => router.push('/jobs')}>Cancel</Button>
-            <Button type="primary" loading={saving} onClick={() => form.submit()} style={{ padding: '0 20px', fontWeight: 500 }}>
-              Create Job
-            </Button>
-          </Space>
-        </div>
+        <PageHeader
+          title="Create Job"
+          breadcrumbs={[
+            { label: 'Jobs', path: '/jobs' },
+            { label: 'Create' }
+          ]}
+          actions={
+            <Space>
+              <Button onClick={() => router.push('/jobs')}>Cancel</Button>
+              <Button type="primary" loading={saving} onClick={() => form.submit()} style={{ padding: '0 20px', fontWeight: 500 }}>
+                Create Job
+              </Button>
+            </Space>
+          }
+        />
 
         <Form
           form={form}
@@ -264,7 +213,7 @@ export default function CreateJobPage() {
                   <Select options={shipmentModeOptions} size="large" />
                 </Form.Item>
                 <Form.Item name="status" label="Status">
-                  <Select options={statusOptions} size="large" />
+                  <Select options={jobStatusOptions} size="large" />
                 </Form.Item>
                 <Row gutter={16}>
                   <Col span={12}>

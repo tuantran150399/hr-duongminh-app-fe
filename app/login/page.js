@@ -4,22 +4,40 @@ import { GlobalOutlined, LockOutlined, MailOutlined } from '@ant-design/icons';
 import { Button, Form, Input, Typography, message } from 'antd';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/components/AppProviders';
-import { login } from '@/services/authService';
-import { setToken } from '@/utils/auth';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import {
+  loginThunk,
+  selectLoginLoading,
+  selectLoginError,
+  clearLoginError
+} from '@/store/slices/authSlice';
+import { useEffect } from 'react';
 
 export default function LoginPage() {
   const router = useRouter();
   const [form] = Form.useForm();
+  const dispatch = useAppDispatch();
   const { language, t } = useLanguage();
 
+  const loginLoading = useAppSelector(selectLoginLoading);
+  const loginError = useAppSelector(selectLoginError);
+
+  // Hiển thị lỗi login từ Redux
+  useEffect(() => {
+    if (loginError) {
+      message.error(t('login.loginError'));
+      dispatch(clearLoginError());
+    }
+  }, [loginError, dispatch, t]);
+
   async function handleSubmit(values) {
-    try {
-      const token = await login(values.username, values.password);
-      setToken(token);
+    const result = await dispatch(
+      loginThunk({ username: values.username, password: values.password })
+    );
+
+    if (loginThunk.fulfilled.match(result)) {
       message.success(t('login.loginSuccess'));
       router.replace('/dashboard');
-    } catch {
-      message.error(t('login.loginError'));
     }
   }
 
@@ -68,7 +86,13 @@ export default function LoginPage() {
             <a href="#">{t('login.forgotPassword')}</a>
           </div>
 
-          <Button type="primary" htmlType="submit" className="login-btn" block>
+          <Button
+            type="primary"
+            htmlType="submit"
+            className="login-btn"
+            block
+            loading={loginLoading}
+          >
             {t('login.signIn')}
           </Button>
         </Form>
