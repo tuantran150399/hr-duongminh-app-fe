@@ -1,37 +1,21 @@
 'use client';
 
 import { Alert, Card, Col, Row, Spin } from 'antd';
-import { useEffect, useState } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
-import { getDashboardStats } from '@/services/dashboardService';
+import { useGetDashboardStatsQuery } from '@/store/services/dashboardApi';
 import { formatCurrency } from '@/utils/format';
 
 export default function DashboardPage() {
-  const [stats, setStats] = useState(null);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    let active = true;
-
-    getDashboardStats()
-      .then((data) => {
-        if (active) setStats(data);
-      })
-      .catch(() => {
-        if (active) setError('Unable to load dashboard data from the backend.');
-      });
-
-    return () => {
-      active = false;
-    };
-  }, []);
+  const { data: stats, isLoading, error } = useGetDashboardStatsQuery();
 
   return (
     <DashboardLayout>
       <h1 className="page-title">Dashboard</h1>
-      {!stats ? (
-        error ? <Alert type="error" showIcon message={error} /> : <Spin />
-      ) : (
+      {isLoading ? (
+        <Spin />
+      ) : error ? (
+        <Alert type="error" showIcon message="Unable to load dashboard data from the backend." />
+      ) : stats ? (
         <Row gutter={[16, 16]}>
           <Col xs={24} sm={12} lg={6}>
             <Card title="Total Jobs">
@@ -54,7 +38,7 @@ export default function DashboardPage() {
             </Card>
           </Col>
         </Row>
-      )}
+      ) : null}
     </DashboardLayout>
   );
 }

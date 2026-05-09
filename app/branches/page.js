@@ -2,37 +2,23 @@
 
 import { Alert, Button, Card, Form, Input, Modal, Space, Switch, Table, Tag, message } from 'antd';
 import { PlusOutlined, ReloadOutlined } from '@ant-design/icons';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
-import { createBranch, getBranches, updateBranch } from '@/services/adminService';
+import {
+  useGetBranchesQuery,
+  useCreateBranchMutation,
+  useUpdateBranchMutation
+} from '@/store/services/adminExtApi';
 
 export default function BranchesPage() {
-  const [branches, setBranches] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [modal, setModal] = useState({ open: false, record: null });
-  const [saving, setSaving] = useState(false);
   const [form] = Form.useForm();
 
-  async function loadBranches() {
-    setLoading(true);
-    setError('');
-    try {
-      setBranches(await getBranches());
-    } catch {
-      setError('Unable to load branches from the backend.');
-    } finally {
-      setLoading(false);
-    }
-  }
+  const { data: branches = [], isLoading, error, refetch } = useGetBranchesQuery();
+  const [createBranch, { isLoading: isCreating }] = useCreateBranchMutation();
+  const [updateBranch, { isLoading: isUpdating }] = useUpdateBranchMutation();
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      loadBranches();
-    }, 0);
-
-    return () => clearTimeout(timer);
-  }, []);
+  const saving = isCreating || isUpdating;
 
   function openModal(record = null) {
     setModal({ open: true, record });
@@ -40,23 +26,19 @@ export default function BranchesPage() {
   }
 
   async function submit(values) {
-    setSaving(true);
     try {
       if (modal.record) {
         const { code, ...payload } = values;
-        await updateBranch(modal.record.backendId, payload);
+        await updateBranch({ id: modal.record.backendId, ...payload }).unwrap();
         message.success('Branch updated.');
       } else {
-        await createBranch(values);
+        await createBranch(values).unwrap();
         message.success('Branch created.');
       }
       setModal({ open: false, record: null });
       form.resetFields();
-      await loadBranches();
     } catch (saveError) {
-      message.error(saveError.response?.data?.message || 'Unable to save branch.');
-    } finally {
-      setSaving(false);
+      message.error(saveError?.data?.message || 'Unable to save branch.');
     }
   }
 
@@ -86,15 +68,15 @@ export default function BranchesPage() {
           <p>Manage branch records and operational scope.</p>
         </div>
         <Space>
-          <Button icon={<ReloadOutlined />} onClick={loadBranches}>Refresh</Button>
+          <Button icon={<ReloadOutlined />} onClick={refetch}>Refresh</Button>
           <Button type="primary" icon={<PlusOutlined />} onClick={() => openModal()}>Create Branch</Button>
         </Space>
       </div>
 
-      {error ? <Alert type="error" showIcon message={error} style={{ marginBottom: 16 }} /> : null}
+      {error ? <Alert type="error" showIcon message="Unable to load branches from the backend." style={{ marginBottom: 16 }} /> : null}
 
       <Card className="table-card">
-        <Table rowKey="id" loading={loading} columns={columns} dataSource={branches} pagination={{ pageSize: 10 }} />
+        <Table rowKey="id" loading={isLoading} columns={columns} dataSource={branches} pagination={{ pageSize: 10 }} />
       </Card>
 
       <Modal

@@ -124,14 +124,6 @@ Notes:
 - The frontend dashboard currently calculates summary cards from raw jobs, revenue, and cost calls.
 - It does not yet use the backend reporting module.
 
-## Attachments
-
-- `POST /attachments/upload` -> `Not implemented`
-- `GET /attachments` -> `Not implemented`
-- `GET /attachments/:id` -> `Not implemented`
-- `GET /attachments/:id/download` -> `Not implemented`
-- `DELETE /attachments/:id` -> `Not implemented`
-
 ## Audit Logs
 
 - `GET /audit-logs` -> `Not implemented`
@@ -167,8 +159,7 @@ Notes:
 1. Connect job create and update forms to backend APIs.
 2. Connect user list and profile APIs so the `Users` page and header can use real data.
 3. Add accounting actions for create, update, payment status, and posting.
-4. Add milestones and attachments to the job detail flow.
-5. Add reporting endpoints to the dashboard for more accurate summaries and charts.
+4. Add reporting endpoints to the dashboard for more accurate summaries and charts.
 
 ## Additional Update: Backend-Only Data Loading
 

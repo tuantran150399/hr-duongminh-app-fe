@@ -1,35 +1,23 @@
 'use client';
 
 import {
-  Alert,
-  Button,
-  Card,
-  Form,
-  Input,
-  Modal,
-  Popconfirm,
-  Select,
-  Space,
-  Switch,
-  Table,
-  Tabs,
-  Tag,
-  message
+  Alert, Button, Card, Form, Input, Modal, Popconfirm,
+  Select, Space, Switch, Table, Tabs, Tag, message
 } from 'antd';
 import { PlusOutlined, ReloadOutlined } from '@ant-design/icons';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import {
-  createRole,
-  createUser,
-  deleteUser,
-  getBranches,
-  getPermissions,
-  getRoles,
-  getUsers,
-  updateRole,
-  updateUser
-} from '@/services/adminService';
+  useGetUsersQuery,
+  useCreateUserMutation,
+  useUpdateUserMutation,
+  useDeleteUserMutation,
+  useGetRolesQuery,
+  useGetBranchesQuery,
+  useGetPermissionsQuery,
+  useCreateRoleMutation,
+  useUpdateRoleMutation
+} from '@/store/services/adminExtApi';
 
 function roleIdsFromUser(user) {
   return (user?.roles || []).map((role) => role.id || role.backendId).filter(Boolean);
@@ -40,17 +28,25 @@ function permissionIdsFromRole(role) {
 }
 
 export default function UsersPage() {
-  const [users, setUsers] = useState([]);
-  const [roles, setRoles] = useState([]);
-  const [branches, setBranches] = useState([]);
-  const [permissions, setPermissions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [userModal, setUserModal] = useState({ open: false, record: null });
   const [roleModal, setRoleModal] = useState({ open: false, record: null });
-  const [saving, setSaving] = useState(false);
   const [userForm] = Form.useForm();
   const [roleForm] = Form.useForm();
+
+  const { data: users = [], isLoading: loadingUsers, error, refetch } = useGetUsersQuery();
+  const { data: roles = [], isLoading: loadingRoles } = useGetRolesQuery();
+  const { data: branches = [] } = useGetBranchesQuery();
+  const { data: permissions = [] } = useGetPermissionsQuery();
+
+  const [createUser, { isLoading: isCreatingUser }] = useCreateUserMutation();
+  const [updateUser, { isLoading: isUpdatingUser }] = useUpdateUserMutation();
+  const [deleteUser] = useDeleteUserMutation();
+  const [createRole, { isLoading: isCreatingRole }] = useCreateRoleMutation();
+  const [updateRole, { isLoading: isUpdatingRole }] = useUpdateRoleMutation();
+
+  const loading = loadingUsers || loadingRoles;
+  const savingUser = isCreatingUser || isUpdatingUser;
+  const savingRole = isCreatingRole || isUpdatingRole;
 
   const roleOptions = useMemo(
     () => roles.map((role) => ({ label: role.name, value: role.backendId })),
@@ -65,47 +61,18 @@ export default function UsersPage() {
     [permissions]
   );
 
-  async function loadData() {
-    setLoading(true);
-    setError('');
-    try {
-      const [nextUsers, nextRoles, nextBranches, nextPermissions] = await Promise.all([
-        getUsers(),
-        getRoles(),
-        getBranches(),
-        getPermissions()
-      ]);
-      setUsers(nextUsers);
-      setRoles(nextRoles);
-      setBranches(nextBranches);
-      setPermissions(nextPermissions);
-    } catch (loadError) {
-      setError('Unable to load user administration data from the backend.');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      loadData();
-    }, 0);
-
-    return () => clearTimeout(timer);
-  }, []);
-
   function openUserModal(record = null) {
     setUserModal({ open: true, record });
     userForm.setFieldsValue(
       record
         ? {
-            username: record.username,
-            email: record.email,
-            fullName: record.fullName,
-            branchId: record.branchId,
-            roleIds: roleIdsFromUser(record.raw),
-            isActive: record.isActive
-          }
+          username: record.username,
+          email: record.email,
+          fullName: record.fullName,
+          branchId: record.branchId,
+          roleIds: roleIdsFromUser(record.raw),
+          isActive: record.isActive
+        }
         : { isActive: true, roleIds: [] }
     );
   }
@@ -115,71 +82,59 @@ export default function UsersPage() {
     roleForm.setFieldsValue(
       record
         ? {
-            name: record.name,
-            description: record.raw?.description,
-            permissionIds: permissionIdsFromRole(record.raw)
-          }
+          name: record.name,
+          description: record.raw?.description,
+          permissionIds: permissionIdsFromRole(record.raw)
+        }
         : { permissionIds: [] }
     );
   }
 
   async function submitUser(values) {
-    setSaving(true);
+    const payload = {
+      username: values.username,
+      email: values.email,
+      fullName: values.fullName,
+      branchId: values.branchId,
+      roleIds: values.roleIds || [],
+      isActive: values.isActive
+    };
     try {
-      const payload = {
-        username: values.username,
-        email: values.email,
-        fullName: values.fullName,
-        branchId: values.branchId,
-        roleIds: values.roleIds || [],
-        isActive: values.isActive
-      };
-
       if (userModal.record) {
         delete payload.username;
         if (!values.password) delete payload.password;
-        await updateUser(userModal.record.backendId, payload);
+        await updateUser({ id: userModal.record.backendId, ...payload }).unwrap();
         message.success('User updated.');
       } else {
-        await createUser({ ...payload, password: values.password });
+        await createUser({ ...payload, password: values.password }).unwrap();
         message.success('User created.');
       }
-
       setUserModal({ open: false, record: null });
       userForm.resetFields();
-      await loadData();
     } catch (saveError) {
-      message.error(saveError.response?.data?.message || 'Unable to save user.');
-    } finally {
-      setSaving(false);
+      message.error(saveError?.data?.message || 'Unable to save user.');
     }
   }
 
   async function submitRole(values) {
-    setSaving(true);
+    const payload = {
+      name: values.name,
+      description: values.description,
+      permissionIds: values.permissionIds || []
+    };
     try {
-      const payload = {
-        name: values.name,
-        description: values.description,
-        permissionIds: values.permissionIds || []
-      };
-
       if (roleModal.record) {
         delete payload.name;
-        await updateRole(roleModal.record.backendId, payload);
+        await updateRole({ id: roleModal.record.backendId, ...payload }).unwrap();
         message.success('Role updated.');
       } else {
-        await createRole(payload);
+        await createRole(payload).unwrap();
         message.success('Role created.');
       }
-
       setRoleModal({ open: false, record: null });
       roleForm.resetFields();
-      await loadData();
     } catch (saveError) {
-      message.error(saveError.response?.data?.message || 'Unable to save role.');
-    } finally {
-      setSaving(false);
+      message.error(saveError?.data?.message || 'Unable to save role.');
     }
   }
 
@@ -221,9 +176,8 @@ export default function UsersPage() {
             okText="Deactivate"
             okButtonProps={{ danger: true }}
             onConfirm={async () => {
-              await deleteUser(record.backendId);
+              await deleteUser(record.backendId).unwrap();
               message.success('User deactivated.');
-              loadData();
             }}
           >
             <Button size="small" danger>Deactivate</Button>
@@ -238,7 +192,6 @@ export default function UsersPage() {
     { title: 'Description', dataIndex: 'description', key: 'description' },
     {
       title: 'Permissions',
-      dataIndex: 'permissions',
       key: 'permissions',
       render: (_, record) => (
         <Space wrap size={[4, 4]}>
@@ -265,10 +218,10 @@ export default function UsersPage() {
             <h2>Users & Roles</h2>
             <p>Manage accounts, role assignment, and permission groups.</p>
           </div>
-          <Button icon={<ReloadOutlined />} onClick={loadData}>Refresh</Button>
+          <Button icon={<ReloadOutlined />} onClick={refetch}>Refresh</Button>
         </div>
 
-        {error ? <Alert type="error" showIcon message={error} style={{ marginBottom: 16 }} /> : null}
+        {error ? <Alert type="error" showIcon message="Unable to load user administration data." style={{ marginBottom: 16 }} /> : null}
 
         <Tabs
           items={[
@@ -310,7 +263,7 @@ export default function UsersPage() {
           open={userModal.open}
           onCancel={() => setUserModal({ open: false, record: null })}
           onOk={() => userForm.submit()}
-          confirmLoading={saving}
+          confirmLoading={savingUser}
           destroyOnHidden
           width={720}
         >
@@ -348,7 +301,7 @@ export default function UsersPage() {
           open={roleModal.open}
           onCancel={() => setRoleModal({ open: false, record: null })}
           onOk={() => roleForm.submit()}
-          confirmLoading={saving}
+          confirmLoading={savingRole}
           destroyOnHidden
           width={760}
         >

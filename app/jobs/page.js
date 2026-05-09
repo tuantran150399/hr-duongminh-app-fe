@@ -5,6 +5,7 @@ import {
   Button,
   Card,
   Empty,
+  message,
   Space,
   Table,
   Typography
@@ -30,6 +31,63 @@ function formatDisplayDate(value) {
   if (!value) return '-';
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleDateString('vi-VN');
+}
+
+function escapeCsv(value) {
+  const text = value === null || value === undefined ? '' : String(value);
+  if (/[",\n]/.test(text)) {
+    return `"${text.replace(/"/g, '""')}"`;
+  }
+  return text;
+}
+
+function downloadJobsCsv(rows) {
+  const headers = [
+    'Job No.',
+    'Customer',
+    'Status',
+    'Origin',
+    'Destination',
+    'ETD',
+    'ETA',
+    'Shipper',
+    'Consignee',
+    'Agent',
+    'Cargo Type',
+    'Container',
+    'C/O Type'
+  ];
+
+  const records = rows.map((job) => [
+    job.job_no,
+    job.customer,
+    job.status,
+    job.origin,
+    job.destination,
+    formatDisplayDate(job.etd),
+    formatDisplayDate(job.eta),
+    job.raw?.shipperName || job.raw?.shipper || '',
+    job.raw?.consigneeName || job.raw?.consignee || '',
+    job.raw?.agentName || job.raw?.agent || '',
+    job.raw?.cargoType || '',
+    job.raw?.containerNo || job.raw?.container || '',
+    job.raw?.coType || ''
+  ]);
+
+  const csv = [headers, ...records]
+    .map((row) => row.map(escapeCsv).join(','))
+    .join('\n');
+
+  const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
+  const url = window.URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0, 10);
+  anchor.href = url;
+  anchor.download = `jobs-${stamp}.csv`;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  window.URL.revokeObjectURL(url);
 }
 
 function ExpandedRow({ record }) {
@@ -199,6 +257,16 @@ export default function JobsPage() {
     setDateRange(null);
   }
 
+  function handleExport() {
+    if (!filteredJobs.length) {
+      message.warning('There are no jobs to export.');
+      return;
+    }
+
+    downloadJobsCsv(filteredJobs);
+    message.success(`Exported ${filteredJobs.length} jobs.`);
+  }
+
   return (
     <DashboardLayout>
       <PageHeader
@@ -206,7 +274,7 @@ export default function JobsPage() {
         subtitle="Manage logistics jobs from live backend data."
         actions={
           <>
-            <Button icon={<DownloadOutlined />}>Export</Button>
+            <Button icon={<DownloadOutlined />} onClick={handleExport}>Export</Button>
             <Button type="primary" icon={<PlusOutlined />} onClick={() => router.push('/jobs/create')}>
               Create Job
             </Button>

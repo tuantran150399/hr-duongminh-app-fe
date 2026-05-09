@@ -25,7 +25,6 @@ import { cleanPayload, convertDateFields } from '@/utils/formUtils';
 import {
   jobTypeOptions,
   shipmentModeOptions,
-  jobStatusOptions,
   customsLaneOptions,
   cargoTypeOptions,
   JOB_DATE_FIELDS
@@ -84,6 +83,7 @@ export default function CreateJobPage() {
 
     try {
       const payload = cleanPayload(convertDateFields(values, JOB_DATE_FIELDS));
+      delete payload.status;
       await createJob(payload).unwrap();
       message.success('Job created.');
       router.push('/jobs');
@@ -211,9 +211,6 @@ export default function CreateJobPage() {
                 </Form.Item>
                 <Form.Item name="shipmentMode" label="Shipment Mode" rules={[{ required: true, message: 'Shipment mode is required.' }]}>
                   <Select options={shipmentModeOptions} size="large" />
-                </Form.Item>
-                <Form.Item name="status" label="Status">
-                  <Select options={jobStatusOptions} size="large" />
                 </Form.Item>
                 <Row gutter={16}>
                   <Col span={12}>

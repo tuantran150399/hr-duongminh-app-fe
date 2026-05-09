@@ -2,9 +2,9 @@
 
 import { Alert, Button, Card, DatePicker, Descriptions, Drawer, Form, Input, Select, Space, Table, Tag } from 'antd';
 import { ReloadOutlined, SearchOutlined } from '@ant-design/icons';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
-import { getAuditLogs } from '@/services/adminService';
+import { useGetAuditLogsQuery } from '@/store/services/adminExtApi';
 
 const { RangePicker } = DatePicker;
 
@@ -14,38 +14,17 @@ function renderJson(value) {
 }
 
 export default function AuditPage() {
-  const [logs, setLogs] = useState([]);
-  const [meta, setMeta] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [selected, setSelected] = useState(null);
+  const [queryParams, setQueryParams] = useState({});
   const [form] = Form.useForm();
 
-  async function loadLogs(params = {}) {
-    setLoading(true);
-    setError('');
-    try {
-      const result = await getAuditLogs(params);
-      setLogs(result.items);
-      setMeta(result.meta);
-    } catch {
-      setError('Unable to load audit logs from the backend.');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      loadLogs();
-    }, 0);
-
-    return () => clearTimeout(timer);
-  }, []);
+  const { data, isLoading, error, refetch } = useGetAuditLogsQuery(queryParams);
+  const logs = data?.items || [];
+  const meta = data?.meta || null;
 
   function submitFilters(values) {
     const range = values.range || [];
-    loadLogs({
+    setQueryParams({
       entityName: values.entityName || undefined,
       entityId: values.entityId || undefined,
       action: values.action || undefined,
@@ -76,7 +55,7 @@ export default function AuditPage() {
           <h2>Audit Logs</h2>
           <p>Read-only system activity trail for sensitive operations.</p>
         </div>
-        <Button icon={<ReloadOutlined />} onClick={() => loadLogs()}>Refresh</Button>
+        <Button icon={<ReloadOutlined />} onClick={refetch}>Refresh</Button>
       </div>
 
       <Card style={{ borderRadius: 8, marginBottom: 16 }}>
@@ -100,19 +79,19 @@ export default function AuditPage() {
             <Form.Item label=" ">
               <Space>
                 <Button type="primary" htmlType="submit">Apply</Button>
-                <Button onClick={() => { form.resetFields(); loadLogs(); }}>Reset</Button>
+                <Button onClick={() => { form.resetFields(); setQueryParams({}); }}>Reset</Button>
               </Space>
             </Form.Item>
           </div>
         </Form>
       </Card>
 
-      {error ? <Alert type="error" showIcon message={error} style={{ marginBottom: 16 }} /> : null}
+      {error ? <Alert type="error" showIcon message="Unable to load audit logs from the backend." style={{ marginBottom: 16 }} /> : null}
 
       <Card className="table-card">
         <Table
           rowKey="id"
-          loading={loading}
+          loading={isLoading}
           columns={columns}
           dataSource={logs}
           pagination={{

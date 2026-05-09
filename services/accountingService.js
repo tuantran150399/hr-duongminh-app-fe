@@ -25,6 +25,17 @@ export async function createCostEntry(payload) {
   return response.data;
 }
 
+export async function importCostEntries(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await api.post('/accounting/cost/import', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
+
+  return response.data;
+}
+
 export async function postRevenueEntry(id) {
   const response = await api.patch(`/accounting/revenue/${id}/post`);
   return response.data;

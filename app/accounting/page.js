@@ -20,6 +20,7 @@ import {
   Tabs,
   Tag,
   Typography,
+  Upload,
   message
 } from 'antd';
 import {
@@ -29,22 +30,23 @@ import {
   UploadOutlined,
   WalletOutlined
 } from '@ant-design/icons';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import {
-  createCostEntry,
-  createRevenueEntry,
-  getAccountingCost,
-  getAccountingRevenue,
-  postCostEntry,
-  postRevenueEntry,
-  updateCostPaymentStatus,
-  updateRevenuePaymentStatus,
-  voidCostEntry,
-  voidRevenueEntry
-} from '@/services/accountingService';
-import { getJobs } from '@/services/jobService';
-import { getPartners } from '@/services/partnerService';
+  useGetAccountingRevenueQuery,
+  useGetAccountingCostQuery,
+  useCreateRevenueEntryMutation,
+  useCreateCostEntryMutation,
+  useImportCostEntriesMutation,
+  usePostRevenueEntryMutation,
+  usePostCostEntryMutation,
+  useVoidRevenueEntryMutation,
+  useVoidCostEntryMutation,
+  useUpdateRevenuePaymentStatusMutation,
+  useUpdateCostPaymentStatusMutation
+} from '@/store/services/accountingApi';
+import { useGetJobsQuery } from '@/store/services/jobsApi';
+import { useGetPartnersQuery } from '@/store/services/partnersApi';
 import { formatCurrency } from '@/utils/format';
 
 const statusColor = {
@@ -96,48 +98,34 @@ function cleanPayload(values) {
 
 export default function AccountingPage() {
   const [form] = Form.useForm();
-  const [revenue, setRevenue] = useState([]);
-  const [cost, setCost] = useState([]);
-  const [jobs, setJobs] = useState([]);
-  const [partners, setPartners] = useState([]);
   const [activeTab, setActiveTab] = useState('revenue');
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [loadError, setLoadError] = useState('');
 
-  async function loadData() {
-    setLoading(true);
-    setLoadError('');
+  // RTK Query hooks
+  const { data: revenueData, isLoading: loadingRevenue, error: revenueError } = useGetAccountingRevenueQuery();
+  const { data: costData, isLoading: loadingCost, error: costError } = useGetAccountingCostQuery();
+  const { data: jobsData } = useGetJobsQuery();
+  const { data: partnersData } = useGetPartnersQuery();
 
-    try {
-      const [revenueResult, costResult, jobsResult, partnerItems] = await Promise.all([
-        getAccountingRevenue(),
-        getAccountingCost(),
-        getJobs(),
-        getPartners()
-      ]);
+  const [createRevenueEntry] = useCreateRevenueEntryMutation();
+  const [createCostEntry] = useCreateCostEntryMutation();
+  const [importCostEntries] = useImportCostEntriesMutation();
+  const [postRevenueEntry] = usePostRevenueEntryMutation();
+  const [postCostEntry] = usePostCostEntryMutation();
+  const [voidRevenueEntry] = useVoidRevenueEntryMutation();
+  const [voidCostEntry] = useVoidCostEntryMutation();
+  const [updateRevenuePaymentStatus] = useUpdateRevenuePaymentStatusMutation();
+  const [updateCostPaymentStatus] = useUpdateCostPaymentStatusMutation();
 
-      setRevenue(revenueResult.items || []);
-      setCost(costResult.items || []);
-      setJobs(jobsResult.items || []);
-      setPartners(partnerItems.filter((partner) => partner.isActive));
-    } catch {
-      setLoadError('Unable to load accounting data from the backend.');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      loadData();
-    }, 0);
-
-    return () => clearTimeout(timer);
-  }, []);
+  const revenue = revenueData?.items || [];
+  const cost = costData?.items || [];
+  const jobs = jobsData?.items || [];
+  const partners = (partnersData?.items || []).filter(p => p.isActive);
+  const loading = loadingRevenue || loadingCost;
+  const loadError = (revenueError || costError) ? 'Unable to load accounting data from the backend.' : '';
 
   const activeRows = activeTab === 'revenue' ? revenue : cost;
   const statusOptions = useMemo(
@@ -165,7 +153,7 @@ export default function AccountingPage() {
   const vendorOptions = useMemo(
     () =>
       partners
-        .filter((partner) => ['VENDOR', 'AGENT', 'CARRIER', 'BOTH'].includes(partner.partnerType))
+        .filter((partner) => ['VENDOR', 'BOTH'].includes(partner.partnerType))
         .map((partner) => ({ value: partner.backendId, label: `${partner.code} - ${partner.name}` })),
     [partners]
   );
@@ -195,15 +183,15 @@ export default function AccountingPage() {
       const payload = cleanPayload(values);
       if (activeTab === 'revenue') {
         delete payload.vendorId;
-        await createRevenueEntry(payload);
+        await createRevenueEntry(payload).unwrap();
       } else {
-        await createCostEntry(payload);
+        await createCostEntry(payload).unwrap();
       }
       message.success(activeTab === 'revenue' ? 'Revenue entry created.' : 'Cost entry created.');
       setModalOpen(false);
-      await loadData();
+      
     } catch (err) {
-      message.error(err?.response?.data?.message || 'Unable to create accounting entry.');
+      message.error(err?.data?.message || 'Unable to create accounting entry.');
     } finally {
       setSaving(false);
     }
@@ -212,42 +200,57 @@ export default function AccountingPage() {
   async function handlePost(record) {
     try {
       if (activeTab === 'revenue') {
-        await postRevenueEntry(record.backendId);
+        await postRevenueEntry(record.backendId).unwrap();
       } else {
-        await postCostEntry(record.backendId);
+        await postCostEntry(record.backendId).unwrap();
       }
       message.success('Entry posted.');
-      await loadData();
+      
     } catch (err) {
-      message.error(err?.response?.data?.message || 'Unable to post entry.');
+      message.error(err?.data?.message || 'Unable to post entry.');
     }
   }
 
   async function handleVoid(record) {
     try {
       if (activeTab === 'revenue') {
-        await voidRevenueEntry(record.backendId, 'Voided from Phase 1 frontend testing.');
+        await voidRevenueEntry({ id: record.backendId, reason: 'Voided.' }).unwrap();
       } else {
-        await voidCostEntry(record.backendId, 'Voided from Phase 1 frontend testing.');
+        await voidCostEntry({ id: record.backendId, reason: 'Voided.' }).unwrap();
       }
       message.success('Entry voided.');
-      await loadData();
+      
     } catch (err) {
-      message.error(err?.response?.data?.message || 'Unable to void entry.');
+      message.error(err?.data?.message || 'Unable to void entry.');
     }
   }
 
   async function handlePaymentStatus(record, paymentStatus) {
     try {
       if (activeTab === 'revenue') {
-        await updateRevenuePaymentStatus(record.backendId, paymentStatus);
+        await updateRevenuePaymentStatus({ id: record.backendId, paymentStatus }).unwrap();
       } else {
-        await updateCostPaymentStatus(record.backendId, paymentStatus);
+        await updateCostPaymentStatus({ id: record.backendId, paymentStatus }).unwrap();
       }
       message.success('Payment status updated.');
-      await loadData();
+      
     } catch (err) {
-      message.error(err?.response?.data?.message || 'Unable to update payment status.');
+      message.error(err?.data?.message || 'Unable to update payment status.');
+    }
+  }
+
+  async function handleCostImport(options) {
+    const { file, onError, onSuccess } = options;
+
+    try {
+      const result = await importCostEntries(file).unwrap();
+      const errorSuffix = result.errorCount ? ` ${result.errorCount} row(s) failed.` : '';
+      message.success(`Imported ${result.createdCount || 0} cost row(s).${errorSuffix}`);
+      onSuccess?.(result);
+    } catch (err) {
+      const errorMessage = err?.data?.message || 'Unable to import cost file.';
+      message.error(errorMessage);
+      onError?.(err);
     }
   }
 
@@ -292,7 +295,7 @@ export default function AccountingPage() {
           value={value === '-' ? 'UNPAID' : String(value).toUpperCase()}
           options={paymentOptions}
           size="small"
-          disabled={record.status === 'Voided'}
+          disabled={record.status !== 'Posted'}
           onChange={(nextValue) => handlePaymentStatus(record, nextValue)}
           style={{ width: 120 }}
         />
@@ -362,9 +365,22 @@ export default function AccountingPage() {
               Revenue, cost, posting, voiding, and payment tracking per job.
             </Typography.Paragraph>
           </div>
-          <Button type="primary" icon={<FileAddOutlined />} onClick={openCreateModal}>
-            {activeTab === 'revenue' ? 'Create Revenue' : 'Create Cost'}
-          </Button>
+          <Space wrap>
+            {activeTab === 'cost' ? (
+              <Upload
+                accept=".xlsx,.xls,.csv"
+                showUploadList={false}
+                customRequest={handleCostImport}
+              >
+                <Button icon={<UploadOutlined />}>
+                  Import Cost Excel
+                </Button>
+              </Upload>
+            ) : null}
+            <Button type="primary" icon={<FileAddOutlined />} onClick={openCreateModal}>
+              {activeTab === 'revenue' ? 'Create Revenue' : 'Create Cost'}
+            </Button>
+          </Space>
         </div>
 
         {loadError ? <Alert type="error" showIcon message={loadError} style={{ marginBottom: 16 }} /> : null}

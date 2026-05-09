@@ -5,7 +5,13 @@ import {
   DashboardOutlined,
   InboxOutlined,
   SettingOutlined,
-  TeamOutlined
+  TeamOutlined,
+  MoneyCollectOutlined,
+  FileProtectOutlined,
+  BarChartOutlined,
+  DollarOutlined,
+  IdcardOutlined,
+  CreditCardOutlined
 } from '@ant-design/icons';
 import { PERMISSIONS } from '@/store/slices/authSlice';
 
@@ -42,6 +48,48 @@ export const APP_ROUTES = [
     showInMenu: true,
     icon: BankOutlined,
     labelKey: 'menu.accounting'
+  },
+  {
+    path: '/payment-requests',
+    permission: PERMISSIONS.ACCOUNTING_VIEW,
+    showInMenu: true,
+    icon: MoneyCollectOutlined,
+    labelKey: 'menu.paymentRequests'
+  },
+  {
+    path: '/debt-policies',
+    permission: PERMISSIONS.PARTNER_MANAGE,
+    showInMenu: true,
+    icon: FileProtectOutlined,
+    labelKey: 'menu.debtPolicies'
+  },
+  {
+    path: '/reports',
+    permission: PERMISSIONS.ACCOUNTING_VIEW,
+    showInMenu: true,
+    icon: BarChartOutlined,
+    labelKey: 'menu.reports'
+  },
+  {
+    path: '/pricing',
+    permission: PERMISSIONS.DASHBOARD_VIEW,
+    showInMenu: true,
+    icon: DollarOutlined,
+    labelKey: 'menu.pricing'
+  },
+  {
+    path: '/hrm',
+    permission: PERMISSIONS.DASHBOARD_VIEW,
+    showInMenu: true,
+    icon: IdcardOutlined,
+    labelKey: 'menu.hrm'
+  },
+  {
+    path: '/advances',
+    permission: PERMISSIONS.ADVANCE_VIEW,
+    showInMenu: true,
+    icon: CreditCardOutlined,
+    labelKey: 'menu.advances'
   },
   {
     path: '/users',

@@ -211,6 +211,7 @@ function JobDetailContent() {
     try {
       const payload = cleanPayload(convertDateFields(values, JOB_DATE_FIELDS));
       delete payload.jobCode;
+      delete payload.status;
       await updateJob({ id: jobId, ...payload }).unwrap();
       message.success('Job updated.');
       setFormLoaded(false);
@@ -402,7 +403,7 @@ function JobDetailContent() {
                   <Select options={shipmentModeOptions} size="large" disabled={isTerminal} />
                 </Form.Item>
                 <Form.Item name="status" label="Status">
-                  <Select options={jobStatusOptions} size="large" disabled={isTerminal} />
+                  <Select options={jobStatusOptions} size="large" disabled />
                 </Form.Item>
                 <Row gutter={16}>
                   <Col span={12}>

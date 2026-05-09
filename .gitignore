@@ -87,6 +87,10 @@ web_modules/
 .next
 out
 
+# Deployment artifacts
+.deploy-static
+*.zip
+
 # Nuxt.js build / generate output
 .nuxt
 dist

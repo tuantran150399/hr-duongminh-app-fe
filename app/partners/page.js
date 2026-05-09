@@ -1,28 +1,18 @@
 'use client';
 
 import {
-  Alert,
-  Button,
-  Card,
-  Form,
-  Input,
-  Modal,
-  Popconfirm,
-  Select,
-  Space,
-  Table,
-  Tag,
-  message
+  Alert, Button, Card, Form, Input, Modal,
+  Popconfirm, Select, Space, Table, Tag, message
 } from 'antd';
-import { EditOutlined, PlusOutlined, StopOutlined } from '@ant-design/icons';
-import { useEffect, useMemo, useState } from 'react';
+import { EditOutlined, PlusOutlined, ReloadOutlined, StopOutlined } from '@ant-design/icons';
+import { useMemo, useState } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import {
-  createPartner,
-  deactivatePartner,
-  getPartners,
-  updatePartner
-} from '@/services/partnerService';
+  useGetPartnersQuery,
+  useCreatePartnerMutation,
+  useUpdatePartnerMutation,
+  useDeactivatePartnerMutation
+} from '@/store/services/partnersApi';
 
 const partnerTypeOptions = [
   { value: 'CUSTOMER', label: 'Customer' },
@@ -40,45 +30,28 @@ function cleanPayload(values) {
 
 export default function PartnersPage() {
   const [form] = Form.useForm();
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingPartner, setEditingPartner] = useState(null);
 
-  async function loadPartners() {
-    setLoading(true);
-    setError('');
+  // RTK Query hooks
+  const { data, isLoading, error, refetch } = useGetPartnersQuery();
+  const [createPartner, { isLoading: isCreating }] = useCreatePartnerMutation();
+  const [updatePartner, { isLoading: isUpdating }] = useUpdatePartnerMutation();
+  const [deactivatePartner] = useDeactivatePartnerMutation();
 
-    try {
-      setData(await getPartners());
-    } catch {
-      setError('Unable to load partners from the backend.');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      loadPartners();
-    }, 0);
-
-    return () => clearTimeout(timer);
-  }, []);
+  const partners = data?.items || [];
+  const saving = isCreating || isUpdating;
 
   const filteredData = useMemo(() => {
     const keyword = search.trim().toLowerCase();
-    if (!keyword) return data;
-
-    return data.filter((item) =>
+    if (!keyword) return partners;
+    return partners.filter((item) =>
       [item.code, item.name, item.taxCode, item.phone, item.email, item.type]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(keyword))
     );
-  }, [data, search]);
+  }, [partners, search]);
 
   function openCreateModal() {
     setEditingPartner(null);
@@ -104,36 +77,28 @@ export default function PartnersPage() {
   }
 
   async function submitPartner(values) {
-    setSaving(true);
-
+    const payload = cleanPayload(values);
     try {
-      const payload = cleanPayload(values);
-
       if (editingPartner) {
         delete payload.code;
-        await updatePartner(editingPartner.backendId, payload);
+        await updatePartner({ id: editingPartner.backendId, ...payload }).unwrap();
         message.success('Partner updated.');
       } else {
-        await createPartner(payload);
+        await createPartner(payload).unwrap();
         message.success('Partner created.');
       }
-
       setModalOpen(false);
-      await loadPartners();
     } catch (err) {
-      message.error(err?.response?.data?.message || 'Unable to save partner.');
-    } finally {
-      setSaving(false);
+      message.error(err?.data?.message || 'Unable to save partner.');
     }
   }
 
   async function handleDeactivate(record) {
     try {
-      await deactivatePartner(record.backendId);
+      await deactivatePartner(record.backendId).unwrap();
       message.success('Partner deactivated.');
-      await loadPartners();
     } catch (err) {
-      message.error(err?.response?.data?.message || 'Unable to deactivate partner.');
+      message.error(err?.data?.message || 'Unable to deactivate partner.');
     }
   }
 
@@ -186,12 +151,15 @@ export default function PartnersPage() {
           <h1 className="page-title">Partners</h1>
           <p className="page-subtitle">Customers, vendors, agents, and carriers used across jobs and accounting.</p>
         </div>
-        <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>
-          Add Partner
-        </Button>
+        <Space>
+          <Button icon={<ReloadOutlined />} onClick={refetch}>Refresh</Button>
+          <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>
+            Add Partner
+          </Button>
+        </Space>
       </div>
 
-      {error ? <Alert type="error" showIcon message={error} style={{ marginBottom: 16 }} /> : null}
+      {error ? <Alert type="error" showIcon message="Unable to load partners from the backend." style={{ marginBottom: 16 }} /> : null}
 
       <Card className="table-card">
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, gap: 12 }}>
@@ -205,7 +173,7 @@ export default function PartnersPage() {
         </div>
         <Table
           rowKey="id"
-          loading={loading}
+          loading={isLoading}
           columns={columns}
           dataSource={filteredData}
           pagination={{ pageSize: 10, showSizeChanger: true }}
