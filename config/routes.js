@@ -79,7 +79,7 @@ export const APP_ROUTES = [
   },
   {
     path: '/hrm',
-    permission: PERMISSIONS.DASHBOARD_VIEW,
+    permission: PERMISSIONS.HR_VIEW,
     showInMenu: true,
     icon: IdcardOutlined,
     labelKey: 'menu.hrm'

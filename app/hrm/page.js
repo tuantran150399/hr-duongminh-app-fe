@@ -160,22 +160,22 @@ export default function HRMPage() {
   ];
 
   const payrollColumns = [
-    { title: 'Mã NV', dataIndex: 'employeeCode', key: 'employeeCode' },
-    { title: 'Họ tên', dataIndex: 'employeeName', key: 'employeeName', render: v => <strong>{v}</strong> },
-    { title: 'Tháng', dataIndex: 'month', key: 'month' },
+    { title: t('hrm.empCode'), dataIndex: 'employeeCode', key: 'employeeCode' },
+    { title: t('hrm.fullName'), dataIndex: 'employeeName', key: 'employeeName', render: v => <strong>{v}</strong> },
+    { title: t('hrm.month'), dataIndex: 'month', key: 'month' },
     { title: t('hrm.baseSalary'), dataIndex: 'baseSalary', key: 'baseSalary', align: 'right', render: v => formatCurrency(v) },
     { title: t('hrm.allowance'), dataIndex: 'allowance', key: 'allowance', align: 'right', render: v => formatCurrency(v) },
     { title: t('hrm.overtime'), dataIndex: 'overtime', key: 'overtime', align: 'right', render: v => formatCurrency(v) },
     { title: t('hrm.deduction'), dataIndex: 'deduction', key: 'deduction', align: 'right', render: v => <span style={{ color: '#ff4d4f' }}>-{formatCurrency(v)}</span> },
     { title: t('hrm.netSalary'), dataIndex: 'netSalary', key: 'netSalary', align: 'right', render: v => <strong style={{ color: '#0057c2' }}>{formatCurrency(v)}</strong> },
     {
-      title: 'Trạng thái', dataIndex: 'status', key: 'status',
+      title: t('hrm.status'), dataIndex: 'status', key: 'status',
       render: s => s === 'FINALIZED'
         ? <Tag color="green" icon={<CheckCircleOutlined />}>{t('hrm.finalized')}</Tag>
         : <Tag color="gold">{t('hrm.draft')}</Tag>
     },
     {
-      title: 'Thao tác', key: 'actions',
+      title: t('hrm.actions'), key: 'actions',
       render: (_, r) => r.status !== 'FINALIZED' && (
         <Popconfirm title={t('hrm.finalizePayrollPrompt')} onConfirm={async () => {
           try {
@@ -238,7 +238,7 @@ export default function HRMPage() {
             <Space>
               <Button icon={<FileExcelOutlined />}>{t('hrm.exportExcel')}</Button>
               <Button type="primary" icon={<FileAddOutlined />} onClick={() => { payrollForm.resetFields(); setPayrollModalOpen(true); }}>
-                Tạo bảng lương
+                {t('hrm.createPayrollBtn')}
               </Button>
             </Space>
           </div>
@@ -266,12 +266,12 @@ export default function HRMPage() {
         <div>
           <Typography.Title level={1} className="page-title">{t('hrm.title')}</Typography.Title>
           <Typography.Paragraph className="page-subtitle">
-            Quản lý hồ sơ nhân viên, chấm công, nghỉ phép và bảng lương hàng tháng.
+            {t('hrm.subtitle')}
           </Typography.Paragraph>
         </div>
         {activeTab === 'employees' && (
           <Button type="primary" icon={<UserAddOutlined />} onClick={() => { form.resetFields(); setModalOpen(true); }}>
-            Thêm nhân viên
+            {t('hrm.addEmployee')}
           </Button>
         )}
       </div>
@@ -301,12 +301,12 @@ export default function HRMPage() {
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item name="fullName" label={t('hrm.fullName')} rules={[{ required: true }]}>
-                <Input placeholder="Nguyễn Văn A" />
+                <Input placeholder={t('hrm.empNamePlaceholder')} />
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item name="phone" label={t('hrm.phone')}>
-                <Input placeholder="09xx..." />
+                <Input placeholder={t('hrm.phonePlaceholder')} />
               </Form.Item>
             </Col>
           </Row>
@@ -318,7 +318,7 @@ export default function HRMPage() {
             </Col>
             <Col span={12}>
               <Form.Item name="position" label={t('hrm.position')} rules={[{ required: true }]}>
-                <Input placeholder="Nhân viên / Trưởng phòng..." />
+                <Input placeholder={t('hrm.position')} />
               </Form.Item>
             </Col>
           </Row>

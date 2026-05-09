@@ -39,7 +39,7 @@ export const hrmApi = createApi({
     // ── Attendance ────────────────────────────────────────────────────────────
     getAttendance: builder.query({
       query: (params = {}) => ({
-        url: '/hrm/attendance',
+        url: '/hr/attendance',
         method: 'GET',
         params: { page: 1, limit: 100, ...params }
       }),
@@ -51,14 +51,14 @@ export const hrmApi = createApi({
     }),
 
     createAttendance: builder.mutation({
-      query: (payload) => ({ url: '/hrm/attendance', method: 'POST', data: payload }),
+      query: (payload) => ({ url: '/hr/attendance', method: 'POST', data: payload }),
       invalidatesTags: ['Attendance']
     }),
 
     // ── Leave Requests ────────────────────────────────────────────────────────
     getLeaveRequests: builder.query({
       query: (params = {}) => ({
-        url: '/hrm/leaves',
+        url: '/hr/leave-requests',
         method: 'GET',
         params: { page: 1, limit: 100, ...params }
       }),
@@ -70,24 +70,24 @@ export const hrmApi = createApi({
     }),
 
     createLeaveRequest: builder.mutation({
-      query: (payload) => ({ url: '/hrm/leaves', method: 'POST', data: payload }),
+      query: (payload) => ({ url: '/hr/leave-requests', method: 'POST', data: payload }),
       invalidatesTags: ['Leave']
     }),
 
     approveLeaveRequest: builder.mutation({
-      query: (id) => ({ url: `/hrm/leaves/${id}/approve`, method: 'PATCH' }),
+      query: (id) => ({ url: `/hr/leave-requests/${id}/approve`, method: 'PATCH' }),
       invalidatesTags: ['Leave']
     }),
 
     rejectLeaveRequest: builder.mutation({
-      query: ({ id, reason }) => ({ url: `/hrm/leaves/${id}/reject`, method: 'PATCH', data: { reason } }),
+      query: ({ id, reason }) => ({ url: `/hr/leave-requests/${id}/reject`, method: 'PATCH', data: { reason } }),
       invalidatesTags: ['Leave']
     }),
 
     // ── Payroll ───────────────────────────────────────────────────────────────
     getPayroll: builder.query({
       query: (params = {}) => ({
-        url: '/hrm/payroll',
+        url: '/hr/payroll',
         method: 'GET',
         params: { page: 1, limit: 100, ...params }
       }),
@@ -99,12 +99,12 @@ export const hrmApi = createApi({
     }),
 
     createPayrollRecord: builder.mutation({
-      query: (payload) => ({ url: '/hrm/payroll', method: 'POST', data: payload }),
+      query: (payload) => ({ url: '/hr/payroll', method: 'POST', data: payload }),
       invalidatesTags: ['Payroll']
     }),
 
     finalizePayroll: builder.mutation({
-      query: (id) => ({ url: `/hrm/payroll/${id}/finalize`, method: 'PATCH' }),
+      query: (id) => ({ url: `/hr/payroll/${id}/post`, method: 'PATCH' }),
       invalidatesTags: ['Payroll']
     })
   })
