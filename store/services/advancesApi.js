@@ -1,6 +1,14 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 import { axiosBaseQuery } from '@/store/axiosBaseQuery';
 
+function toItems(response) {
+  if (Array.isArray(response)) return response;
+  if (Array.isArray(response?.data)) return response.data;
+  if (Array.isArray(response?.data?.items)) return response.data.items;
+  if (Array.isArray(response?.items)) return response.items;
+  return [];
+}
+
 export const advancesApi = createApi({
   reducerPath: 'advancesApi',
   baseQuery: axiosBaseQuery(),
@@ -13,8 +21,7 @@ export const advancesApi = createApi({
         params: { page: 1, limit: 100, ...params }
       }),
       transformResponse: (response) => {
-        const items = response?.data ?? response?.items ?? (Array.isArray(response) ? response : []);
-        return { items };
+        return { items: toItems(response) };
       },
       providesTags: ['Advances']
     }),

@@ -1,5 +1,6 @@
 import {
   AuditOutlined,
+  SafetyCertificateOutlined,
   BankOutlined,
   BranchesOutlined,
   DashboardOutlined,
@@ -11,7 +12,11 @@ import {
   BarChartOutlined,
   DollarOutlined,
   IdcardOutlined,
-  CreditCardOutlined
+  CreditCardOutlined,
+  FileDoneOutlined,
+  SwapOutlined,
+  BellOutlined,
+  ReconciliationOutlined
 } from '@ant-design/icons';
 import { PERMISSIONS } from '@/store/slices/authSlice';
 
@@ -71,6 +76,20 @@ export const APP_ROUTES = [
     labelKey: 'menu.reports'
   },
   {
+    path: '/debit-notes',
+    permission: PERMISSIONS.ACCOUNTING_VIEW,
+    showInMenu: true,
+    icon: FileDoneOutlined,
+    labelKey: 'menu.debitNotes'
+  },
+  {
+    path: '/cob',
+    permission: PERMISSIONS.ACCOUNTING_VIEW,
+    showInMenu: true,
+    icon: SwapOutlined,
+    labelKey: 'menu.cob'
+  },
+  {
     path: '/pricing',
     permission: PERMISSIONS.DASHBOARD_VIEW,
     showInMenu: true,
@@ -111,6 +130,27 @@ export const APP_ROUTES = [
     showInMenu: true,
     icon: AuditOutlined,
     labelKey: 'menu.audit'
+  },
+  {
+    path: '/notifications',
+    permission: PERMISSIONS.DASHBOARD_VIEW,
+    showInMenu: true,
+    icon: BellOutlined,
+    labelKey: 'menu.notifications'
+  },
+  {
+    path: '/adjustments',
+    permission: PERMISSIONS.ACCOUNTING_VIEW,
+    showInMenu: true,
+    icon: ReconciliationOutlined,
+    labelKey: 'menu.adjustments'
+  },
+  {
+    path: '/security',
+    permission: PERMISSIONS.SECURITY_VIEW,
+    showInMenu: true,
+    icon: SafetyCertificateOutlined,
+    labelKey: 'menu.security'
   }
 ];
 

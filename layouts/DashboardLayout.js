@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import {
-  BellOutlined,
   CalendarOutlined,
   DownOutlined,
   LogoutOutlined,
@@ -11,16 +10,18 @@ import {
   QuestionCircleOutlined,
   UserOutlined
 } from '@ant-design/icons';
-import { Avatar, Button, Dropdown, Layout, Menu, Tooltip, Typography } from 'antd';
+import { Avatar, Button, Dropdown, Grid, Layout, Menu, Tooltip, Typography } from 'antd';
 import { usePathname, useRouter } from 'next/navigation';
 import { useLanguage } from '@/components/AppProviders';
 import AuthGuard from '@/components/AuthGuard';
+import NotificationBell from '@/components/NotificationBell';
 import { clearAllTokens } from '@/utils/auth';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { logout, selectUser, selectUserPermissions } from '@/store/slices/authSlice';
 import { getAuthorizedMenuItems, APP_ROUTES } from '@/config/routes';
 
 const { Header, Content, Sider } = Layout;
+const { useBreakpoint } = Grid;
 
 export default function DashboardLayout({ children }) {
   const pathname = usePathname();
@@ -29,6 +30,9 @@ export default function DashboardLayout({ children }) {
   const [collapsed, setCollapsed] = useState(false);
   const [currentDateLabel, setCurrentDateLabel] = useState('');
   const { language, setLanguage, options, t } = useLanguage();
+  const screens = useBreakpoint();
+  const isBelowDesktop = screens.lg === false;
+  const isMobile = screens.sm === false;
 
   // Lấy user và permissions từ Redux store
   const user = useAppSelector(selectUser);
@@ -62,6 +66,9 @@ export default function DashboardLayout({ children }) {
 
   function handleMenuClick({ key }) {
     router.push(key);
+    if (isBelowDesktop) {
+      setCollapsed(true);
+    }
   }
 
   function handleLogout() {
@@ -106,12 +113,22 @@ export default function DashboardLayout({ children }) {
   return (
     <AuthGuard>
       <Layout className="dashboard-shell">
+        {isBelowDesktop && !collapsed ? (
+          <button
+            type="button"
+            className="dashboard-sider-backdrop"
+            aria-label="Close navigation"
+            onClick={() => setCollapsed(true)}
+          />
+        ) : null}
+
         <Sider
           width={252}
-          collapsedWidth={88}
+          collapsedWidth={isBelowDesktop ? 0 : 88}
           collapsed={collapsed}
           breakpoint="lg"
-          className="dashboard-sider"
+          onBreakpoint={(broken) => setCollapsed(broken)}
+          className={`dashboard-sider ${isBelowDesktop ? 'is-mobile' : ''}`}
           theme="light"
           trigger={null}
         >
@@ -160,7 +177,7 @@ export default function DashboardLayout({ children }) {
               />
 
               <div className="header-context">
-                <span className="header-eyebrow">{t('common.workspace')}</span>
+                {!isMobile ? <span className="header-eyebrow">{t('common.workspace')}</span> : null}
                 <Typography.Title level={5} className="header-title">
                   {currentSection}
                 </Typography.Title>
@@ -195,10 +212,14 @@ export default function DashboardLayout({ children }) {
                 </Button>
               </Dropdown>
 
-              <Button type="text" icon={<BellOutlined />} className="header-icon-btn" />
-              <Button type="text" icon={<QuestionCircleOutlined />} className="header-icon-btn" />
+              {!isMobile ? (
+                <>
+                  <NotificationBell />
+                  <Button type="text" icon={<QuestionCircleOutlined />} className="header-icon-btn" />
+                </>
+              ) : null}
 
-              <div className="header-divider" />
+              {!isMobile ? <div className="header-divider" /> : null}
 
               {/* Avatar + User dropdown */}
               <Dropdown

@@ -50,8 +50,8 @@ export const partnersApi = createApi({
       invalidatesTags: [{ type: 'Partner', id: 'LIST' }]
     }),
 
-    deactivatePartner: builder.mutation({
-      query: (id) => ({ url: `/partners/${id}/deactivate`, method: 'PATCH' }),
+    lockPartner: builder.mutation({
+      query: (id) => ({ url: `/partners/${id}/lock`, method: 'PATCH' }),
       invalidatesTags: (_result, _error, id) => [
         { type: 'Partner', id },
         { type: 'Partner', id: 'LIST' }
@@ -66,5 +66,5 @@ export const {
   useCreatePartnerMutation,
   useUpdatePartnerMutation,
   useDeletePartnerMutation,
-  useDeactivatePartnerMutation
+  useLockPartnerMutation
 } = partnersApi;

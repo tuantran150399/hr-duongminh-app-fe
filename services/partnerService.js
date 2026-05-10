@@ -27,7 +27,7 @@ export async function updatePartner(id, payload) {
   return response.data;
 }
 
-export async function deactivatePartner(id) {
-  const response = await api.delete(`/partners/${id}`);
+export async function lockPartner(id) {
+  const response = await api.patch(`/partners/${id}/lock`);
   return response.data;
 }

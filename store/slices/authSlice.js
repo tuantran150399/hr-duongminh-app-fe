@@ -37,6 +37,8 @@ export const PERMISSIONS = {
   ADVANCE_MANAGE: 'advance:manage',
   HR_VIEW: 'hr:view',
   HR_MANAGE: 'hr:manage',
+  SECURITY_VIEW: 'security:view',
+  SECURITY_MANAGE: 'security:manage',
 
   USERS_VIEW: 'users:view',
   USERS_MANAGE: 'users:manage',
@@ -71,6 +73,8 @@ export const ROLE_PERMISSIONS = {
     PERMISSIONS.ADVANCE_MANAGE,
     PERMISSIONS.HR_VIEW,
     PERMISSIONS.HR_MANAGE,
+    PERMISSIONS.SECURITY_VIEW,
+    PERMISSIONS.SECURITY_MANAGE,
     PERMISSIONS.USERS_VIEW,
     PERMISSIONS.USERS_MANAGE,
     PERMISSIONS.USER_MANAGE,
@@ -135,7 +139,9 @@ const PERMISSION_ALIASES = {
   ,'advance:view': [PERMISSIONS.ADVANCE_VIEW],
   'advance:manage': [PERMISSIONS.ADVANCE_VIEW, PERMISSIONS.ADVANCE_MANAGE],
   'hr:view': [PERMISSIONS.HR_VIEW],
-  'hr:manage': [PERMISSIONS.HR_VIEW, PERMISSIONS.HR_MANAGE]
+  'hr:manage': [PERMISSIONS.HR_VIEW, PERMISSIONS.HR_MANAGE],
+  'security:view': [PERMISSIONS.SECURITY_VIEW],
+  'security:manage': [PERMISSIONS.SECURITY_VIEW, PERMISSIONS.SECURITY_MANAGE]
 };
 
 export const loginThunk = createAsyncThunk(

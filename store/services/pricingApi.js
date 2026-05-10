@@ -35,6 +35,22 @@ export const pricingApi = createApi({
         return { url: '/pricing/import', method: 'POST', data: formData };
       },
       invalidatesTags: [{ type: 'Pricing', id: 'LIST' }]
+    }),
+
+    // Lookup applicable tariffs for a given customer/job combination.
+    // Backend matches by partnerId, serviceType, route, effectivity dates.
+    // Falls back to general tariffs (partnerId=null) if no customer-specific ones exist.
+    lookupPricing: builder.query({
+      query: ({ partnerId, jobId } = {}) => ({
+        url: '/pricing/lookup',
+        method: 'GET',
+        params: { partnerId, jobId }
+      }),
+      transformResponse: (response) => {
+        const { items } = extractPaginatedItems(response);
+        return items || [];
+      },
+      providesTags: [{ type: 'Pricing', id: 'LOOKUP' }]
     })
   })
 });
@@ -42,5 +58,6 @@ export const pricingApi = createApi({
 export const {
   useGetServicePricesQuery,
   useCreateServicePriceMutation,
-  useImportServicePricesMutation
+  useImportServicePricesMutation,
+  useLookupPricingQuery
 } = pricingApi;

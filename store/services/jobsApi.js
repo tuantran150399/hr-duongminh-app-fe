@@ -65,6 +65,15 @@ export const jobsApi = createApi({
     deleteJob: builder.mutation({
       query: (id) => ({ url: `/jobs/${id}`, method: 'DELETE' }),
       invalidatesTags: [{ type: 'Job', id: 'LIST' }]
+    }),
+
+    exportJobs: builder.mutation({
+      query: (params = {}) => ({
+        url: '/jobs/export',
+        method: 'POST',
+        data: params,
+        responseType: 'blob'
+      })
     })
   })
 });
@@ -76,5 +85,6 @@ export const {
   useUpdateJobMutation,
   useCopyJobMutation,
   useCancelJobMutation,
-  useDeleteJobMutation
+  useDeleteJobMutation,
+  useExportJobsMutation
 } = jobsApi;

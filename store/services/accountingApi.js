@@ -98,6 +98,25 @@ export const accountingApi = createApi({
         data: { paymentStatus }
       }),
       invalidatesTags: ['Cost']
+    }),
+
+    // ── Charts ───────────────────────────────────────────────────────────────
+    getRevenueChart: builder.query({
+      query: (params = {}) => ({
+        url: '/accounting/revenue/chart',
+        method: 'GET',
+        params
+      }),
+      providesTags: ['Revenue']
+    }),
+
+    getCostChart: builder.query({
+      query: (params = {}) => ({
+        url: '/accounting/cost/chart',
+        method: 'GET',
+        params
+      }),
+      providesTags: ['Cost']
     })
   })
 });
@@ -113,5 +132,7 @@ export const {
   useImportCostEntriesMutation,
   usePostCostEntryMutation,
   useVoidCostEntryMutation,
-  useUpdateCostPaymentStatusMutation
+  useUpdateCostPaymentStatusMutation,
+  useGetRevenueChartQuery,
+  useGetCostChartQuery
 } = accountingApi;

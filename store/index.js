@@ -17,6 +17,11 @@ import { reportsApi } from '@/store/services/reportsApi';
 import { pricingApi } from '@/store/services/pricingApi';
 import { adminExtApi } from '@/store/services/adminExtApi';
 import { hrmApi } from '@/store/services/hrmApi';
+import { debitNotesApi } from '@/store/services/debitNotesApi';
+import { cobApi } from '@/store/services/cobApi';
+import { notificationsApi } from '@/store/services/notificationsApi';
+import { adjustmentsApi } from '@/store/services/adjustmentsApi';
+import { securityApi } from '@/store/services/securityApi';
 
 export const store = configureStore({
   reducer: {
@@ -38,7 +43,12 @@ export const store = configureStore({
     [reportsApi.reducerPath]: reportsApi.reducer,
     [pricingApi.reducerPath]: pricingApi.reducer,
     [adminExtApi.reducerPath]: adminExtApi.reducer,
-    [hrmApi.reducerPath]: hrmApi.reducer
+    [hrmApi.reducerPath]: hrmApi.reducer,
+    [debitNotesApi.reducerPath]: debitNotesApi.reducer,
+    [cobApi.reducerPath]: cobApi.reducer,
+    [notificationsApi.reducerPath]: notificationsApi.reducer,
+    [adjustmentsApi.reducerPath]: adjustmentsApi.reducer,
+    [securityApi.reducerPath]: securityApi.reducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -54,6 +64,11 @@ export const store = configureStore({
       reportsApi.middleware,
       pricingApi.middleware,
       adminExtApi.middleware,
-      hrmApi.middleware
+      hrmApi.middleware,
+      debitNotesApi.middleware,
+      cobApi.middleware,
+      notificationsApi.middleware,
+      adjustmentsApi.middleware,
+      securityApi.middleware
     )
 });

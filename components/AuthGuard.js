@@ -41,7 +41,9 @@ export default function AuthGuard({ children }) {
   if (sessionStatus === 'idle' || sessionStatus === 'loading') {
     return (
       <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}>
-        <Spin size="large" tip="Đang tải..." />
+        <Spin size="large" tip="Đang tải...">
+          <div />
+        </Spin>
       </div>
     );
   }

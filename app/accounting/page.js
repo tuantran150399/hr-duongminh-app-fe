@@ -19,6 +19,7 @@ import {
   Table,
   Tabs,
   Tag,
+  Tooltip,
   Typography,
   Upload,
   message
@@ -27,6 +28,7 @@ import {
   CheckCircleOutlined,
   FileAddOutlined,
   StopOutlined,
+  SwapOutlined,
   UploadOutlined,
   WalletOutlined
 } from '@ant-design/icons';
@@ -43,11 +45,80 @@ import {
   useVoidRevenueEntryMutation,
   useVoidCostEntryMutation,
   useUpdateRevenuePaymentStatusMutation,
-  useUpdateCostPaymentStatusMutation
+  useUpdateCostPaymentStatusMutation,
+  useGetRevenueChartQuery,
+  useGetCostChartQuery
 } from '@/store/services/accountingApi';
 import { useGetJobsQuery } from '@/store/services/jobsApi';
 import { useGetPartnersQuery } from '@/store/services/partnersApi';
+import { useMarkCostAsCobMutation } from '@/store/services/cobApi';
 import { formatCurrency } from '@/utils/format';
+import { useLanguage } from '@/components/AppProviders';
+
+const CHART_COLORS = [
+  '#0057c2', '#52c41a', '#fa8c16', '#ff4d4f',
+  '#13c2c2', '#722ed1', '#eb2f96', '#fadb14'
+];
+
+function ChartRow({ revenueChart, costChart, t }) {
+  function renderChart(data, titleKey) {
+    const entries = Array.isArray(data) ? data
+      : Array.isArray(data?.data) ? data.data
+      : Object.entries(data ?? {}).map(([status, total]) => ({ status, total }));
+    if (!entries.length) {
+      return (
+        <Card style={{ height: 220 }}>
+          <div style={{ fontWeight: 600, marginBottom: 12 }}>{t(titleKey)}</div>
+          <div style={{ color: '#aaa', textAlign: 'center', paddingTop: 48 }}>
+            {t('accounting.noChartData')}
+          </div>
+        </Card>
+      );
+    }
+    const total = entries.reduce((s, e) => s + Number(e.total ?? e.count ?? 0), 0);
+    return (
+      <Card style={{ height: 220 }}>
+        <div style={{ fontWeight: 600, marginBottom: 12 }}>{t(titleKey)}</div>
+        <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+          {/* bar segments */}
+          <div style={{ flex: 1, minWidth: 160 }}>
+            <div style={{ display: 'flex', height: 20, borderRadius: 10, overflow: 'hidden', background: '#f0f0f0' }}>
+              {entries.map((e, i) => {
+                const val = Number(e.total ?? e.count ?? 0);
+                const pct = total > 0 ? (val / total * 100).toFixed(1) : 0;
+                return (
+                  <div key={e.status} title={`${e.status}: ${formatCurrency(val)} (${pct}%)`}
+                    style={{ width: `${pct}%`, background: CHART_COLORS[i % CHART_COLORS.length], transition: 'width .4s' }} />
+                );
+              })}
+            </div>
+            <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {entries.map((e, i) => {
+                const val = Number(e.total ?? e.count ?? 0);
+                const pct = total > 0 ? (val / total * 100).toFixed(1) : 0;
+                return (
+                  <div key={e.status} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+                    <span style={{ width: 10, height: 10, borderRadius: 2, background: CHART_COLORS[i % CHART_COLORS.length], flexShrink: 0 }} />
+                    <span style={{ flex: 1 }}>{e.status}</span>
+                    <span style={{ fontWeight: 600 }}>{formatCurrency(val)}</span>
+                    <span style={{ color: '#aaa', minWidth: 42, textAlign: 'right' }}>{pct}%</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+      <Col xs={24} md={12}>{renderChart(revenueChart, 'security.chart.revenueTitle')}</Col>
+      <Col xs={24} md={12}>{renderChart(costChart,    'security.chart.costTitle')}</Col>
+    </Row>
+  );
+}
 
 const statusColor = {
   Draft: 'default',
@@ -97,12 +168,19 @@ function cleanPayload(values) {
 }
 
 export default function AccountingPage() {
+  const { t } = useLanguage();
   const [form] = Form.useForm();
   const [activeTab, setActiveTab] = useState('revenue');
   const [saving, setSaving] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+
+  // COB modal state
+  const [cobModalOpen, setCobModalOpen] = useState(false);
+  const [cobCostRecord, setCobCostRecord] = useState(null);
+  const [cobCustomerId, setCobCustomerId] = useState(null);
+  const [cobSaving, setCobSaving] = useState(false);
 
   // RTK Query hooks
   const { data: revenueData, isLoading: loadingRevenue, error: revenueError } = useGetAccountingRevenueQuery();
@@ -119,6 +197,10 @@ export default function AccountingPage() {
   const [voidCostEntry] = useVoidCostEntryMutation();
   const [updateRevenuePaymentStatus] = useUpdateRevenuePaymentStatusMutation();
   const [updateCostPaymentStatus] = useUpdateCostPaymentStatusMutation();
+  const [markCostAsCob] = useMarkCostAsCobMutation();
+
+  const { data: revenueChartData } = useGetRevenueChartQuery();
+  const { data: costChartData }    = useGetCostChartQuery();
 
   const revenue = revenueData?.items || [];
   const cost = costData?.items || [];
@@ -254,6 +336,41 @@ export default function AccountingPage() {
     }
   }
 
+  // ─── COB automation ─────────────────────────────────────────────────────────
+
+  const customerOptions = useMemo(
+    () =>
+      partners
+        .filter((partner) => ['CUSTOMER', 'BOTH'].includes(partner.partnerType))
+        .map((partner) => ({ value: partner.backendId, label: `${partner.code} - ${partner.name}` })),
+    [partners]
+  );
+
+  function openCobModal(record) {
+    setCobCostRecord(record);
+    setCobCustomerId(null);
+    setCobModalOpen(true);
+  }
+
+  async function handleCobSubmit() {
+    if (!cobCustomerId) {
+      message.warning('Please select a customer to charge.');
+      return;
+    }
+
+    setCobSaving(true);
+    try {
+      await markCostAsCob({ costId: cobCostRecord.backendId, partnerId: cobCustomerId }).unwrap();
+      message.success('Cost marked as charge-on-behalf. A receivable has been auto-created.');
+      setCobModalOpen(false);
+      setCobCostRecord(null);
+    } catch (err) {
+      message.error(err?.data?.message || 'Unable to mark cost as COB.');
+    } finally {
+      setCobSaving(false);
+    }
+  }
+
   const columns = [
     {
       title: 'Job No.',
@@ -316,7 +433,7 @@ export default function AccountingPage() {
     {
       title: 'Actions',
       key: 'actions',
-      width: 160,
+      width: activeTab === 'cost' ? 210 : 160,
       render: (_, record) => (
         <Space>
           <Popconfirm title="Post this draft entry?" okText="Post" onConfirm={() => handlePost(record)}>
@@ -326,6 +443,16 @@ export default function AccountingPage() {
               title="Post"
             />
           </Popconfirm>
+          {activeTab === 'cost' && record.status === 'Posted' && (
+            <Tooltip title="Chi hộ — charge customer on behalf">
+              <Button
+                icon={<SwapOutlined />}
+                onClick={() => openCobModal(record)}
+                style={{ color: '#1677ff' }}
+                title="Mark as COB"
+              />
+            </Tooltip>
+          )}
           <Popconfirm
             title="Void this accounting entry?"
             okText="Void"
@@ -407,6 +534,9 @@ export default function AccountingPage() {
             </Card>
           </Col>
         </Row>
+
+        {/* Revenue / Cost chart row */}
+        <ChartRow revenueChart={revenueChartData} costChart={costChartData} t={t} />
 
         <Card className="table-card" style={{ marginTop: 16 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
@@ -525,6 +655,47 @@ export default function AccountingPage() {
               <Input.TextArea rows={3} placeholder="Notes" />
             </Form.Item>
           </Form>
+        </Modal>
+
+        {/* COB Modal — Mark cost as charge-on-behalf */}
+        <Modal
+          title={
+            <Space>
+              <SwapOutlined />
+              Chi hộ — Charge on Behalf
+            </Space>
+          }
+          open={cobModalOpen}
+          onCancel={() => { setCobModalOpen(false); setCobCostRecord(null); }}
+          onOk={handleCobSubmit}
+          confirmLoading={cobSaving}
+          destroyOnHidden
+          width={500}
+        >
+          <Alert
+            type="info"
+            showIcon
+            message="Auto-receivable"
+            description="When you mark this cost as COB, the system will automatically create a matching receivable from the selected customer, linked to the same Job No."
+            style={{ marginBottom: 16 }}
+          />
+          {cobCostRecord && (
+            <div style={{ marginBottom: 16, padding: 12, background: '#fafafa', borderRadius: 6 }}>
+              <div><strong>Cost entry:</strong> {cobCostRecord.description}</div>
+              <div><strong>Amount:</strong> {formatCurrency(cobCostRecord.amount)} {cobCostRecord.currency}</div>
+              <div><strong>Job:</strong> {cobCostRecord.job_no}</div>
+            </div>
+          )}
+          <Typography.Text>Select the customer to charge this cost to:</Typography.Text>
+          <Select
+            showSearch
+            optionFilterProp="label"
+            options={customerOptions}
+            placeholder="Select customer"
+            value={cobCustomerId}
+            onChange={setCobCustomerId}
+            style={{ width: '100%', marginTop: 8 }}
+          />
         </Modal>
       </div>
     </DashboardLayout>

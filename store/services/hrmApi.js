@@ -1,6 +1,14 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 import { axiosBaseQuery } from '@/store/axiosBaseQuery';
 
+function toItems(response) {
+  if (Array.isArray(response)) return response;
+  if (Array.isArray(response?.data)) return response.data;
+  if (Array.isArray(response?.data?.items)) return response.data.items;
+  if (Array.isArray(response?.items)) return response.items;
+  return [];
+}
+
 export const hrmApi = createApi({
   reducerPath: 'hrmApi',
   baseQuery: axiosBaseQuery(),
@@ -14,8 +22,7 @@ export const hrmApi = createApi({
         params: { page: 1, limit: 100, ...params }
       }),
       transformResponse: (response) => {
-        const items = response?.data?.items ?? response?.items ?? (Array.isArray(response) ? response : []);
-        return { items };
+        return { items: toItems(response) };
       },
       providesTags: (result) =>
         result?.items
@@ -44,8 +51,7 @@ export const hrmApi = createApi({
         params: { page: 1, limit: 100, ...params }
       }),
       transformResponse: (response) => {
-        const items = response?.data?.items ?? response?.items ?? (Array.isArray(response) ? response : []);
-        return { items };
+        return { items: toItems(response) };
       },
       providesTags: ['Attendance']
     }),
@@ -63,8 +69,7 @@ export const hrmApi = createApi({
         params: { page: 1, limit: 100, ...params }
       }),
       transformResponse: (response) => {
-        const items = response?.data?.items ?? response?.items ?? (Array.isArray(response) ? response : []);
-        return { items };
+        return { items: toItems(response) };
       },
       providesTags: ['Leave']
     }),
@@ -92,8 +97,7 @@ export const hrmApi = createApi({
         params: { page: 1, limit: 100, ...params }
       }),
       transformResponse: (response) => {
-        const items = response?.data?.items ?? response?.items ?? (Array.isArray(response) ? response : []);
-        return { items };
+        return { items: toItems(response) };
       },
       providesTags: ['Payroll']
     }),

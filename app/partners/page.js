@@ -11,7 +11,7 @@ import {
   useGetPartnersQuery,
   useCreatePartnerMutation,
   useUpdatePartnerMutation,
-  useDeactivatePartnerMutation
+  useLockPartnerMutation
 } from '@/store/services/partnersApi';
 
 const partnerTypeOptions = [
@@ -38,7 +38,7 @@ export default function PartnersPage() {
   const { data, isLoading, error, refetch } = useGetPartnersQuery();
   const [createPartner, { isLoading: isCreating }] = useCreatePartnerMutation();
   const [updatePartner, { isLoading: isUpdating }] = useUpdatePartnerMutation();
-  const [deactivatePartner] = useDeactivatePartnerMutation();
+  const [lockPartner] = useLockPartnerMutation();
 
   const partners = data?.items || [];
   const saving = isCreating || isUpdating;
@@ -93,12 +93,12 @@ export default function PartnersPage() {
     }
   }
 
-  async function handleDeactivate(record) {
+  async function handleLock(record) {
     try {
-      await deactivatePartner(record.backendId).unwrap();
-      message.success('Partner deactivated.');
+      await lockPartner(record.backendId).unwrap();
+      message.success('Partner locked.');
     } catch (err) {
-      message.error(err?.data?.message || 'Unable to deactivate partner.');
+      message.error(err?.data?.message || 'Unable to lock partner.');
     }
   }
 
@@ -131,11 +131,11 @@ export default function PartnersPage() {
         <Space>
           <Button icon={<EditOutlined />} onClick={() => openEditModal(record)} />
           <Popconfirm
-            title="Deactivate partner?"
+            title="Lock partner?"
             description="The partner will remain in history but cannot be used as active data."
-            okText="Deactivate"
+            okText="Lock"
             okButtonProps={{ danger: true }}
-            onConfirm={() => handleDeactivate(record)}
+            onConfirm={() => handleLock(record)}
           >
             <Button danger icon={<StopOutlined />} disabled={!record.isActive} />
           </Popconfirm>
