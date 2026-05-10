@@ -1,7 +1,7 @@
 'use client';
 
-import { GlobalOutlined, LockOutlined, MailOutlined } from '@ant-design/icons';
-import { Button, Form, Input, Typography, message } from 'antd';
+import { GlobalOutlined, LockOutlined, MailOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import { Alert, Button, Form, Input, Modal, Typography, message } from 'antd';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/components/AppProviders';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -11,7 +11,7 @@ import {
   selectLoginError,
   clearLoginError
 } from '@/store/slices/authSlice';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -21,16 +21,37 @@ export default function LoginPage() {
 
   const loginLoading = useAppSelector(selectLoginLoading);
   const loginError = useAppSelector(selectLoginError);
+  const [errorMsg, setErrorMsg] = useState('');
 
-  // Hiển thị lỗi login từ Redux
+  // Show error popup when login fails
   useEffect(() => {
     if (loginError) {
-      message.error(t('login.loginError'));
+      const detail =
+        typeof loginError === 'string'
+          ? loginError
+          : loginError?.message || loginError?.data?.message || t('login.loginError');
+
+      setErrorMsg(detail);
+
+      Modal.error({
+        title: t('login.loginErrorTitle') || 'Login Failed',
+        content: detail,
+        centered: true,
+        okText: t('login.tryAgain') || 'Try Again',
+        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+        onOk: () => {
+          // Focus the password field so the user can retry quickly
+          const pwInput = document.querySelector('input[type="password"]');
+          if (pwInput) pwInput.focus();
+        }
+      });
+
       dispatch(clearLoginError());
     }
   }, [loginError, dispatch, t]);
 
   async function handleSubmit(values) {
+    setErrorMsg('');
     const result = await dispatch(
       loginThunk({ username: values.username, password: values.password })
     );
@@ -49,12 +70,25 @@ export default function LoginPage() {
         </Typography.Title>
         <div className="login-brand-subtitle">MAKE IT EASY</div>
 
+        {/* Persistent inline error banner */}
+        {errorMsg && (
+          <Alert
+            type="error"
+            showIcon
+            closable
+            message={errorMsg}
+            onClose={() => setErrorMsg('')}
+            style={{ marginBottom: 16, borderRadius: 8 }}
+          />
+        )}
+
         <Form
           form={form}
           className="login-form"
           layout="vertical"
           initialValues={{ username: 'api.tester', password: 'ApiTest@123' }}
           onFinish={handleSubmit}
+          onChange={() => setErrorMsg('')}
         >
           <Form.Item
             name="username"
@@ -108,3 +142,4 @@ export default function LoginPage() {
     </main>
   );
 }
+

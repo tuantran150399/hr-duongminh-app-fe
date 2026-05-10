@@ -52,6 +52,8 @@ const dictionary = {
     login: {
       loginSuccess: 'Signed in successfully',
       loginError: 'Sign in failed. Please check your credentials.',
+      loginErrorTitle: 'Login Failed',
+      tryAgain: 'Try Again',
       usernameRequired: 'Please enter your username or email',
       usernamePlaceholder: 'Username or email',
       passwordRequired: 'Please enter your password',
@@ -617,6 +619,8 @@ const dictionary = {
     login: {
       loginSuccess: 'Đăng nhập thành công',
       loginError: 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.',
+      loginErrorTitle: 'Đăng nhập thất bại',
+      tryAgain: 'Thử lại',
       usernameRequired: 'Vui lòng nhập tên đăng nhập hoặc email',
       usernamePlaceholder: 'Tên đăng nhập hoặc email',
       passwordRequired: 'Vui lòng nhập mật khẩu',
