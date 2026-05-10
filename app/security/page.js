@@ -259,7 +259,7 @@ export default function SecurityPage() {
       label: <span><GlobalOutlined /> {t('security.ipRulesTab')}</span>,
       children: (
         <div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+          <div className="security-rule-toolbar">
             <Button type="primary" icon={<PlusOutlined />} onClick={openCreateRule}>
               {t('security.addRule')}
             </Button>

@@ -61,52 +61,92 @@ const CHART_COLORS = [
 ];
 
 function ChartRow({ revenueChart, costChart, t }) {
-  function renderChart(data, titleKey) {
-    const entries = Array.isArray(data) ? data
-      : Array.isArray(data?.data) ? data.data
+  function extractEntries(data) {
+    if (!data) return [];
+    return Array.isArray(data?.data) ? data.data
+      : Array.isArray(data) ? data
       : Object.entries(data ?? {}).map(([status, total]) => ({ status, total }));
+  }
+
+  function renderMonthlyChart(data, titleKey, barColor, accentColor) {
+    const entries = extractEntries(data);
     if (!entries.length) {
       return (
-        <Card style={{ height: 220 }}>
-          <div style={{ fontWeight: 600, marginBottom: 12 }}>{t(titleKey)}</div>
-          <div style={{ color: '#aaa', textAlign: 'center', paddingTop: 48 }}>
-            {t('accounting.noChartData')}
+        <Card style={{ height: 320 }}>
+          <div style={{ fontWeight: 600, marginBottom: 12, fontSize: 15 }}>{t(titleKey)}</div>
+          <div style={{ color: '#aaa', textAlign: 'center', paddingTop: 80 }}>
+            {t('accounting.chart.noData')}
           </div>
         </Card>
       );
     }
-    const total = entries.reduce((s, e) => s + Number(e.total ?? e.count ?? 0), 0);
+
+    const maxVal = Math.max(...entries.map(e => Number(e.totalAmount ?? e.total ?? 0)), 1);
+    const totalValue = entries.reduce((s, e) => s + Number(e.totalAmount ?? e.total ?? 0), 0);
+    const totalCount = entries.reduce((s, e) => s + Number(e.count ?? 0), 0);
+    const barWidth = Math.max(24, Math.min(48, Math.floor(320 / entries.length)));
+
     return (
-      <Card style={{ height: 220 }}>
-        <div style={{ fontWeight: 600, marginBottom: 12 }}>{t(titleKey)}</div>
-        <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-          {/* bar segments */}
-          <div style={{ flex: 1, minWidth: 160 }}>
-            <div style={{ display: 'flex', height: 20, borderRadius: 10, overflow: 'hidden', background: '#f0f0f0' }}>
-              {entries.map((e, i) => {
-                const val = Number(e.total ?? e.count ?? 0);
-                const pct = total > 0 ? (val / total * 100).toFixed(1) : 0;
-                return (
-                  <div key={e.status} title={`${e.status}: ${formatCurrency(val)} (${pct}%)`}
-                    style={{ width: `${pct}%`, background: CHART_COLORS[i % CHART_COLORS.length], transition: 'width .4s' }} />
-                );
-              })}
-            </div>
-            <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {entries.map((e, i) => {
-                const val = Number(e.total ?? e.count ?? 0);
-                const pct = total > 0 ? (val / total * 100).toFixed(1) : 0;
-                return (
-                  <div key={e.status} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
-                    <span style={{ width: 10, height: 10, borderRadius: 2, background: CHART_COLORS[i % CHART_COLORS.length], flexShrink: 0 }} />
-                    <span style={{ flex: 1 }}>{e.status}</span>
-                    <span style={{ fontWeight: 600 }}>{formatCurrency(val)}</span>
-                    <span style={{ color: '#aaa', minWidth: 42, textAlign: 'right' }}>{pct}%</span>
-                  </div>
-                );
-              })}
-            </div>
+      <Card style={{ height: 320 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 16 }}>
+          <div style={{ fontWeight: 600, fontSize: 15 }}>{t(titleKey)}</div>
+          <div style={{ fontSize: 12, color: '#8c8c8c' }}>
+            {totalCount} {t('accounting.chart.entries')} · {formatCurrency(totalValue)}
           </div>
+        </div>
+
+        {/* Vertical bar chart */}
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: 180, padding: '0 4px' }}>
+          {entries.map((e, i) => {
+            const val = Number(e.totalAmount ?? e.total ?? 0);
+            const pct = (val / maxVal * 100).toFixed(1);
+            const heightPx = Math.max(4, (val / maxVal) * 160);
+            return (
+              <Tooltip
+                key={e.period || e.status || i}
+                title={
+                  <div>
+                    <div style={{ fontWeight: 600 }}>{e.period || e.status}</div>
+                    <div>{t('accounting.chart.amount')}: {formatCurrency(val)}</div>
+                    {e.count !== undefined && <div>{t('accounting.chart.entries')}: {e.count}</div>}
+                  </div>
+                }
+              >
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 0 }}>
+                  <div style={{
+                    fontSize: 10, color: '#595959', marginBottom: 4,
+                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                    maxWidth: barWidth + 8
+                  }}>
+                    {val > 0 ? formatCurrency(val) : ''}
+                  </div>
+                  <div
+                    style={{
+                      width: barWidth,
+                      height: heightPx,
+                      background: `linear-gradient(180deg, ${barColor} 0%, ${accentColor} 100%)`,
+                      borderRadius: '4px 4px 0 0',
+                      transition: 'height 0.5s ease',
+                      cursor: 'pointer',
+                      minHeight: 4
+                    }}
+                  />
+                </div>
+              </Tooltip>
+            );
+          })}
+        </div>
+
+        {/* Period labels */}
+        <div style={{ display: 'flex', gap: 4, padding: '6px 4px 0', borderTop: '1px solid #f0f0f0' }}>
+          {entries.map((e, i) => (
+            <div key={e.period || i} style={{
+              flex: 1, textAlign: 'center', fontSize: 11, color: '#8c8c8c',
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+            }}>
+              {(e.period || '').replace(/^\d{4}-/, '')}
+            </div>
+          ))}
         </div>
       </Card>
     );
@@ -114,8 +154,12 @@ function ChartRow({ revenueChart, costChart, t }) {
 
   return (
     <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
-      <Col xs={24} md={12}>{renderChart(revenueChart, 'security.chart.revenueTitle')}</Col>
-      <Col xs={24} md={12}>{renderChart(costChart,    'security.chart.costTitle')}</Col>
+      <Col xs={24} md={12}>
+        {renderMonthlyChart(revenueChart, 'accounting.chart.revenueTitle', '#0057c2', '#40a9ff')}
+      </Col>
+      <Col xs={24} md={12}>
+        {renderMonthlyChart(costChart, 'accounting.chart.costTitle', '#ff4d4f', '#ff7a7a')}
+      </Col>
     </Row>
   );
 }
@@ -492,7 +536,7 @@ export default function AccountingPage() {
               Revenue, cost, posting, voiding, and payment tracking per job.
             </Typography.Paragraph>
           </div>
-          <Space wrap>
+          <div className="page-actions">
             {activeTab === 'cost' ? (
               <Upload
                 accept=".xlsx,.xls,.csv"
@@ -507,7 +551,7 @@ export default function AccountingPage() {
             <Button type="primary" icon={<FileAddOutlined />} onClick={openCreateModal}>
               {activeTab === 'revenue' ? 'Create Revenue' : 'Create Cost'}
             </Button>
-          </Space>
+          </div>
         </div>
 
         {loadError ? <Alert type="error" showIcon message={loadError} style={{ marginBottom: 16 }} /> : null}
@@ -539,8 +583,9 @@ export default function AccountingPage() {
         <ChartRow revenueChart={revenueChartData} costChart={costChartData} t={t} />
 
         <Card className="table-card" style={{ marginTop: 16 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
+          <div className="accounting-card-toolbar">
             <Tabs
+              className="responsive-tabs"
               activeKey={activeTab}
               items={tabItems}
               onChange={(key) => {
@@ -549,7 +594,7 @@ export default function AccountingPage() {
                 setSearch('');
               }}
             />
-            <Space wrap>
+            <Space wrap className="page-actions">
               <Input.Search
                 allowClear
                 value={search}

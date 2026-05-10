@@ -6,7 +6,6 @@ import {
   Card,
   Empty,
   message,
-  Space,
   Table,
   Typography
 } from 'antd';
@@ -22,6 +21,7 @@ import DashboardLayout from '@/layouts/DashboardLayout';
 import PageHeader from '@/components/PageHeader';
 import StatusTag from '@/components/StatusTag';
 import FilterCard from '@/components/FilterCard';
+import { useLanguage } from '@/components/AppProviders';
 import { useGetJobsQuery } from '@/store/services/jobsApi';
 import { normalizeJob } from '@/utils/apiMappers';
 import { useGetPartnersQuery } from '@/store/services/partnersApi';
@@ -41,31 +41,19 @@ function escapeCsv(value) {
   return text;
 }
 
-function downloadJobsCsv(rows) {
+function downloadJobsCsv(rows, t) {
   const headers = [
-    'Job No.',
-    'Customer',
-    'Status',
-    'Origin',
-    'Destination',
-    'ETD',
-    'ETA',
-    'Shipper',
-    'Consignee',
-    'Agent',
-    'Cargo Type',
-    'Container',
-    'C/O Type'
+    t('jobs.jobNo'), t('jobs.customer'), t('jobs.status'),
+    t('jobs.origin'), t('jobs.destination'),
+    t('jobs.etd'), t('jobs.eta'),
+    t('jobs.shipper'), t('jobs.consignee'), t('jobs.agent'),
+    t('jobs.cargoType'), t('jobs.container'), t('jobs.coType')
   ];
 
   const records = rows.map((job) => [
-    job.job_no,
-    job.customer,
-    job.status,
-    job.origin,
-    job.destination,
-    formatDisplayDate(job.etd),
-    formatDisplayDate(job.eta),
+    job.job_no, job.customer, job.status,
+    job.origin, job.destination,
+    formatDisplayDate(job.etd), formatDisplayDate(job.eta),
     job.raw?.shipperName || job.raw?.shipper || '',
     job.raw?.consigneeName || job.raw?.consignee || '',
     job.raw?.agentName || job.raw?.agent || '',
@@ -90,7 +78,7 @@ function downloadJobsCsv(rows) {
   window.URL.revokeObjectURL(url);
 }
 
-function ExpandedRow({ record }) {
+function ExpandedRow({ record, t }) {
   const router = useRouter();
   const raw = record.raw || {};
 
@@ -98,35 +86,35 @@ function ExpandedRow({ record }) {
     <div className="expanded-row-detail">
       <div className="detail-grid">
         <div>
-          <span className="detail-label">Shipper</span>
+          <span className="detail-label">{t('jobs.shipper')}</span>
           <span className="detail-value">{raw.shipperName || raw.shipper || '-'}</span>
         </div>
         <div>
-          <span className="detail-label">Consignee</span>
+          <span className="detail-label">{t('jobs.consignee')}</span>
           <span className="detail-value">{raw.consigneeName || raw.consignee || '-'}</span>
         </div>
         <div>
-          <span className="detail-label">Agent</span>
+          <span className="detail-label">{t('jobs.agent')}</span>
           <span className="detail-value">{raw.agentName || raw.agent || '-'}</span>
         </div>
         <div>
-          <span className="detail-label">Cargo Type</span>
+          <span className="detail-label">{t('jobs.cargoType')}</span>
           <span className="detail-value">{raw.cargoType || '-'}</span>
         </div>
         <div>
-          <span className="detail-label">Origin</span>
+          <span className="detail-label">{t('jobs.origin')}</span>
           <span className="detail-value">{record.origin || '-'}</span>
         </div>
         <div>
-          <span className="detail-label">Destination</span>
+          <span className="detail-label">{t('jobs.destination')}</span>
           <span className="detail-value">{record.destination || '-'}</span>
         </div>
         <div>
-          <span className="detail-label">Container</span>
+          <span className="detail-label">{t('jobs.container')}</span>
           <span className="detail-value detail-mono">{raw.containerNo || raw.container || '-'}</span>
         </div>
         <div>
-          <span className="detail-label">C/O Type</span>
+          <span className="detail-label">{t('jobs.coType')}</span>
           <span className="detail-value">{raw.coType || '-'}</span>
         </div>
       </div>
@@ -135,7 +123,7 @@ function ExpandedRow({ record }) {
           size="small"
           onClick={() => router.push(`/jobs/detail?id=${record.backendId || record.id}`)}
         >
-          Detail
+          {t('jobs.detail')}
         </Button>
       </div>
     </div>
@@ -144,15 +132,14 @@ function ExpandedRow({ record }) {
 
 export default function JobsPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateRange, setDateRange] = useState(null);
 
-  // RTK Query — lấy jobs và partners
   const { data: jobsData, isLoading: jobsLoading, error: jobsError, refetch } = useGetJobsQuery();
   const { data: partnersData } = useGetPartnersQuery();
 
-  // Build partners map từ RTK Query cache
   const partnersById = useMemo(() => {
     const partners = partnersData?.items || [];
     return partners.reduce((result, raw) => {
@@ -162,7 +149,6 @@ export default function JobsPage() {
     }, {});
   }, [partnersData]);
 
-  // Normalize jobs với partners map
   const jobs = useMemo(() => {
     const rawItems = jobsData?.items || [];
     return rawItems.map((job) => normalizeJob(job, partnersById)).filter(Boolean);
@@ -170,11 +156,11 @@ export default function JobsPage() {
 
   const statusOptions = useMemo(
     () => [
-      { value: 'all', label: 'All statuses' },
+      { value: 'all', label: t('jobs.allStatuses') },
       ...Array.from(new Set(jobs.map((item) => item.status).filter(Boolean)))
         .map((status) => ({ value: status, label: status }))
     ],
-    [jobs]
+    [jobs, t]
   );
 
   const filteredJobs = jobs.filter((job) => {
@@ -205,51 +191,21 @@ export default function JobsPage() {
 
   const columns = [
     {
-      title: 'Job No.',
+      title: t('jobs.jobNo'),
       dataIndex: 'job_no',
       key: 'job_no',
       sorter: (a, b) => String(a.job_no).localeCompare(String(b.job_no)),
       render: (value) => <span style={{ fontWeight: 600, color: '#0057c2' }}>{value || '-'}</span>
     },
-    {
-      title: 'Customer',
-      dataIndex: 'customer',
-      key: 'customer',
-      sorter: (a, b) => String(a.customer).localeCompare(String(b.customer))
-    },
-    {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      render: (value) => <StatusTag value={value} />
-    },
-    {
-      title: 'Origin',
-      dataIndex: 'origin',
-      key: 'origin'
-    },
-    {
-      title: 'Destination',
-      dataIndex: 'destination',
-      key: 'destination'
-    },
-    {
-      title: 'ETD',
-      dataIndex: 'etd',
-      key: 'etd',
-      render: formatDisplayDate
-    },
-    {
-      title: 'ETA',
-      dataIndex: 'eta',
-      key: 'eta',
-      render: formatDisplayDate
-    }
+    { title: t('jobs.customer'), dataIndex: 'customer', key: 'customer', sorter: (a, b) => String(a.customer).localeCompare(String(b.customer)) },
+    { title: t('jobs.status'), dataIndex: 'status', key: 'status', render: (value) => <StatusTag value={value} /> },
+    { title: t('jobs.origin'), dataIndex: 'origin', key: 'origin' },
+    { title: t('jobs.destination'), dataIndex: 'destination', key: 'destination' },
+    { title: t('jobs.etd'), dataIndex: 'etd', key: 'etd', render: formatDisplayDate },
+    { title: t('jobs.eta'), dataIndex: 'eta', key: 'eta', render: formatDisplayDate }
   ];
 
-  const errorMessage = jobsError
-    ? 'Unable to load jobs from the backend.'
-    : '';
+  const errorMessage = jobsError ? t('jobs.loadError') : '';
 
   function handleReset() {
     setSearchTerm('');
@@ -259,33 +215,32 @@ export default function JobsPage() {
 
   function handleExport() {
     if (!filteredJobs.length) {
-      message.warning('There are no jobs to export.');
+      message.warning(t('jobs.noJobsToExport'));
       return;
     }
-
-    downloadJobsCsv(filteredJobs);
-    message.success(`Exported ${filteredJobs.length} jobs.`);
+    downloadJobsCsv(filteredJobs, t);
+    message.success(`${t('jobs.export')}: ${filteredJobs.length}`);
   }
 
   return (
     <DashboardLayout>
       <PageHeader
-        title="Jobs"
-        subtitle="Manage logistics jobs from live backend data."
+        title={t('jobs.title')}
+        subtitle={t('jobs.subtitle')}
         actions={
-          <>
-            <Button icon={<DownloadOutlined />} onClick={handleExport}>Export</Button>
+          <div className="page-actions">
+            <Button icon={<DownloadOutlined />} onClick={handleExport}>{t('jobs.export')}</Button>
             <Button type="primary" icon={<PlusOutlined />} onClick={() => router.push('/jobs/create')}>
-              Create Job
+              {t('jobs.createJob')}
             </Button>
-          </>
+          </div>
         }
       />
 
       <FilterCard
         searchValue={searchTerm}
         onSearchChange={(event) => setSearchTerm(event.target.value)}
-        searchPlaceholder="Job number or customer"
+        searchPlaceholder={t('jobs.searchPlaceholder')}
         statusValue={statusFilter}
         onStatusChange={setStatusFilter}
         statusOptions={statusOptions}
@@ -297,11 +252,20 @@ export default function JobsPage() {
       <Card style={{ borderRadius: 8, overflow: 'hidden' }}>
         {errorMessage ? <Alert type="error" showIcon message={errorMessage} style={{ margin: 16 }} /> : null}
         <div className="shipment-toolbar">
-          <span className="shipment-toolbar-total">Total: {filteredJobs.length} jobs</span>
-          <Space>
-            <ReloadOutlined style={{ color: '#727786', cursor: 'pointer' }} onClick={refetch} />
-            <SettingOutlined style={{ color: '#727786' }} />
-          </Space>
+          <span className="shipment-toolbar-total">{t('jobs.totalLabel')}: {filteredJobs.length}</span>
+          <div className="toolbar-actions">
+            <Button
+              className="toolbar-icon-button"
+              icon={<ReloadOutlined />}
+              onClick={refetch}
+              aria-label="Refresh jobs"
+            />
+            <Button
+              className="toolbar-icon-button"
+              icon={<SettingOutlined />}
+              aria-label="Table settings"
+            />
+          </div>
         </div>
 
         <Table
@@ -310,16 +274,16 @@ export default function JobsPage() {
           columns={columns}
           dataSource={filteredJobs}
           locale={{
-            emptyText: <Empty description={errorMessage ? 'Backend data is unavailable.' : 'No jobs found.'} />
+            emptyText: <Empty description={errorMessage ? t('jobs.backendUnavailable') : t('jobs.noJobsFound')} />
           }}
           pagination={{
             pageSize: 10,
             total: filteredJobs.length,
             showSizeChanger: false,
-            showTotal: (total, range) => `Showing ${range[0]}-${range[1]} of ${total}`
+            showTotal: (total, range) => `${range[0]}-${range[1]} / ${total}`
           }}
           expandable={{
-            expandedRowRender: (record) => <ExpandedRow record={record} />,
+            expandedRowRender: (record) => <ExpandedRow record={record} t={t} />,
             expandRowByClick: true
           }}
           size="small"

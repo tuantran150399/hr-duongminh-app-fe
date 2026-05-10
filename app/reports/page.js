@@ -2,7 +2,7 @@
 
 import {
   Alert, Button, Card, Col, Row, Table, Tabs,
-  Typography, DatePicker, Space, message
+  Typography, DatePicker, message
 } from 'antd';
 import { useState } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
@@ -187,16 +187,18 @@ export default function ReportsPage() {
             {t('reports.subtitle')}
           </Typography.Paragraph>
         </div>
-        <Button onClick={handleExport}>{t('reports.exportExcel')}</Button>
+        <div className="page-actions">
+          <Button onClick={handleExport}>{t('reports.exportExcel')}</Button>
+        </div>
       </div>
 
       <Card style={{ marginBottom: 16 }}>
         <Row gutter={16} align="middle">
-          <Col>
-            <Space>
-              <span>{t('reports.dateRange')}:</span>
-              <RangePicker value={dateRange} onChange={setDateRange} />
-            </Space>
+          <Col span={24}>
+            <div className="report-filter-row">
+              <span className="report-filter-label">{t('reports.dateRange')}:</span>
+              <RangePicker value={dateRange} onChange={setDateRange} style={{ width: '100%', maxWidth: 360 }} />
+            </div>
           </Col>
         </Row>
       </Card>
@@ -204,7 +206,7 @@ export default function ReportsPage() {
       {error && <Alert type="error" showIcon message={t('reports.loadError')} style={{ marginBottom: 16 }} />}
 
       <Card className="table-card">
-        <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} />
+        <Tabs className="responsive-tabs" activeKey={activeTab} onChange={setActiveTab} items={tabItems} />
         <Table
           rowKey={(record, i) => record.id || record.branchId || record.partnerId || record.period || record.status || i}
           loading={isLoading}

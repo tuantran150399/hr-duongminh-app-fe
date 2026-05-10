@@ -525,7 +525,7 @@ export default function DebitNotesPage() {
           </Typography.Paragraph>
         </div>
         <Space>
-          <Button icon={<ReloadOutlined />} onClick={refetch}>{t('common.resetFilters')}</Button>
+          <Button icon={<ReloadOutlined />} onClick={refetch}>{t('common.refresh')}</Button>
           <Button type="primary" icon={<FileAddOutlined />} onClick={openCreateModal}>
             {t('debitNotes.create')}
           </Button>

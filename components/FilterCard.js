@@ -52,10 +52,10 @@ export default function FilterCard({
   extra
 }) {
   return (
-    <Card className="filter-card" style={{ borderRadius: 8, marginBottom: 24, border: '1px solid #e2e2e2' }}>
+    <Card className="filter-card">
       <Row gutter={[16, 16]} align="bottom">
         <Col xs={24} md={showDateRange ? 8 : 10}>
-          <Text style={{ color: '#414755', fontSize: 14, fontWeight: 500 }}>Search</Text>
+          <Text className="filter-label">Search</Text>
           <Input
             allowClear
             prefix={<SearchOutlined />}
@@ -68,7 +68,7 @@ export default function FilterCard({
 
         {statusOptions.length > 0 ? (
           <Col xs={24} md={showDateRange ? 6 : 8}>
-            <Text style={{ color: '#414755', fontSize: 14, fontWeight: 500 }}>Status</Text>
+            <Text className="filter-label">Status</Text>
             <Select
               value={statusValue}
               onChange={onStatusChange}
@@ -81,7 +81,7 @@ export default function FilterCard({
 
         {showDateRange ? (
           <Col xs={24} md={7}>
-            <Text style={{ color: '#414755', fontSize: 14, fontWeight: 500 }}>Date Range</Text>
+            <Text className="filter-label">Date Range</Text>
             <RangePicker
               value={dateRange}
               onChange={onDateRangeChange}

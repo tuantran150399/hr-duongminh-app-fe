@@ -678,6 +678,124 @@ a {
   margin: 0;
 }
 
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.page-header > div:first-child {
+  min-width: 0;
+}
+
+.page-subtitle {
+  margin: 6px 0 0 !important;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.page-actions,
+.page-actions.ant-space {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.page-actions .ant-btn,
+.page-header-actions .ant-btn,
+.shipment-page-actions .ant-btn,
+.accounting-hero-actions .ant-btn {
+  min-height: 40px;
+  padding-inline: 16px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.table-card {
+  border-radius: 18px !important;
+  border: 1px solid rgba(226, 232, 240, 0.9) !important;
+  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.05);
+}
+
+.table-card .ant-card-body {
+  padding: 20px;
+}
+
+.toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.toolbar-icon-button.ant-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  padding: 0;
+}
+
+.filter-card {
+  border-radius: 18px !important;
+  margin-bottom: 20px !important;
+  border: 1px solid rgba(226, 232, 240, 0.9) !important;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+}
+
+.filter-card .ant-card-body {
+  padding: 18px 20px;
+}
+
+.filter-label {
+  display: inline-block;
+  margin-bottom: 8px;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.filter-card .ant-input-affix-wrapper,
+.filter-card .ant-select-selector,
+.filter-card .ant-picker,
+.filter-card .ant-btn {
+  border-radius: 12px !important;
+}
+
+.report-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.report-filter-label {
+  color: #475569;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.responsive-tabs .ant-tabs-nav {
+  margin-bottom: 16px !important;
+}
+
+.responsive-tabs .ant-tabs-nav-wrap {
+  overflow: auto !important;
+}
+
+.responsive-tabs .ant-tabs-tab {
+  white-space: nowrap;
+}
+
+.security-rule-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+}
+
 .accounting-page {
   display: flex;
   flex-direction: column;
@@ -1161,21 +1279,54 @@ a {
   }
 
   .page-header-component,
-  .shipment-page-header {
+  .shipment-page-header,
+  .page-header {
     flex-direction: column;
     align-items: stretch;
   }
 
   .page-header-actions,
   .shipment-page-actions,
-  .accounting-hero-actions {
+  .accounting-hero-actions,
+  .page-actions,
+  .page-actions.ant-space {
     width: 100%;
-    justify-content: flex-start;
+    justify-content: stretch;
   }
 
   .page-header-actions > *,
-  .shipment-page-actions > * {
-    flex: 1 1 auto;
+  .shipment-page-actions > *,
+  .page-actions > *,
+  .page-actions.ant-space > * {
+    flex: 1 1 calc(50% - 8px);
+    min-width: 0;
+  }
+
+  .table-card .ant-card-body,
+  .filter-card .ant-card-body {
+    padding: 16px;
+  }
+
+  .shipment-toolbar,
+  .report-filter-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .toolbar-actions {
+    justify-content: flex-start;
+  }
+
+  .responsive-tabs .ant-tabs-tab {
+    padding-inline: 10px !important;
+  }
+
+  .security-rule-toolbar {
+    justify-content: stretch;
+  }
+
+  .security-rule-toolbar .ant-btn {
+    width: 100%;
   }
 }
 
@@ -1207,6 +1358,24 @@ a {
   .ant-picker,
   .ant-input-number {
     max-width: 100%;
+  }
+
+  .page-title,
+  .page-header-title {
+    font-size: 24px !important;
+  }
+
+  .page-header-actions > *,
+  .shipment-page-actions > *,
+  .page-actions > *,
+  .page-actions.ant-space > * {
+    flex-basis: 100%;
+  }
+
+  .page-actions .ant-btn,
+  .page-header-actions .ant-btn,
+  .shipment-page-actions .ant-btn {
+    width: 100%;
   }
 }
 
