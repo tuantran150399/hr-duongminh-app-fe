@@ -7,6 +7,7 @@ import {
 import { PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import { useMemo, useState } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
+import { useLanguage } from '@/components/AppProviders';
 import {
   useGetUsersQuery,
   useCreateUserMutation,
@@ -28,6 +29,7 @@ function permissionIdsFromRole(role) {
 }
 
 export default function UsersPage() {
+  const { t } = useLanguage();
   const [userModal, setUserModal] = useState({ open: false, record: null });
   const [roleModal, setRoleModal] = useState({ open: false, record: null });
   const [userForm] = Form.useForm();
@@ -104,15 +106,15 @@ export default function UsersPage() {
         delete payload.username;
         if (!values.password) delete payload.password;
         await updateUser({ id: userModal.record.backendId, ...payload }).unwrap();
-        message.success('User updated.');
+        message.success(t('users.userUpdated'));
       } else {
         await createUser({ ...payload, password: values.password }).unwrap();
-        message.success('User created.');
+        message.success(t('users.userCreated'));
       }
       setUserModal({ open: false, record: null });
       userForm.resetFields();
     } catch (saveError) {
-      message.error(saveError?.data?.message || 'Unable to save user.');
+      message.error(saveError?.data?.message || t('users.saveUserError'));
     }
   }
 
@@ -126,30 +128,30 @@ export default function UsersPage() {
       if (roleModal.record) {
         delete payload.name;
         await updateRole({ id: roleModal.record.backendId, ...payload }).unwrap();
-        message.success('Role updated.');
+        message.success(t('users.roleUpdated'));
       } else {
         await createRole(payload).unwrap();
-        message.success('Role created.');
+        message.success(t('users.roleCreated'));
       }
       setRoleModal({ open: false, record: null });
       roleForm.resetFields();
     } catch (saveError) {
-      message.error(saveError?.data?.message || 'Unable to save role.');
+      message.error(saveError?.data?.message || t('users.saveRoleError'));
     }
   }
 
   const userColumns = [
-    { title: 'Username', dataIndex: 'username', key: 'username' },
-    { title: 'Full name', dataIndex: 'fullName', key: 'fullName' },
-    { title: 'Email', dataIndex: 'email', key: 'email' },
+    { title: t('users.username'), dataIndex: 'username', key: 'username' },
+    { title: t('users.fullName'), dataIndex: 'fullName', key: 'fullName' },
+    { title: t('users.emailLabel'), dataIndex: 'email', key: 'email' },
     {
-      title: 'Branch',
+      title: t('users.branch'),
       dataIndex: 'branchId',
       key: 'branchId',
       render: (value) => branches.find((branch) => branch.backendId === value)?.name || '-'
     },
     {
-      title: 'Roles',
+      title: t('users.roles'),
       dataIndex: 'roleNames',
       key: 'roleNames',
       render: (items = []) => (
@@ -159,28 +161,28 @@ export default function UsersPage() {
       )
     },
     {
-      title: 'Status',
+      title: t('users.status'),
       dataIndex: 'isActive',
       key: 'isActive',
-      render: (value) => <Tag color={value ? 'green' : 'red'}>{value ? 'Active' : 'Locked'}</Tag>
+      render: (value) => <Tag color={value ? 'green' : 'red'}>{value ? t('users.active') : t('users.locked')}</Tag>
     },
     {
-      title: 'Actions',
+      title: t('users.actions'),
       key: 'actions',
       align: 'right',
       render: (_, record) => (
         <Space>
-          <Button size="small" onClick={() => openUserModal(record)}>Edit</Button>
+          <Button size="small" onClick={() => openUserModal(record)}>{t('users.edit')}</Button>
           <Popconfirm
-            title="Deactivate this user?"
-            okText="Deactivate"
+            title={t('users.deactivateConfirm')}
+            okText={t('users.deactivate')}
             okButtonProps={{ danger: true }}
             onConfirm={async () => {
               await deleteUser(record.backendId).unwrap();
-              message.success('User deactivated.');
+              message.success(t('users.userDeactivated'));
             }}
           >
-            <Button size="small" danger>Deactivate</Button>
+            <Button size="small" danger>{t('users.deactivate')}</Button>
           </Popconfirm>
         </Space>
       )
@@ -188,10 +190,10 @@ export default function UsersPage() {
   ];
 
   const roleColumns = [
-    { title: 'Role', dataIndex: 'name', key: 'name' },
-    { title: 'Description', dataIndex: 'description', key: 'description' },
+    { title: t('users.roleName'), dataIndex: 'name', key: 'name' },
+    { title: t('users.description'), dataIndex: 'description', key: 'description' },
     {
-      title: 'Permissions',
+      title: t('users.permissions'),
       key: 'permissions',
       render: (_, record) => (
         <Space wrap size={[4, 4]}>
@@ -203,10 +205,10 @@ export default function UsersPage() {
       )
     },
     {
-      title: 'Actions',
+      title: t('users.actions'),
       key: 'actions',
       align: 'right',
-      render: (_, record) => <Button size="small" onClick={() => openRoleModal(record)}>Edit</Button>
+      render: (_, record) => <Button size="small" onClick={() => openRoleModal(record)}>{t('users.edit')}</Button>
     }
   ];
 
@@ -215,25 +217,25 @@ export default function UsersPage() {
       <div className="admin-page">
         <div className="shipment-page-header">
           <div>
-            <h2>Users & Roles</h2>
-            <p>Manage accounts, role assignment, and permission groups.</p>
+            <h2>{t('users.title')}</h2>
+            <p>{t('users.subtitle')}</p>
           </div>
-          <Button icon={<ReloadOutlined />} onClick={refetch}>Refresh</Button>
+          <Button icon={<ReloadOutlined />} onClick={refetch}>{t('users.refresh')}</Button>
         </div>
 
-        {error ? <Alert type="error" showIcon message="Unable to load user administration data." style={{ marginBottom: 16 }} /> : null}
+        {error ? <Alert type="error" showIcon message={t('users.loadError')} style={{ marginBottom: 16 }} /> : null}
 
         <Tabs
           items={[
             {
               key: 'users',
-              label: `Users (${users.length})`,
+              label: `${t('users.usersTab')} (${users.length})`,
               children: (
                 <Card className="table-card">
                   <div className="shipment-toolbar">
-                    <span className="shipment-toolbar-total">User accounts</span>
+                    <span className="shipment-toolbar-total">{t('users.userAccounts')}</span>
                     <Button type="primary" icon={<PlusOutlined />} onClick={() => openUserModal()}>
-                      Create User
+                      {t('users.createUser')}
                     </Button>
                   </div>
                   <Table rowKey="id" loading={loading} columns={userColumns} dataSource={users} pagination={{ pageSize: 10 }} />
@@ -242,13 +244,13 @@ export default function UsersPage() {
             },
             {
               key: 'roles',
-              label: `Roles (${roles.length})`,
+              label: `${t('users.rolesTab')} (${roles.length})`,
               children: (
                 <Card className="table-card">
                   <div className="shipment-toolbar">
-                    <span className="shipment-toolbar-total">Permission groups</span>
+                    <span className="shipment-toolbar-total">{t('users.permissionGroups')}</span>
                     <Button type="primary" icon={<PlusOutlined />} onClick={() => openRoleModal()}>
-                      Create Role
+                      {t('users.createRole')}
                     </Button>
                   </div>
                   <Table rowKey="id" loading={loading} columns={roleColumns} dataSource={roles} pagination={{ pageSize: 10 }} />
@@ -259,7 +261,7 @@ export default function UsersPage() {
         />
 
         <Modal
-          title={userModal.record ? 'Edit User' : 'Create User'}
+          title={userModal.record ? t('users.editUser') : t('users.createUser')}
           open={userModal.open}
           onCancel={() => setUserModal({ open: false, record: null })}
           onOk={() => userForm.submit()}
@@ -268,36 +270,36 @@ export default function UsersPage() {
           width={720}
         >
           <Form form={userForm} layout="vertical" onFinish={submitUser}>
-            <Form.Item name="username" label="Username" rules={[{ required: !userModal.record, message: 'Username is required' }]}>
+            <Form.Item name="username" label={t('users.username')} rules={[{ required: !userModal.record, message: t('users.usernameRequired') }]}>
               <Input disabled={Boolean(userModal.record)} />
             </Form.Item>
-            <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email', message: 'Valid email is required' }]}>
+            <Form.Item name="email" label={t('users.emailLabel')} rules={[{ required: true, type: 'email', message: t('users.emailRequired') }]}>
               <Input />
             </Form.Item>
-            <Form.Item name="fullName" label="Full name">
+            <Form.Item name="fullName" label={t('users.fullName')}>
               <Input />
             </Form.Item>
             <Form.Item
               name="password"
-              label={userModal.record ? 'New password' : 'Password'}
-              rules={[{ required: !userModal.record, min: 6, message: 'Password must be at least 6 characters' }]}
+              label={userModal.record ? t('users.newPassword') : t('users.password')}
+              rules={[{ required: !userModal.record, min: 6, message: t('users.passwordMin') }]}
             >
               <Input.Password />
             </Form.Item>
-            <Form.Item name="branchId" label="Branch">
+            <Form.Item name="branchId" label={t('users.branch')}>
               <Select allowClear options={branchOptions} />
             </Form.Item>
-            <Form.Item name="roleIds" label="Roles">
+            <Form.Item name="roleIds" label={t('users.roles')}>
               <Select mode="multiple" allowClear options={roleOptions} />
             </Form.Item>
-            <Form.Item name="isActive" label="Active" valuePropName="checked">
+            <Form.Item name="isActive" label={t('users.activeLabel')} valuePropName="checked">
               <Switch />
             </Form.Item>
           </Form>
         </Modal>
 
         <Modal
-          title={roleModal.record ? 'Edit Role' : 'Create Role'}
+          title={roleModal.record ? t('users.editRole') : t('users.createRole')}
           open={roleModal.open}
           onCancel={() => setRoleModal({ open: false, record: null })}
           onOk={() => roleForm.submit()}
@@ -306,13 +308,13 @@ export default function UsersPage() {
           width={760}
         >
           <Form form={roleForm} layout="vertical" onFinish={submitRole}>
-            <Form.Item name="name" label="Role name" rules={[{ required: !roleModal.record, message: 'Role name is required' }]}>
+            <Form.Item name="name" label={t('users.roleName')} rules={[{ required: !roleModal.record, message: t('users.roleNameRequired') }]}>
               <Input disabled={Boolean(roleModal.record)} />
             </Form.Item>
-            <Form.Item name="description" label="Description">
+            <Form.Item name="description" label={t('users.description')}>
               <Input.TextArea rows={3} />
             </Form.Item>
-            <Form.Item name="permissionIds" label="Permissions">
+            <Form.Item name="permissionIds" label={t('users.permissions')}>
               <Select mode="multiple" allowClear options={permissionOptions} optionFilterProp="label" />
             </Form.Item>
           </Form>

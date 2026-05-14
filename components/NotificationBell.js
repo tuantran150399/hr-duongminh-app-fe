@@ -59,16 +59,16 @@ function entityLink(notification) {
   return map[entityType] || null;
 }
 
-function formatTimeAgo(dateString) {
+function formatTimeAgo(dateString, t) {
   if (!dateString) return '';
   const diff = Date.now() - new Date(dateString).getTime();
   const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return 'Just now';
-  if (minutes < 60) return `${minutes}m ago`;
+  if (minutes < 1) return t('timeAgo.justNow');
+  if (minutes < 60) return t('timeAgo.minutesAgo', { count: minutes });
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
+  if (hours < 24) return t('timeAgo.hoursAgo', { count: hours });
   const days = Math.floor(hours / 24);
-  return `${days}d ago`;
+  return t('timeAgo.daysAgo', { count: days });
 }
 
 export default function NotificationBell() {
@@ -222,7 +222,7 @@ export default function NotificationBell() {
                         </Typography.Text>
                         <br />
                         <Typography.Text type="secondary" style={{ fontSize: 11 }}>
-                          {formatTimeAgo(item.createdAt)}
+                          {formatTimeAgo(item.createdAt, t)}
                         </Typography.Text>
                       </>
                     }

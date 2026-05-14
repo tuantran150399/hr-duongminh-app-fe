@@ -2,6 +2,7 @@
 
 import { Button, Card, Col, DatePicker, Input, Row, Select, Typography } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
+import { useLanguage } from '@/components/AppProviders';
 
 const { RangePicker } = DatePicker;
 const { Text } = Typography;
@@ -12,7 +13,7 @@ const { Text } = Typography;
  * Props:
  *   searchValue     — Giá trị tìm kiếm hiện tại
  *   onSearchChange  — Callback khi thay đổi search (event => void)
- *   searchPlaceholder — Placeholder cho ô search (default: 'Search...')
+ *   searchPlaceholder — Placeholder cho ô search (default: dùng từ dictionary)
  *
  *   statusValue     — Giá trị filter status hiện tại
  *   onStatusChange  — Callback khi thay đổi status (value => void)
@@ -29,7 +30,6 @@ const { Text } = Typography;
  *   <FilterCard
  *     searchValue={search}
  *     onSearchChange={(e) => setSearch(e.target.value)}
- *     searchPlaceholder="Job number or customer"
  *     statusValue={status}
  *     onStatusChange={setStatus}
  *     statusOptions={[{ value: 'all', label: 'All' }, ...]}
@@ -41,7 +41,7 @@ const { Text } = Typography;
 export default function FilterCard({
   searchValue,
   onSearchChange,
-  searchPlaceholder = 'Search...',
+  searchPlaceholder,
   statusValue,
   onStatusChange,
   statusOptions = [],
@@ -51,15 +51,17 @@ export default function FilterCard({
   onReset,
   extra
 }) {
+  const { t } = useLanguage();
+
   return (
     <Card className="filter-card">
       <Row gutter={[16, 16]} align="bottom">
         <Col xs={24} md={showDateRange ? 8 : 10}>
-          <Text className="filter-label">Search</Text>
+          <Text className="filter-label">{t('filterCard.search')}</Text>
           <Input
             allowClear
             prefix={<SearchOutlined />}
-            placeholder={searchPlaceholder}
+            placeholder={searchPlaceholder || t('filterCard.searchPlaceholder')}
             value={searchValue}
             onChange={onSearchChange}
             size="large"
@@ -68,7 +70,7 @@ export default function FilterCard({
 
         {statusOptions.length > 0 ? (
           <Col xs={24} md={showDateRange ? 6 : 8}>
-            <Text className="filter-label">Status</Text>
+            <Text className="filter-label">{t('filterCard.status')}</Text>
             <Select
               value={statusValue}
               onChange={onStatusChange}
@@ -81,7 +83,7 @@ export default function FilterCard({
 
         {showDateRange ? (
           <Col xs={24} md={7}>
-            <Text className="filter-label">Date Range</Text>
+            <Text className="filter-label">{t('filterCard.dateRange')}</Text>
             <RangePicker
               value={dateRange}
               onChange={onDateRangeChange}
@@ -95,7 +97,7 @@ export default function FilterCard({
         {onReset ? (
           <Col xs={24} md={3}>
             <Button block size="large" onClick={onReset}>
-              Reset
+              {t('filterCard.reset')}
             </Button>
           </Col>
         ) : null}

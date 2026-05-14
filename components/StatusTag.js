@@ -1,6 +1,7 @@
 'use client';
 
 import { Tag } from 'antd';
+import { useLanguage } from '@/components/AppProviders';
 
 /**
  * Mapping mặc định giữa status label → Ant Design Tag color.
@@ -66,9 +67,11 @@ export default function StatusTag({ value, colorMap, ...rest }) {
  *   <ActiveStatusTag value={record.isActive} />
  */
 export function ActiveStatusTag({ value, ...rest }) {
+  const { t } = useLanguage();
+
   return (
     <Tag color={value ? 'green' : 'red'} {...rest}>
-      {value ? 'Active' : 'Inactive'}
+      {value ? t('statusTag.active') : t('statusTag.inactive')}
     </Tag>
   );
 }

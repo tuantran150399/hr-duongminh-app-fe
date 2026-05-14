@@ -251,7 +251,7 @@ export default function AccountingPage() {
   const jobs = jobsData?.items || [];
   const partners = (partnersData?.items || []).filter(p => p.isActive);
   const loading = loadingRevenue || loadingCost;
-  const loadError = (revenueError || costError) ? 'Unable to load accounting data from the backend.' : '';
+  const loadError = (revenueError || costError) ? t('accounting.loadError') : '';
 
   const activeRows = activeTab === 'revenue' ? revenue : cost;
   const statusOptions = useMemo(
@@ -316,11 +316,11 @@ export default function AccountingPage() {
       } else {
         await createCostEntry(payload).unwrap();
       }
-      message.success(activeTab === 'revenue' ? 'Revenue entry created.' : 'Cost entry created.');
+      message.success(t('accounting.createSuccess'));
       setModalOpen(false);
       
     } catch (err) {
-      message.error(err?.data?.message || 'Unable to create accounting entry.');
+      message.error(err?.data?.message || t('accounting.createError'));
     } finally {
       setSaving(false);
     }
@@ -333,10 +333,10 @@ export default function AccountingPage() {
       } else {
         await postCostEntry(record.backendId).unwrap();
       }
-      message.success('Entry posted.');
+      message.success(t('accountingForm.postSuccess'));
       
     } catch (err) {
-      message.error(err?.data?.message || 'Unable to post entry.');
+      message.error(err?.data?.message || t('accountingForm.postError'));
     }
   }
 
@@ -347,10 +347,10 @@ export default function AccountingPage() {
       } else {
         await voidCostEntry({ id: record.backendId, reason: 'Voided.' }).unwrap();
       }
-      message.success('Entry voided.');
+      message.success(t('accountingForm.voidSuccess'));
       
     } catch (err) {
-      message.error(err?.data?.message || 'Unable to void entry.');
+      message.error(err?.data?.message || t('accountingForm.voidError'));
     }
   }
 
@@ -361,10 +361,10 @@ export default function AccountingPage() {
       } else {
         await updateCostPaymentStatus({ id: record.backendId, paymentStatus }).unwrap();
       }
-      message.success('Payment status updated.');
+      message.success(t('accountingForm.paymentUpdated'));
       
     } catch (err) {
-      message.error(err?.data?.message || 'Unable to update payment status.');
+      message.error(err?.data?.message || t('accountingForm.paymentError'));
     }
   }
 
@@ -401,18 +401,18 @@ export default function AccountingPage() {
 
   async function handleCobSubmit() {
     if (!cobCustomerId) {
-      message.warning('Please select a customer to charge.');
+      message.warning(t('accountingForm.selectCustomer'));
       return;
     }
 
     setCobSaving(true);
     try {
       await markCostAsCob({ costId: cobCostRecord.backendId, partnerId: cobCustomerId }).unwrap();
-      message.success('Cost marked as charge-on-behalf. A receivable has been auto-created.');
+      message.success(t('accountingForm.cobSuccess'));
       setCobModalOpen(false);
       setCobCostRecord(null);
     } catch (err) {
-      message.error(err?.data?.message || 'Unable to mark cost as COB.');
+      message.error(err?.data?.message || t('accountingForm.cobError'));
     } finally {
       setCobSaving(false);
     }
@@ -420,15 +420,15 @@ export default function AccountingPage() {
 
   const columns = [
     {
-      title: 'Job No.',
+      title: t('accountingForm.jobNo'),
       dataIndex: 'job_no',
       key: 'job_no',
       width: 170,
       sorter: (a, b) => String(a.job_no).localeCompare(String(b.job_no))
     },
-    { title: 'Description', dataIndex: 'description', key: 'description' },
+    { title: t('accountingForm.description'), dataIndex: 'description', key: 'description' },
     {
-      title: 'Amount',
+      title: t('accountingForm.amount'),
       dataIndex: 'amount',
       key: 'amount',
       align: 'right',
@@ -437,20 +437,20 @@ export default function AccountingPage() {
       render: (value) => <strong>{formatCurrency(value)}</strong>
     },
     {
-      title: 'Currency',
+      title: t('accountingForm.currency'),
       dataIndex: 'currency',
       key: 'currency',
       width: 110
     },
     {
-      title: 'Financial Status',
+      title: t('accounting.status'),
       dataIndex: 'status',
       key: 'status',
       width: 150,
       render: (value) => <Tag color={statusColor[value] || 'default'}>{value}</Tag>
     },
     {
-      title: 'Payment',
+      title: t('accounting.paymentStatus'),
       dataIndex: 'paymentStatus',
       key: 'paymentStatus',
       width: 150,
@@ -466,43 +466,43 @@ export default function AccountingPage() {
       )
     },
     {
-      title: 'Doc Date',
+      title: t('accountingForm.docDate'),
       dataIndex: 'date',
       key: 'date',
       width: 140
     },
     {
-      title: 'Due Date',
+      title: t('accountingForm.dueDate'),
       dataIndex: 'dueDate',
       key: 'dueDate',
       width: 140
     },
     {
-      title: 'Actions',
+      title: t('accounting.actions'),
       key: 'actions',
       width: activeTab === 'cost' ? 210 : 160,
       render: (_, record) => (
         <Space>
-          <Popconfirm title="Post this draft entry?" okText="Post" onConfirm={() => handlePost(record)}>
+          <Popconfirm title={t('accountingForm.postConfirm')} okText={t('accountingForm.postOk')} onConfirm={() => handlePost(record)}>
             <Button
               icon={<UploadOutlined />}
               disabled={record.status !== 'Draft'}
-              title="Post"
+              title={t('accountingForm.postOk')}
             />
           </Popconfirm>
           {activeTab === 'cost' && record.status === 'Posted' && (
-            <Tooltip title="Chi hộ — charge customer on behalf">
+            <Tooltip title={t('accountingForm.cobTooltip')}>
               <Button
                 icon={<SwapOutlined />}
                 onClick={() => openCobModal(record)}
                 style={{ color: '#1677ff' }}
-                title="Mark as COB"
+                title={t('accountingForm.markCob')}
               />
             </Tooltip>
           )}
           <Popconfirm
-            title="Void this accounting entry?"
-            okText="Void"
+            title={t('accountingForm.voidConfirm')}
+            okText={t('accountingForm.voidOk')}
             okButtonProps={{ danger: true }}
             onConfirm={() => handleVoid(record)}
           >
@@ -510,7 +510,7 @@ export default function AccountingPage() {
               danger
               icon={<StopOutlined />}
               disabled={record.status === 'Voided'}
-              title="Void"
+              title={t('accountingForm.voidOk')}
             />
           </Popconfirm>
         </Space>
@@ -521,11 +521,11 @@ export default function AccountingPage() {
   const tabItems = [
     {
       key: 'revenue',
-      label: `Revenue (${revenue.length})`
+      label: `${t('accounting.revenue')} (${revenue.length})`
     },
     {
       key: 'cost',
-      label: `Cost (${cost.length})`
+      label: `${t('accounting.cost')} (${cost.length})`
     }
   ];
 
@@ -534,9 +534,9 @@ export default function AccountingPage() {
       <div className="accounting-page">
         <div className="page-header">
           <div>
-            <Typography.Title level={1} className="page-title">Accounting</Typography.Title>
+            <Typography.Title level={1} className="page-title">{t('accounting.title')}</Typography.Title>
             <Typography.Paragraph className="page-subtitle">
-              Revenue, cost, posting, voiding, and payment tracking per job.
+              {t('accounting.subtitle')}
             </Typography.Paragraph>
           </div>
           <div className="page-actions">
@@ -547,12 +547,12 @@ export default function AccountingPage() {
                 customRequest={handleCostImport}
               >
                 <Button icon={<UploadOutlined />}>
-                  Import Cost Excel
+                  {t('accounting.importExcel')}
                 </Button>
               </Upload>
             ) : null}
             <Button type="primary" icon={<FileAddOutlined />} onClick={openCreateModal}>
-              {activeTab === 'revenue' ? 'Create Revenue' : 'Create Cost'}
+              {activeTab === 'revenue' ? t('accounting.createRevenue') : t('accounting.createCost')}
             </Button>
           </div>
         </div>
@@ -562,22 +562,22 @@ export default function AccountingPage() {
         <Row gutter={[16, 16]} className="accounting-summary-grid">
           <Col xs={24} md={12} xl={6}>
             <Card>
-              <Statistic title={activeTab === 'revenue' ? 'Total Revenue' : 'Total Cost'} value={totalAmount} formatter={formatCurrency} prefix={<WalletOutlined />} />
+              <Statistic title={activeTab === 'revenue' ? t('accounting.totalRevenue') : t('accounting.totalCost')} value={totalAmount} formatter={formatCurrency} prefix={<WalletOutlined />} />
             </Card>
           </Col>
           <Col xs={24} md={12} xl={6}>
             <Card>
-              <Statistic title="Posted" value={postedAmount} formatter={formatCurrency} prefix={<CheckCircleOutlined />} />
+              <Statistic title={t('accountingForm.posted')} value={postedAmount} formatter={formatCurrency} prefix={<CheckCircleOutlined />} />
             </Card>
           </Col>
           <Col xs={24} md={12} xl={6}>
             <Card>
-              <Statistic title="Open Payment" value={openPaymentAmount} formatter={formatCurrency} />
+              <Statistic title={t('accountingForm.openPayment')} value={openPaymentAmount} formatter={formatCurrency} />
             </Card>
           </Col>
           <Col xs={24} md={12} xl={6}>
             <Card>
-              <Statistic title="Draft Items" value={draftCount} />
+              <Statistic title={t('accountingForm.draftItems')} value={draftCount} />
             </Card>
           </Col>
         </Row>
@@ -601,7 +601,7 @@ export default function AccountingPage() {
               <Input.Search
                 allowClear
                 value={search}
-                placeholder="Search job, description, status"
+                placeholder={t('accountingForm.searchPlaceholder')}
                 onChange={(event) => setSearch(event.target.value)}
                 style={{ width: 280 }}
               />
@@ -611,7 +611,7 @@ export default function AccountingPage() {
                 style={{ width: 160 }}
                 options={statusOptions.map((status) => ({
                   value: status,
-                  label: status === 'all' ? 'All statuses' : status
+                  label: status === 'all' ? t('accounting.allStatuses') : status
                 }))}
               />
             </Space>
@@ -623,13 +623,13 @@ export default function AccountingPage() {
             columns={columns}
             dataSource={filteredRows}
             scroll={{ x: 1180 }}
-            locale={{ emptyText: <Empty description="No accounting records found." image={Empty.PRESENTED_IMAGE_SIMPLE} /> }}
+            locale={{ emptyText: <Empty description={t('accountingForm.noRecords')} image={Empty.PRESENTED_IMAGE_SIMPLE} /> }}
             pagination={{ pageSize: 10, showSizeChanger: true }}
           />
         </Card>
 
         <Modal
-          title={activeTab === 'revenue' ? 'Create Revenue Entry' : 'Create Cost Entry'}
+          title={activeTab === 'revenue' ? t('accounting.createRevenue') : t('accounting.createCost')}
           open={modalOpen}
           onCancel={() => setModalOpen(false)}
           onOk={() => form.submit()}
@@ -638,20 +638,20 @@ export default function AccountingPage() {
           width={760}
         >
           <Form form={form} layout="vertical" onFinish={submitEntry}>
-            <Form.Item name="jobId" label="Job No." rules={[{ required: true, message: 'Job is required.' }]}>
-              <Select showSearch optionFilterProp="label" options={jobOptions} placeholder="Select job" />
+            <Form.Item name="jobId" label={t('accountingForm.jobNo')} rules={[{ required: true, message: t('accountingForm.jobRequired') }]}>
+              <Select showSearch optionFilterProp="label" options={jobOptions} placeholder={t('accountingForm.selectJob')} />
             </Form.Item>
             {activeTab === 'cost' ? (
-              <Form.Item name="vendorId" label="Vendor / Agent" rules={[{ required: true, message: 'Vendor is required for cost entries.' }]}>
-                <Select showSearch optionFilterProp="label" options={vendorOptions} placeholder="Select vendor" />
+              <Form.Item name="vendorId" label={t('accountingForm.vendorAgent')} rules={[{ required: true, message: t('accountingForm.vendorRequired') }]}>
+                <Select showSearch optionFilterProp="label" options={vendorOptions} placeholder={t('accountingForm.selectVendor')} />
               </Form.Item>
             ) : null}
-            <Form.Item name="description" label="Description" rules={[{ required: true, message: 'Description is required.' }]}>
-              <Input placeholder="Accounting description" />
+            <Form.Item name="description" label={t('accountingForm.description')} rules={[{ required: true, message: t('accountingForm.descriptionRequired') }]}>
+              <Input placeholder={t('accountingForm.descriptionPlaceholder')} />
             </Form.Item>
             <Row gutter={16}>
               <Col xs={24} md={8}>
-                <Form.Item name="currency" label="Currency" rules={[{ required: true, message: 'Currency is required.' }]}>
+                <Form.Item name="currency" label={t('accountingForm.currency')} rules={[{ required: true, message: t('accountingForm.currencyRequired') }]}>
                   <Select
                     options={[
                       { value: 'VND', label: 'VND' },
@@ -662,45 +662,45 @@ export default function AccountingPage() {
                 </Form.Item>
               </Col>
               <Col xs={24} md={8}>
-                <Form.Item name="amount" label="Amount" rules={[{ required: true, message: 'Amount is required.' }]}>
+                <Form.Item name="amount" label={t('accountingForm.amount')} rules={[{ required: true, message: t('accountingForm.amountRequired') }]}>
                   <InputNumber min={0} precision={2} style={{ width: '100%' }} />
                 </Form.Item>
               </Col>
               <Col xs={24} md={8}>
-                <Form.Item name="exchangeRate" label="Exchange Rate" rules={[{ required: true, message: 'Exchange rate is required.' }]}>
+                <Form.Item name="exchangeRate" label={t('accountingForm.exchangeRate')} rules={[{ required: true, message: t('accountingForm.exchangeRateRequired') }]}>
                   <InputNumber min={0} precision={2} style={{ width: '100%' }} />
                 </Form.Item>
               </Col>
               <Col xs={24} md={8}>
-                <Form.Item name="localAmount" label="Local Amount">
+                <Form.Item name="localAmount" label={t('accountingForm.localAmount')}>
                   <InputNumber min={0} precision={2} style={{ width: '100%' }} />
                 </Form.Item>
               </Col>
               <Col xs={24} md={8}>
-                <Form.Item name="docDate" label="Document Date">
+                <Form.Item name="docDate" label={t('accountingForm.docDate')}>
                   <DatePicker format="DD/MM/YYYY" style={{ width: '100%' }} />
                 </Form.Item>
               </Col>
               <Col xs={24} md={8}>
-                <Form.Item name="dueDate" label="Due Date">
+                <Form.Item name="dueDate" label={t('accountingForm.dueDate')}>
                   <DatePicker format="DD/MM/YYYY" style={{ width: '100%' }} />
                 </Form.Item>
               </Col>
             </Row>
             <Row gutter={16}>
               <Col xs={24} md={12}>
-                <Form.Item name="refNumber" label="Reference No.">
-                  <Input placeholder="Reference number" />
+                <Form.Item name="refNumber" label={t('accountingForm.refNumber')}>
+                  <Input placeholder={t('accountingForm.refPlaceholder')} />
                 </Form.Item>
               </Col>
               <Col xs={24} md={12}>
-                <Form.Item name="invoiceNumber" label="Invoice No.">
-                  <Input placeholder="Invoice number" />
+                <Form.Item name="invoiceNumber" label={t('accountingForm.invoiceNumber')}>
+                  <Input placeholder={t('accountingForm.invoicePlaceholder')} />
                 </Form.Item>
               </Col>
             </Row>
-            <Form.Item name="notes" label="Notes">
-              <Input.TextArea rows={3} placeholder="Notes" />
+            <Form.Item name="notes" label={t('accountingForm.notes')}>
+              <Input.TextArea rows={3} placeholder={t('accountingForm.notesPlaceholder')} />
             </Form.Item>
           </Form>
         </Modal>
@@ -710,7 +710,7 @@ export default function AccountingPage() {
           title={
             <Space>
               <SwapOutlined />
-              Chi hộ — Charge on Behalf
+              {t('accountingForm.cobTooltip')}
             </Space>
           }
           open={cobModalOpen}
@@ -723,23 +723,23 @@ export default function AccountingPage() {
           <Alert
             type="info"
             showIcon
-            message="Auto-receivable"
-            description="When you mark this cost as COB, the system will automatically create a matching receivable from the selected customer, linked to the same Job No."
+            message={t('accountingForm.markCob')}
+            description={t('accountingForm.cobDescription')}
             style={{ marginBottom: 16 }}
           />
           {cobCostRecord && (
             <div style={{ marginBottom: 16, padding: 12, background: '#fafafa', borderRadius: 6 }}>
-              <div><strong>Cost entry:</strong> {cobCostRecord.description}</div>
-              <div><strong>Amount:</strong> {formatCurrency(cobCostRecord.amount)} {cobCostRecord.currency}</div>
-              <div><strong>Job:</strong> {cobCostRecord.job_no}</div>
+              <div><strong>{t('accountingForm.description')}:</strong> {cobCostRecord.description}</div>
+              <div><strong>{t('accountingForm.amount')}:</strong> {formatCurrency(cobCostRecord.amount)} {cobCostRecord.currency}</div>
+              <div><strong>{t('accountingForm.jobNo')}:</strong> {cobCostRecord.job_no}</div>
             </div>
           )}
-          <Typography.Text>Select the customer to charge this cost to:</Typography.Text>
+          <Typography.Text>{t('accountingForm.selectCustomer')}:</Typography.Text>
           <Select
             showSearch
             optionFilterProp="label"
             options={customerOptions}
-            placeholder="Select customer"
+            placeholder={t('accountingForm.selectCustomer')}
             value={cobCustomerId}
             onChange={setCobCustomerId}
             style={{ width: '100%', marginTop: 8 }}

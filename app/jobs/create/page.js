@@ -17,20 +17,22 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import PageHeader from '@/components/PageHeader';
+import { useLanguage } from '@/components/AppProviders';
 import { useCreateJobMutation } from '@/store/services/jobsApi';
 import { useGetPartnersQuery } from '@/store/services/partnersApi';
 import { useGetUsersQuery, useGetBranchesQuery } from '@/store/services/adminApi';
 import { normalizePartner } from '@/utils/apiMappers';
 import { cleanPayload, convertDateFields } from '@/utils/formUtils';
 import {
-  jobTypeOptions,
-  shipmentModeOptions,
-  customsLaneOptions,
-  cargoTypeOptions,
+  getJobTypeOptions,
+  getShipmentModeOptions,
+  getCustomsLaneOptions,
+  getCargoTypeOptions,
   JOB_DATE_FIELDS
 } from '@/config/jobConstants';
 
 export default function CreateJobPage() {
+  const { t } = useLanguage();
   const router = useRouter();
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
@@ -85,10 +87,10 @@ export default function CreateJobPage() {
       const payload = cleanPayload(convertDateFields(values, JOB_DATE_FIELDS));
       delete payload.status;
       await createJob(payload).unwrap();
-      message.success('Job created.');
+      message.success(t('jobForm.createSuccess'));
       router.push('/jobs');
     } catch (err) {
-      message.error(err?.data?.message || 'Unable to create job.');
+      message.error(err?.data?.message || t('jobForm.createError'));
     } finally {
       setSaving(false);
     }
@@ -98,16 +100,16 @@ export default function CreateJobPage() {
     <DashboardLayout>
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         <PageHeader
-          title="Create Job"
+          title={t('jobForm.createTitle')}
           breadcrumbs={[
-            { label: 'Jobs', path: '/jobs' },
-            { label: 'Create' }
+            { label: t('jobForm.breadcrumbJobs'), path: '/jobs' },
+            { label: t('jobForm.breadcrumbCreate') }
           ]}
           actions={
             <Space>
-              <Button onClick={() => router.push('/jobs')}>Cancel</Button>
+              <Button onClick={() => router.push('/jobs')}>{t('jobForm.cancel')}</Button>
               <Button type="primary" loading={saving} onClick={() => form.submit()} style={{ padding: '0 20px', fontWeight: 500 }}>
-                Create Job
+                {t('jobForm.createJob')}
               </Button>
             </Space>
           }
@@ -122,81 +124,81 @@ export default function CreateJobPage() {
           <Row gutter={[24, 24]}>
             <Col xs={24} lg={16}>
               <Space direction="vertical" size={24} style={{ width: '100%' }}>
-                <Card title={<Space><BankOutlined style={{ color: '#0057c2' }} />Customer and Assignment</Space>}>
+                <Card title={<Space><BankOutlined style={{ color: '#0057c2' }} />{t('jobForm.cardCustomer')}</Space>}>
                   <Row gutter={24}>
                     <Col xs={24} md={12}>
-                      <Form.Item name="jobCode" label="Job No." rules={[{ required: true, message: 'Job No. is required.' }]}>
-                        <Input placeholder="JOB-2026-0001" size="large" />
+                      <Form.Item name="jobCode" label={t('jobForm.jobNo')} rules={[{ required: true, message: t('jobForm.jobNoRequired') }]}>
+                        <Input placeholder={t('jobForm.jobNoPlaceholder')} size="large" />
                       </Form.Item>
                     </Col>
                     <Col xs={24} md={12}>
-                      <Form.Item name="partnerId" label="Customer" rules={[{ required: true, message: 'Customer is required.' }]}>
+                      <Form.Item name="partnerId" label={t('jobForm.customer')} rules={[{ required: true, message: t('jobForm.customerRequired') }]}>
                         <Select loading={loadingOptions} showSearch optionFilterProp="label" options={partnerOptions} size="large" />
                       </Form.Item>
                     </Col>
                     <Col xs={24} md={12}>
-                      <Form.Item name="branchId" label="Branch">
+                      <Form.Item name="branchId" label={t('jobForm.branch')}>
                         <Select loading={loadingOptions} allowClear showSearch optionFilterProp="label" options={branchOptions} size="large" />
                       </Form.Item>
                     </Col>
                     <Col xs={24} md={12}>
-                      <Form.Item name="assignedUserId" label="Assigned User">
+                      <Form.Item name="assignedUserId" label={t('jobForm.assignedUser')}>
                         <Select loading={loadingOptions} allowClear showSearch optionFilterProp="label" options={userOptions} size="large" />
                       </Form.Item>
                     </Col>
                     <Col span={24}>
-                      <Form.Item name="shipper" label="Shipper">
-                        <Input placeholder="Shipper name" size="large" />
+                      <Form.Item name="shipper" label={t('jobForm.shipper')}>
+                        <Input placeholder={t('jobForm.shipperPlaceholder')} size="large" />
                       </Form.Item>
                     </Col>
                     <Col span={24}>
-                      <Form.Item name="consignee" label="Consignee">
-                        <Input placeholder="Consignee name" size="large" />
+                      <Form.Item name="consignee" label={t('jobForm.consignee')}>
+                        <Input placeholder={t('jobForm.consigneePlaceholder')} size="large" />
                       </Form.Item>
                     </Col>
                     <Col span={24}>
-                      <Form.Item name="agentId" label="Agent / Carrier">
+                      <Form.Item name="agentId" label={t('jobForm.agentCarrier')}>
                         <Select loading={loadingOptions} allowClear showSearch optionFilterProp="label" options={agentOptions} size="large" />
                       </Form.Item>
                     </Col>
                   </Row>
                 </Card>
 
-                <Card title={<Space><FileTextOutlined style={{ color: '#0057c2' }} />Declaration and Cargo</Space>}>
+                <Card title={<Space><FileTextOutlined style={{ color: '#0057c2' }} />{t('jobForm.cardDeclaration')}</Space>}>
                   <Row gutter={24}>
                     <Col xs={24} md={12}>
-                      <Form.Item name="declarationNo" label="Customs Declaration No.">
-                        <Input placeholder="Declaration number" size="large" />
+                      <Form.Item name="declarationNo" label={t('jobForm.declarationNo')}>
+                        <Input placeholder={t('jobForm.declarationPlaceholder')} size="large" />
                       </Form.Item>
                     </Col>
                     <Col xs={24} md={12}>
-                      <Form.Item name="businessType" label="Business Type">
-                        <Input placeholder="Processing, production export, trading..." size="large" />
+                      <Form.Item name="businessType" label={t('jobForm.businessType')}>
+                        <Input placeholder={t('jobForm.businessTypePlaceholder')} size="large" />
                       </Form.Item>
                     </Col>
                     <Col xs={24} md={12}>
-                      <Form.Item name="customsLane" label="Customs Lane">
-                        <Select allowClear options={customsLaneOptions} size="large" />
+                      <Form.Item name="customsLane" label={t('jobForm.customsLane')}>
+                        <Select allowClear options={getCustomsLaneOptions(t)} size="large" />
                       </Form.Item>
                     </Col>
                     <Col xs={24} md={12}>
-                      <Form.Item name="cargoType" label="Cargo Type" rules={[{ required: true, message: 'Cargo type is required.' }]}>
-                        <Select options={cargoTypeOptions} size="large" />
+                      <Form.Item name="cargoType" label={t('jobForm.cargoType')} rules={[{ required: true, message: t('jobForm.cargoTypeRequired') }]}>
+                        <Select options={getCargoTypeOptions(t)} size="large" />
                       </Form.Item>
                     </Col>
                     <Col xs={24} md={12}>
-                      <Form.Item name="containerNo" label="Container No.">
-                        <Input placeholder="Container number" size="large" />
+                      <Form.Item name="containerNo" label={t('jobForm.containerNo')}>
+                        <Input placeholder={t('jobForm.containerPlaceholder')} size="large" />
                       </Form.Item>
                     </Col>
                     <Col xs={24} md={12}>
-                      <Form.Item name="sealNo" label="Seal No.">
-                        <Input placeholder="Seal number" size="large" />
+                      <Form.Item name="sealNo" label={t('jobForm.sealNo')}>
+                        <Input placeholder={t('jobForm.sealPlaceholder')} size="large" />
                       </Form.Item>
                     </Col>
                     <Col span={24}>
-                      <Form.Item name="notes" label="Notes">
-                        <Input.TextArea rows={3} placeholder="Operational notes" />
+                      <Form.Item name="notes" label={t('jobForm.notes')}>
+                        <Input.TextArea rows={3} placeholder={t('jobForm.notesPlaceholder')} />
                       </Form.Item>
                     </Col>
                   </Row>
@@ -205,68 +207,68 @@ export default function CreateJobPage() {
             </Col>
 
             <Col xs={24} lg={8}>
-              <Card title={<Space><CompassOutlined style={{ color: '#0057c2' }} />Shipment</Space>}>
-                <Form.Item name="jobType" label="Job Type" rules={[{ required: true, message: 'Job type is required.' }]}>
-                  <Select options={jobTypeOptions} size="large" />
+              <Card title={<Space><CompassOutlined style={{ color: '#0057c2' }} />{t('jobForm.cardShipment')}</Space>}>
+                <Form.Item name="jobType" label={t('jobForm.jobType')} rules={[{ required: true, message: t('jobForm.jobTypeRequired') }]}>
+                  <Select options={getJobTypeOptions(t)} size="large" />
                 </Form.Item>
-                <Form.Item name="shipmentMode" label="Shipment Mode" rules={[{ required: true, message: 'Shipment mode is required.' }]}>
-                  <Select options={shipmentModeOptions} size="large" />
+                <Form.Item name="shipmentMode" label={t('jobForm.shipmentMode')} rules={[{ required: true, message: t('jobForm.shipmentModeRequired') }]}>
+                  <Select options={getShipmentModeOptions(t)} size="large" />
                 </Form.Item>
                 <Row gutter={16}>
                   <Col span={12}>
-                    <Form.Item name="vesselName" label="Vessel">
-                      <Input placeholder="Vessel" size="large" />
+                    <Form.Item name="vesselName" label={t('jobForm.vessel')}>
+                      <Input placeholder={t('jobForm.vessel')} size="large" />
                     </Form.Item>
                   </Col>
                   <Col span={12}>
-                    <Form.Item name="voyageNo" label="Voyage">
-                      <Input placeholder="Voyage" size="large" />
+                    <Form.Item name="voyageNo" label={t('jobForm.voyage')}>
+                      <Input placeholder={t('jobForm.voyage')} size="large" />
                     </Form.Item>
                   </Col>
                 </Row>
                 <Row gutter={16}>
                   <Col span={12}>
-                    <Form.Item name="pol" label="POL">
-                      <Input placeholder="Loading port" size="large" />
+                    <Form.Item name="pol" label={t('jobForm.pol')}>
+                      <Input placeholder={t('jobForm.polPlaceholder')} size="large" />
                     </Form.Item>
                   </Col>
                   <Col span={12}>
-                    <Form.Item name="pod" label="POD">
-                      <Input placeholder="Discharge port" size="large" />
+                    <Form.Item name="pod" label={t('jobForm.pod')}>
+                      <Input placeholder={t('jobForm.podPlaceholder')} size="large" />
                     </Form.Item>
                   </Col>
                 </Row>
-                <Form.Item name="origin" label="Origin">
-                  <Input placeholder="Origin" size="large" />
+                <Form.Item name="origin" label={t('jobForm.origin')}>
+                  <Input placeholder={t('jobForm.origin')} size="large" />
                 </Form.Item>
-                <Form.Item name="destination" label="Destination">
-                  <Input placeholder="Destination" size="large" />
+                <Form.Item name="destination" label={t('jobForm.destination')}>
+                  <Input placeholder={t('jobForm.destination')} size="large" />
                 </Form.Item>
                 <Row gutter={16}>
                   <Col span={12}>
-                    <Form.Item name="etd" label="ETD">
+                    <Form.Item name="etd" label={t('jobForm.etd')}>
                       <DatePicker style={{ width: '100%' }} size="large" format="DD/MM/YYYY" />
                     </Form.Item>
                   </Col>
                   <Col span={12}>
-                    <Form.Item name="eta" label="ETA">
+                    <Form.Item name="eta" label={t('jobForm.eta')}>
                       <DatePicker style={{ width: '100%' }} size="large" format="DD/MM/YYYY" />
                     </Form.Item>
                   </Col>
                 </Row>
                 <Row gutter={16}>
                   <Col span={12}>
-                    <Form.Item name="atd" label="ATD">
+                    <Form.Item name="atd" label={t('jobForm.atd')}>
                       <DatePicker style={{ width: '100%' }} size="large" format="DD/MM/YYYY" />
                     </Form.Item>
                   </Col>
                   <Col span={12}>
-                    <Form.Item name="ata" label="ATA">
+                    <Form.Item name="ata" label={t('jobForm.ata')}>
                       <DatePicker style={{ width: '100%' }} size="large" format="DD/MM/YYYY" />
                     </Form.Item>
                   </Col>
                 </Row>
-                <Form.Item name="actualDeliveryDate" label="Actual Delivery Date">
+                <Form.Item name="actualDeliveryDate" label={t('jobForm.actualDeliveryDate')}>
                   <DatePicker style={{ width: '100%' }} size="large" format="DD/MM/YYYY" />
                 </Form.Item>
               </Card>

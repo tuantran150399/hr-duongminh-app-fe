@@ -1,43 +1,54 @@
 /**
  * Job form select options — dùng chung cho Jobs Create và Jobs Detail.
+ * Sử dụng translation function t() để hỗ trợ đa ngôn ngữ.
  *
  * Import:
- *   import { jobTypeOptions, shipmentModeOptions, ... } from '@/config/jobConstants';
+ *   import { getJobTypeOptions, getShipmentModeOptions, ... } from '@/config/jobConstants';
  */
 
-export const jobTypeOptions = [
-  { value: 'IMPORT', label: 'Import' },
-  { value: 'EXPORT', label: 'Export' },
-  { value: 'DOMESTIC', label: 'Domestic' }
-];
+export function getJobTypeOptions(t) {
+  return [
+    { value: 'IMPORT', label: t('jobForm.jobTypeImport') },
+    { value: 'EXPORT', label: t('jobForm.jobTypeExport') },
+    { value: 'DOMESTIC', label: t('jobForm.jobTypeDomestic') }
+  ];
+}
 
-export const shipmentModeOptions = [
-  { value: 'SEA_FCL', label: 'Sea FCL' },
-  { value: 'SEA_LCL', label: 'Sea LCL' },
-  { value: 'AIR', label: 'Air' },
-  { value: 'ROAD', label: 'Road' },
-  { value: 'RAIL', label: 'Rail' }
-];
+export function getShipmentModeOptions(t) {
+  return [
+    { value: 'SEA_FCL', label: t('jobForm.shipmentSeaFcl') },
+    { value: 'SEA_LCL', label: t('jobForm.shipmentSeaLcl') },
+    { value: 'AIR', label: t('jobForm.shipmentAir') },
+    { value: 'ROAD', label: t('jobForm.shipmentRoad') },
+    { value: 'RAIL', label: t('jobForm.shipmentRail') }
+  ];
+}
 
-export const jobStatusOptions = [
-  { value: 'DRAFT', label: 'Draft' },
-  { value: 'IN_PROGRESS', label: 'In Progress' },
-  { value: 'CLOSED', label: 'Closed' },
-  { value: 'CANCELLED', label: 'Cancelled' }
-];
+export function getJobStatusOptions(t) {
+  return [
+    { value: 'DRAFT', label: t('jobForm.statusDraft') },
+    { value: 'IN_PROGRESS', label: t('jobForm.statusInProgress') },
+    { value: 'CLOSED', label: t('jobForm.statusClosed') },
+    { value: 'CANCELLED', label: t('jobForm.statusCancelled') }
+  ];
+}
 
-export const customsLaneOptions = [
-  { value: 'GREEN', label: 'Green' },
-  { value: 'YELLOW', label: 'Yellow' },
-  { value: 'RED', label: 'Red' }
-];
+export function getCustomsLaneOptions(t) {
+  return [
+    { value: 'GREEN', label: t('jobForm.laneGreen') },
+    { value: 'YELLOW', label: t('jobForm.laneYellow') },
+    { value: 'RED', label: t('jobForm.laneRed') }
+  ];
+}
 
-export const cargoTypeOptions = [
-  { value: 'FCL', label: 'FCL' },
-  { value: 'LCL', label: 'LCL' },
-  { value: 'AIR', label: 'Air' },
-  { value: 'BULK', label: 'Bulk cargo' }
-];
+export function getCargoTypeOptions(t) {
+  return [
+    { value: 'FCL', label: t('jobForm.cargoFcl') },
+    { value: 'LCL', label: t('jobForm.cargoLcl') },
+    { value: 'AIR', label: t('jobForm.cargoAir') },
+    { value: 'BULK', label: t('jobForm.cargoBulk') }
+  ];
+}
 
 /** Terminal statuses — job ở trạng thái này không cho phép edit */
 export const TERMINAL_STATUSES = ['CLOSED', 'CANCELLED'];

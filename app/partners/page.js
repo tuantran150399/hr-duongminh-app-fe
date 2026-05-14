@@ -7,20 +7,13 @@ import {
 import { EditOutlined, PlusOutlined, ReloadOutlined, StopOutlined } from '@ant-design/icons';
 import { useMemo, useState } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
+import { useLanguage } from '@/components/AppProviders';
 import {
   useGetPartnersQuery,
   useCreatePartnerMutation,
   useUpdatePartnerMutation,
   useLockPartnerMutation
 } from '@/store/services/partnersApi';
-
-const partnerTypeOptions = [
-  { value: 'CUSTOMER', label: 'Customer' },
-  { value: 'VENDOR', label: 'Vendor' },
-  { value: 'AGENT', label: 'Agent' },
-  { value: 'CARRIER', label: 'Carrier' },
-  { value: 'BOTH', label: 'Customer/Vendor' }
-];
 
 function cleanPayload(values) {
   return Object.fromEntries(
@@ -29,6 +22,7 @@ function cleanPayload(values) {
 }
 
 export default function PartnersPage() {
+  const { t } = useLanguage();
   const [form] = Form.useForm();
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
@@ -42,6 +36,14 @@ export default function PartnersPage() {
 
   const partners = data?.items || [];
   const saving = isCreating || isUpdating;
+
+  const partnerTypeOptions = [
+    { value: 'CUSTOMER', label: t('partners.customer') },
+    { value: 'VENDOR', label: t('partners.vendor') },
+    { value: 'AGENT', label: t('partners.agent') },
+    { value: 'CARRIER', label: t('partners.carrier') },
+    { value: 'BOTH', label: t('partners.customerVendor') }
+  ];
 
   const filteredData = useMemo(() => {
     const keyword = search.trim().toLowerCase();
@@ -82,58 +84,58 @@ export default function PartnersPage() {
       if (editingPartner) {
         delete payload.code;
         await updatePartner({ id: editingPartner.backendId, ...payload }).unwrap();
-        message.success('Partner updated.');
+        message.success(t('partners.updateSuccess'));
       } else {
         await createPartner(payload).unwrap();
-        message.success('Partner created.');
+        message.success(t('partners.createSuccess'));
       }
       setModalOpen(false);
     } catch (err) {
-      message.error(err?.data?.message || 'Unable to save partner.');
+      message.error(err?.data?.message || t('partners.saveError'));
     }
   }
 
   async function handleLock(record) {
     try {
       await lockPartner(record.backendId).unwrap();
-      message.success('Partner locked.');
+      message.success(t('partners.lockSuccess'));
     } catch (err) {
-      message.error(err?.data?.message || 'Unable to lock partner.');
+      message.error(err?.data?.message || t('partners.lockError'));
     }
   }
 
   const columns = [
-    { title: 'Code', dataIndex: 'code', key: 'code', width: 130 },
-    { title: 'Name', dataIndex: 'name', key: 'name' },
+    { title: t('partners.code'), dataIndex: 'code', key: 'code', width: 130 },
+    { title: t('partners.name'), dataIndex: 'name', key: 'name' },
     {
-      title: 'Type',
+      title: t('partners.type'),
       dataIndex: 'type',
       key: 'type',
       width: 150,
       render: (type) => <Tag color={type === 'Customer' ? 'blue' : 'orange'}>{type}</Tag>
     },
-    { title: 'Tax Code / MST', dataIndex: 'taxCode', key: 'taxCode', width: 150 },
-    { title: 'Contact', dataIndex: 'contactPerson', key: 'contactPerson', width: 180 },
-    { title: 'Phone', dataIndex: 'phone', key: 'phone', width: 140 },
-    { title: 'Email', dataIndex: 'email', key: 'email', width: 210 },
+    { title: t('partners.taxCode'), dataIndex: 'taxCode', key: 'taxCode', width: 150 },
+    { title: t('partners.contact'), dataIndex: 'contactPerson', key: 'contactPerson', width: 180 },
+    { title: t('partners.phone'), dataIndex: 'phone', key: 'phone', width: 140 },
+    { title: t('partners.email'), dataIndex: 'email', key: 'email', width: 210 },
     {
-      title: 'Status',
+      title: t('partners.status'),
       dataIndex: 'isActive',
       key: 'isActive',
       width: 110,
-      render: (value) => <Tag color={value ? 'green' : 'red'}>{value ? 'Active' : 'Inactive'}</Tag>
+      render: (value) => <Tag color={value ? 'green' : 'red'}>{value ? t('partners.active') : t('partners.inactive')}</Tag>
     },
     {
-      title: 'Actions',
+      title: t('partners.actions'),
       key: 'actions',
       width: 150,
       render: (_, record) => (
         <Space>
           <Button icon={<EditOutlined />} onClick={() => openEditModal(record)} />
           <Popconfirm
-            title="Lock partner?"
-            description="The partner will remain in history but cannot be used as active data."
-            okText="Lock"
+            title={t('partners.lockPartner')}
+            description={t('partners.lockDescription')}
+            okText={t('partners.lock')}
             okButtonProps={{ danger: true }}
             onConfirm={() => handleLock(record)}
           >
@@ -148,24 +150,24 @@ export default function PartnersPage() {
     <DashboardLayout>
       <div className="page-header">
         <div>
-          <h1 className="page-title">Partners</h1>
-          <p className="page-subtitle">Customers, vendors, agents, and carriers used across jobs and accounting.</p>
+          <h1 className="page-title">{t('partners.title')}</h1>
+          <p className="page-subtitle">{t('partners.subtitle')}</p>
         </div>
         <Space>
-          <Button icon={<ReloadOutlined />} onClick={refetch}>Refresh</Button>
+          <Button icon={<ReloadOutlined />} onClick={refetch}>{t('partners.refresh')}</Button>
           <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>
-            Add Partner
+            {t('partners.addPartner')}
           </Button>
         </Space>
       </div>
 
-      {error ? <Alert type="error" showIcon message="Unable to load partners from the backend." style={{ marginBottom: 16 }} /> : null}
+      {error ? <Alert type="error" showIcon message={t('partners.loadError')} style={{ marginBottom: 16 }} /> : null}
 
       <Card className="table-card">
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, gap: 12 }}>
           <Input.Search
             allowClear
-            placeholder="Search code, name, tax code, phone, email"
+            placeholder={t('partners.searchPlaceholder')}
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             style={{ maxWidth: 420 }}
@@ -182,7 +184,7 @@ export default function PartnersPage() {
       </Card>
 
       <Modal
-        title={editingPartner ? 'Edit Partner' : 'Create Partner'}
+        title={editingPartner ? t('partners.editPartner') : t('partners.createPartner')}
         open={modalOpen}
         onCancel={() => setModalOpen(false)}
         onOk={() => form.submit()}
@@ -194,49 +196,49 @@ export default function PartnersPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 16 }}>
             <Form.Item
               name="code"
-              label="Partner Code"
-              rules={[{ required: true, message: 'Partner code is required.' }]}
+              label={t('partners.partnerCode')}
+              rules={[{ required: true, message: t('partners.partnerCodeRequired') }]}
             >
               <Input disabled={Boolean(editingPartner)} placeholder="CUS001" />
             </Form.Item>
             <Form.Item
               name="partnerType"
-              label="Partner Type"
-              rules={[{ required: true, message: 'Partner type is required.' }]}
+              label={t('partners.partnerType')}
+              rules={[{ required: true, message: t('partners.partnerTypeRequired') }]}
             >
               <Select options={partnerTypeOptions} />
             </Form.Item>
           </div>
-          <Form.Item name="name" label="Name" rules={[{ required: true, message: 'Partner name is required.' }]}>
+          <Form.Item name="name" label={t('partners.partnerName')} rules={[{ required: true, message: t('partners.partnerNameRequired') }]}>
             <Input placeholder="Company name" />
           </Form.Item>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 16 }}>
-            <Form.Item name="taxCode" label="Tax Code / MST">
+            <Form.Item name="taxCode" label={t('partners.taxCode')}>
               <Input placeholder="Tax code" />
             </Form.Item>
-            <Form.Item name="contactPerson" label="Contact Person">
+            <Form.Item name="contactPerson" label={t('partners.contactPerson')}>
               <Input placeholder="Primary contact" />
             </Form.Item>
             <Form.Item
               name="phone"
-              label="Phone"
-              rules={[{ pattern: /^[0-9+\-\s().]{7,20}$/, message: 'Enter a valid phone number.' }]}
+              label={t('partners.phone')}
+              rules={[{ pattern: /^[0-9+\-\s().]{7,20}$/, message: t('partners.phoneValidation') }]}
             >
               <Input placeholder="Phone number" />
             </Form.Item>
-            <Form.Item name="email" label="Email" rules={[{ type: 'email', message: 'Enter a valid email.' }]}>
+            <Form.Item name="email" label={t('partners.email')} rules={[{ type: 'email', message: t('partners.emailValidation') }]}>
               <Input placeholder="name@company.com" />
             </Form.Item>
           </div>
-          <Form.Item name="address" label="Address">
+          <Form.Item name="address" label={t('partners.address')}>
             <Input.TextArea rows={3} placeholder="Business address" />
           </Form.Item>
           {editingPartner ? (
-            <Form.Item name="isActive" label="Status">
+            <Form.Item name="isActive" label={t('partners.status')}>
               <Select
                 options={[
-                  { value: true, label: 'Active' },
-                  { value: false, label: 'Inactive' }
+                  { value: true, label: t('partners.active') },
+                  { value: false, label: t('partners.inactive') }
                 ]}
               />
             </Form.Item>

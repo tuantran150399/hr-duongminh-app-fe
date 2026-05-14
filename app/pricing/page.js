@@ -31,21 +31,13 @@ import {
 } from '@ant-design/icons';
 import { useMemo, useState } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
+import { useLanguage } from '@/components/AppProviders';
 import { formatCurrency } from '@/utils/format';
 import { useGetServicePricesQuery, useCreateServicePriceMutation, useImportServicePricesMutation } from '@/store/services/pricingApi';
 import { useGetPartnersQuery } from '@/store/services/partnersApi';
 
-const serviceTypeOptions = [
-  { label: 'Customs', value: 'CUSTOMS' },
-  { label: 'Trucking', value: 'TRUCKING' },
-  { label: 'Sea Freight', value: 'SEA_FREIGHT' },
-  { label: 'Air Freight', value: 'AIR_FREIGHT' },
-  { label: 'Local Charge', value: 'LOCAL_CHARGE' },
-  { label: 'LCL', value: 'LCL' },
-  { label: 'Other', value: 'OTHER' }
-];
-
 export default function PricingPage() {
+  const { t } = useLanguage();
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -58,7 +50,17 @@ export default function PricingPage() {
 
   const data = pricingData?.items || [];
   const partners = (partnersData?.items || []).filter(p => p.isActive);
-  const loadError = loadErrorObj ? 'Unable to load pricing data from the backend.' : '';
+  const loadError = loadErrorObj ? t('pricing.loadError') : '';
+
+  const serviceTypeOptions = [
+    { label: t('pricing.customs'), value: 'CUSTOMS' },
+    { label: t('pricing.trucking'), value: 'TRUCKING' },
+    { label: t('pricing.seaFreight'), value: 'SEA_FREIGHT' },
+    { label: t('pricing.airFreight'), value: 'AIR_FREIGHT' },
+    { label: t('pricing.localCharge'), value: 'LOCAL_CHARGE' },
+    { label: t('pricing.lcl'), value: 'LCL' },
+    { label: t('pricing.other'), value: 'OTHER' }
+  ];
 
   const partnerMap = useMemo(
     () => partners.reduce((result, partner) => {
@@ -101,13 +103,13 @@ export default function PricingPage() {
         effectiveFrom: values.effectiveFrom?.format('YYYY-MM-DD'),
         effectiveTo: values.effectiveTo?.format('YYYY-MM-DD')
       }).unwrap();
-      message.success('New tariff added successfully');
+      message.success(t('pricing.createSuccess'));
 
       setModalOpen(false);
       form.resetFields();
       
     } catch (err) {
-      message.error(err?.data?.message || 'Unable to create service price.');
+      message.error(err?.data?.message || t('pricing.createError'));
     } finally {
       setSaving(false);
     }
@@ -119,11 +121,11 @@ export default function PricingPage() {
     try {
       const result = await importServicePrices(file).unwrap();
       const errorSuffix = result.errorCount ? ` ${result.errorCount} row(s) failed.` : '';
-      message.success(`Imported ${result.createdCount || 0} new tariff(s), updated ${result.updatedCount || 0}.${errorSuffix}`);
+      message.success(t('pricing.importSuccess', { created: result.createdCount || 0, updated: result.updatedCount || 0, errorSuffix }));
       
       onSuccess?.(result);
     } catch (err) {
-      const errorMessage = err?.data?.message || 'Unable to import pricing file.';
+      const errorMessage = err?.data?.message || t('pricing.importError');
       message.error(errorMessage);
       onError?.(err);
     }
@@ -136,28 +138,28 @@ export default function PricingPage() {
   const coveredRoutes = new Set(data.map((item) => `${item.routeFrom || ''}-${item.routeTo || ''}`)).size;
 
   const columns = [
-    { title: 'Partner', dataIndex: 'partnerId', key: 'partnerId', render: value => partnerMap[value]?.name || 'General tariff' },
-    { title: 'Service Type', dataIndex: 'serviceType', key: 'serviceType', render: value => <Tag color="blue">{value}</Tag> },
-    { title: 'Shipment', dataIndex: 'shipmentMode', key: 'shipmentMode', render: value => value || '-' },
+    { title: t('pricing.partner'), dataIndex: 'partnerId', key: 'partnerId', render: value => partnerMap[value]?.name || t('pricing.generalTariff') },
+    { title: t('pricing.serviceType'), dataIndex: 'serviceType', key: 'serviceType', render: value => <Tag color="blue">{value}</Tag> },
+    { title: t('pricing.shipment'), dataIndex: 'shipmentMode', key: 'shipmentMode', render: value => value || '-' },
     {
-      title: 'Route',
+      title: t('pricing.route'),
       key: 'route',
       render: (_, record) => <strong>{[record.routeFrom, record.routeTo].filter(Boolean).join(' -> ') || '-'}</strong>
     },
-    { title: 'Unit', dataIndex: 'unit', key: 'unit', render: value => value || '-' },
+    { title: t('pricing.unit'), dataIndex: 'unit', key: 'unit', render: value => value || '-' },
     { 
-      title: 'Rate',
+      title: t('pricing.rate'),
       dataIndex: 'amount',
       key: 'rate',
       align: 'right',
       render: (val, record) => <span style={{ fontWeight: 600, color: '#0057c2' }}>{Number(val || 0).toLocaleString()} {record.currency || 'VND'}</span>
     },
-    { title: 'Effective To', dataIndex: 'effectiveTo', key: 'effectiveTo', render: value => value || '-' },
+    { title: t('pricing.effectiveTo'), dataIndex: 'effectiveTo', key: 'effectiveTo', render: value => value || '-' },
     { 
-      title: 'Status',
+      title: t('pricing.status'),
       dataIndex: 'isActive',
       key: 'status',
-      render: value => <Tag color={value === false ? 'red' : 'green'}>{value === false ? 'Inactive' : 'Active'}</Tag>
+      render: value => <Tag color={value === false ? 'red' : 'green'}>{value === false ? t('pricing.inactive') : t('pricing.active')}</Tag>
     }
   ];
 
@@ -165,17 +167,17 @@ export default function PricingPage() {
     <DashboardLayout>
       <div className="page-header">
         <div>
-          <Typography.Title level={1} className="page-title">Pricing & Tariffs</Typography.Title>
+          <Typography.Title level={1} className="page-title">{t('pricing.title')}</Typography.Title>
           <Typography.Paragraph className="page-subtitle">
-            Manage standard rates, carrier tariffs, and bulk Excel imports.
+            {t('pricing.subtitle')}
           </Typography.Paragraph>
         </div>
         <Space wrap>
           <Upload accept=".xlsx,.xls,.csv" showUploadList={false} customRequest={handleImport}>
-            <Button icon={<CloudUploadOutlined />}>Import Excel</Button>
+            <Button icon={<CloudUploadOutlined />}>{t('pricing.importExcel')}</Button>
           </Upload>
           <Button type="primary" icon={<PlusOutlined />} onClick={() => { form.resetFields(); setModalOpen(true); }}>
-            Add Tariff
+            {t('pricing.addTariff')}
           </Button>
         </Space>
       </div>
@@ -185,17 +187,17 @@ export default function PricingPage() {
       <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
         <Col xs={24} md={8}>
           <Card>
-            <Statistic title="Active Tariffs" value={activeTariffs} prefix={<TagOutlined />} />
+            <Statistic title={t('pricing.activeTariffs')} value={activeTariffs} prefix={<TagOutlined />} />
           </Card>
         </Col>
         <Col xs={24} md={8}>
           <Card>
-            <Statistic title="Average Rate" value={averageRate} formatter={formatCurrency} prefix={<RiseOutlined />} />
+            <Statistic title={t('pricing.averageRate')} value={averageRate} formatter={formatCurrency} prefix={<RiseOutlined />} />
           </Card>
         </Col>
         <Col xs={24} md={8}>
           <Card>
-            <Statistic title="Routes Covered" value={coveredRoutes} prefix={<GlobalOutlined />} />
+            <Statistic title={t('pricing.routesCovered')} value={coveredRoutes} prefix={<GlobalOutlined />} />
           </Card>
         </Col>
       </Row>
@@ -203,7 +205,7 @@ export default function PricingPage() {
       <Card className="table-card">
         <div style={{ marginBottom: 16 }}>
           <Input
-            placeholder="Search by route or carrier..."
+            placeholder={t('pricing.searchPlaceholder')}
             prefix={<SearchOutlined />}
             value={search}
             onChange={e => setSearch(e.target.value)}
@@ -216,12 +218,12 @@ export default function PricingPage() {
           loading={loading}
           rowKey="id"
           pagination={{ pageSize: 10 }}
-          locale={{ emptyText: <Empty description="No pricing records found." image={Empty.PRESENTED_IMAGE_SIMPLE} /> }}
+          locale={{ emptyText: <Empty description={t('pricing.noRecords')} image={Empty.PRESENTED_IMAGE_SIMPLE} /> }}
         />
       </Card>
 
       <Modal
-        title="Add New Tariff"
+        title={t('pricing.addTariffTitle')}
         open={modalOpen}
         onCancel={() => setModalOpen(false)}
         onOk={() => form.submit()}
@@ -229,7 +231,7 @@ export default function PricingPage() {
         width={600}
       >
         <Form form={form} layout="vertical" onFinish={handleSave}>
-          <Form.Item name="partnerId" label="Partner">
+          <Form.Item name="partnerId" label={t('pricing.partner')}>
             <Select
               allowClear
               showSearch
@@ -238,74 +240,74 @@ export default function PricingPage() {
                 value: partner.backendId,
                 label: `${partner.code} - ${partner.name}`
               }))}
-              placeholder="Optional customer/vendor specific tariff"
+              placeholder={t('pricing.partnerPlaceholder')}
             />
           </Form.Item>
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item name="serviceType" label="Service Type" rules={[{ required: true, message: 'Service type is required.' }]}>
+              <Form.Item name="serviceType" label={t('pricing.serviceType')} rules={[{ required: true, message: t('pricing.serviceTypeRequired') }]}>
                 <Select options={serviceTypeOptions} />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="shipmentMode" label="Shipment Mode">
-                <Input placeholder="e.g. SEA_FCL, AIR, ROAD" />
+              <Form.Item name="shipmentMode" label={t('pricing.shipmentMode')}>
+                <Input placeholder={t('pricing.shipmentModePlaceholder')} />
               </Form.Item>
             </Col>
           </Row>
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item name="routeFrom" label="Route From">
-                <Input placeholder="Origin / port of loading" />
+              <Form.Item name="routeFrom" label={t('pricing.routeFrom')}>
+                <Input placeholder={t('pricing.routeFromPlaceholder')} />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="routeTo" label="Route To">
-                <Input placeholder="Destination / port of discharge" />
+              <Form.Item name="routeTo" label={t('pricing.routeTo')}>
+                <Input placeholder={t('pricing.routeToPlaceholder')} />
               </Form.Item>
             </Col>
           </Row>
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item name="unit" label="Unit">
-                <Input placeholder="e.g. Container, KG, CBM" />
+              <Form.Item name="unit" label={t('pricing.unit')}>
+                <Input placeholder={t('pricing.unitPlaceholder')} />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="currency" label="Currency" initialValue="VND">
+              <Form.Item name="currency" label={t('pricing.currency')} initialValue="VND">
                 <Select options={[{ value: 'VND', label: 'VND' }, { value: 'USD', label: 'USD' }, { value: 'EUR', label: 'EUR' }]} />
               </Form.Item>
             </Col>
           </Row>
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item name="amount" label="Rate" rules={[{ required: true, message: 'Rate is required.' }]}>
+              <Form.Item name="amount" label={t('pricing.rate')} rules={[{ required: true, message: t('pricing.rateRequired') }]}>
                 <InputNumber style={{ width: '100%' }} min={0} />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="minQuantity" label="Min Quantity">
+              <Form.Item name="minQuantity" label={t('pricing.minQuantity')}>
                 <InputNumber style={{ width: '100%' }} min={0} />
               </Form.Item>
             </Col>
           </Row>
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item name="maxQuantity" label="Max Quantity">
+              <Form.Item name="maxQuantity" label={t('pricing.maxQuantity')}>
                 <InputNumber style={{ width: '100%' }} min={0} />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="effectiveFrom" label="Effective From">
+              <Form.Item name="effectiveFrom" label={t('pricing.effectiveFrom')}>
                 <DatePicker format="DD/MM/YYYY" style={{ width: '100%' }} />
               </Form.Item>
             </Col>
           </Row>
-          <Form.Item name="effectiveTo" label="Effective To">
+          <Form.Item name="effectiveTo" label={t('pricing.effectiveTo')}>
             <DatePicker format="DD/MM/YYYY" style={{ width: '100%' }} />
           </Form.Item>
-          <Form.Item name="notes" label="Notes">
-            <Input.TextArea rows={3} placeholder="Notes" />
+          <Form.Item name="notes" label={t('pricing.notes')}>
+            <Input.TextArea rows={3} placeholder={t('pricing.notes')} />
           </Form.Item>
         </Form>
       </Modal>
