@@ -13,7 +13,10 @@ export const jobsApi = createApi({
         method: 'GET',
         params
       }),
-      transformResponse: (response) => extractPaginatedItems(response),
+      transformResponse: (response) => {
+        const { items, meta } = extractPaginatedItems(response);
+        return { items: items.map((job) => normalizeJob(job)).filter(Boolean), meta };
+      },
       providesTags: (result) =>
         result?.items
           ? [

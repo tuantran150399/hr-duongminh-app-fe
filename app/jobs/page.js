@@ -142,8 +142,7 @@ export default function JobsPage() {
 
   const partnersById = useMemo(() => {
     const partners = partnersData?.items || [];
-    return partners.reduce((result, raw) => {
-      const partner = normalizePartner(raw);
+    return partners.reduce((result, partner) => {
       if (partner) result[partner.backendId] = partner;
       return result;
     }, {});

@@ -1,6 +1,6 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 import { axiosBaseQuery } from '@/store/axiosBaseQuery';
-import { extractPaginatedItems } from '@/utils/apiMappers';
+import { extractPaginatedItems, normalizePartner } from '@/utils/apiMappers';
 
 export const partnersApi = createApi({
   reducerPath: 'partnersApi',
@@ -13,7 +13,10 @@ export const partnersApi = createApi({
         method: 'GET',
         params
       }),
-      transformResponse: (response) => extractPaginatedItems(response),
+      transformResponse: (response) => {
+        const { items, meta } = extractPaginatedItems(response);
+        return { items: items.map((p) => normalizePartner(p)).filter(Boolean), meta };
+      },
       providesTags: (result) =>
         result?.items
           ? [

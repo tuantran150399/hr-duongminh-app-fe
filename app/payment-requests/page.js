@@ -81,7 +81,7 @@ export default function PaymentRequestsPage() {
   const loadError = loadErrorObj ? t('paymentRequests.loadError') : '';
 
   const jobOptions = useMemo(
-    () => jobs.map((job) => ({ value: job.backendId, label: `${job.job_no} - ${job.customer}` })),
+    () => jobs.map((job) => ({ value: job.backendId, label: `${job.job_no || job.id} - ${job.customer || ''}` })),
     [jobs]
   );
 

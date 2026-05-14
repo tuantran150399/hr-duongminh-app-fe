@@ -272,7 +272,10 @@ export default function AccountingPage() {
   }, [activeRows, search, statusFilter]);
 
   const jobOptions = useMemo(
-    () => jobs.map((job) => ({ value: job.backendId, label: `${job.job_no} - ${job.customer}` })),
+    () => jobs.map((job) => ({
+      value: job.backendId,
+      label: `${job.job_no || job.raw?.jobCode || job.id} - ${job.customer || job.raw?.partnerName || ''}`
+    })),
     [jobs]
   );
 

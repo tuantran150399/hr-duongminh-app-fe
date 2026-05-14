@@ -313,7 +313,7 @@ export default function DebitNotesPage() {
   const loadError = loadErrorObj ? t('debitNotes.loadError') : '';
 
   const jobOptions = useMemo(
-    () => jobs.map((job) => ({ value: job.backendId, label: `${job.job_no} - ${job.customer}` })),
+    () => jobs.map((job) => ({ value: job.backendId, label: `${job.job_no || job.id} - ${job.customer || ''}` })),
     [jobs]
   );
 

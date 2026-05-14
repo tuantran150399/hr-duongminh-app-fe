@@ -61,7 +61,7 @@ export function normalizeEntry(entry) {
   return {
     id: String(entry.id),
     backendId: entry.id,
-    job_no: entry.jobCode || entry.job?.jobCode || `Job #${entry.jobId ?? '-'}`,
+    job_no: entry.jobCode || entry.job?.jobCode || (entry.jobId ? `Job #${entry.jobId}` : '-'),
     jobId: entry.jobId,
     vendorId: entry.vendorId,
     description: entry.description || '-',

@@ -112,8 +112,7 @@ function JobDetailContent() {
 
   // Build dropdown options
   const partners = useMemo(() => {
-    const items = partnersData?.items || [];
-    return items.map(normalizePartner).filter(Boolean);
+    return partnersData?.items || [];
   }, [partnersData]);
 
   const partnerOptions = useMemo(

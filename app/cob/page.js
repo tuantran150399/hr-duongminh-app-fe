@@ -66,7 +66,7 @@ export default function CobPage() {
   const partners = (partnersData?.items || []).filter((p) => p.isActive);
 
   const jobOptions = useMemo(
-    () => jobs.map((j) => ({ value: j.backendId, label: `${j.job_no} - ${j.customer}` })),
+    () => jobs.map((j) => ({ value: j.backendId, label: `${j.job_no || j.id} - ${j.customer || ''}` })),
     [jobs]
   );
 

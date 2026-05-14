@@ -46,7 +46,7 @@ export default function CreateJobPage() {
   // Build options từ RTK Query cache
   const partners = useMemo(() => {
     const items = partnersData?.items || [];
-    return items.map(normalizePartner).filter((p) => p?.isActive);
+    return items.filter((p) => p?.isActive);
   }, [partnersData]);
 
   const partnerOptions = useMemo(
