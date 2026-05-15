@@ -63,6 +63,23 @@ export const paymentRequestsApi = createApi({
         { type: 'PaymentRequest', id },
         { type: 'PaymentRequest', id: 'LIST' }
       ]
+    }),
+
+    updatePaymentRequest: builder.mutation({
+      query: ({ id, ...body }) => ({
+        url: `/payment-requests/${id}`,
+        method: 'PUT',
+        data: body
+      }),
+      invalidatesTags: (_result, _error, { id }) => [
+        { type: 'PaymentRequest', id },
+        { type: 'PaymentRequest', id: 'LIST' }
+      ]
+    }),
+
+    deletePaymentRequest: builder.mutation({
+      query: (id) => ({ url: `/payment-requests/${id}`, method: 'DELETE' }),
+      invalidatesTags: [{ type: 'PaymentRequest', id: 'LIST' }]
     })
   })
 });
@@ -73,5 +90,7 @@ export const {
   useCreatePaymentRequestMutation,
   useApprovePaymentRequestMutation,
   useFinalApprovePaymentRequestMutation,
-  useRejectPaymentRequestMutation
+  useRejectPaymentRequestMutation,
+  useUpdatePaymentRequestMutation,
+  useDeletePaymentRequestMutation
 } = paymentRequestsApi;

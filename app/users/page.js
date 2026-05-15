@@ -4,7 +4,7 @@ import {
   Alert, Button, Card, Form, Input, Modal, Popconfirm,
   Select, Space, Switch, Table, Tabs, Tag, message
 } from 'antd';
-import { PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import { useMemo, useState } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { useLanguage } from '@/components/AppProviders';
@@ -172,7 +172,7 @@ export default function UsersPage() {
       align: 'right',
       render: (_, record) => (
         <Space>
-          <Button size="small" onClick={() => openUserModal(record)}>{t('users.edit')}</Button>
+          <Button size="small" icon={<EditOutlined />} title={t('users.edit')} onClick={() => openUserModal(record)} />
           <Popconfirm
             title={t('users.deactivateConfirm')}
             okText={t('users.deactivate')}
@@ -182,7 +182,7 @@ export default function UsersPage() {
               message.success(t('users.userDeactivated'));
             }}
           >
-            <Button size="small" danger>{t('users.deactivate')}</Button>
+            <Button size="small" danger icon={<DeleteOutlined />} title={t('users.deactivate')} />
           </Popconfirm>
         </Space>
       )
@@ -208,7 +208,7 @@ export default function UsersPage() {
       title: t('users.actions'),
       key: 'actions',
       align: 'right',
-      render: (_, record) => <Button size="small" onClick={() => openRoleModal(record)}>{t('users.edit')}</Button>
+      render: (_, record) => <Button size="small" icon={<EditOutlined />} title={t('users.edit')} onClick={() => openRoleModal(record)} />
     }
   ];
 

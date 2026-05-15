@@ -26,6 +26,7 @@ import {
   CheckCircleOutlined,
   CloseCircleOutlined,
   DeleteOutlined,
+  EditOutlined,
   FileAddOutlined,
   PlusOutlined,
   ReloadOutlined,
@@ -38,6 +39,8 @@ import { useLanguage } from '@/components/AppProviders';
 import {
   useGetDebitNotesQuery,
   useCreateDebitNoteMutation,
+  useUpdateDebitNoteMutation,
+  useDeleteDebitNoteMutation,
   usePostDebitNoteMutation,
   useVoidDebitNoteMutation,
   useSendDebitNoteMutation
@@ -289,6 +292,7 @@ export default function DebitNotesPage() {
   const [lineItems, setLineItems] = useState([]);
   const [selectedPartnerId, setSelectedPartnerId] = useState(null);
   const [selectedJobId, setSelectedJobId] = useState(null);
+  const [editingRecord, setEditingRecord] = useState(null);
 
   const statusColor = {
     DRAFT: 'default',
@@ -302,6 +306,8 @@ export default function DebitNotesPage() {
   const { data: partnersData } = useGetPartnersQuery();
   const { data: pricingData } = useGetServicePricesQuery();
   const [createDebitNote] = useCreateDebitNoteMutation();
+  const [updateDebitNote] = useUpdateDebitNoteMutation();
+  const [deleteDebitNote] = useDeleteDebitNoteMutation();
   const [postDebitNote] = usePostDebitNoteMutation();
   const [voidDebitNote] = useVoidDebitNoteMutation();
   const [sendDebitNote] = useSendDebitNoteMutation();
@@ -340,11 +346,37 @@ export default function DebitNotesPage() {
   );
 
   function openCreateModal() {
+    setEditingRecord(null);
     form.resetFields();
     form.setFieldsValue({ currency: 'VND' });
     setLineItems([]);
     setSelectedPartnerId(null);
     setSelectedJobId(null);
+    setModalOpen(true);
+  }
+
+  function openEditModal(record) {
+    setEditingRecord(record);
+    form.setFieldsValue({
+      partnerId: record.raw?.partnerId,
+      jobId: record.jobId,
+      currency: record.currency || 'VND',
+      description: record.raw?.description || ''
+    });
+    setSelectedPartnerId(record.raw?.partnerId);
+    setSelectedJobId(record.jobId);
+    const existingLines = (record.raw?.lineItems || []).map((line, idx) => ({
+      key: `edit-${Date.now()}-${idx}`,
+      serviceType: line.serviceType || '',
+      description: line.description || '',
+      quantity: Number(line.quantity || 1),
+      unitPrice: Number(line.unitPrice || 0),
+      amount: Number(line.amount || 0),
+      currency: line.currency || 'VND',
+      pricingId: line.pricingId || null,
+      isAutoFilled: false
+    }));
+    setLineItems(existingLines);
     setModalOpen(true);
   }
 
@@ -380,6 +412,7 @@ export default function DebitNotesPage() {
       await createDebitNote(payload).unwrap();
       message.success(t('debitNotes.createSuccess'));
       setModalOpen(false);
+      setEditingRecord(null);
     } catch (err) {
       message.error(err?.data?.message || t('debitNotes.createError'));
     } finally {
@@ -492,6 +525,21 @@ export default function DebitNotesPage() {
         return (
           <Space>
             {isDraft && (
+              <>
+                <Button size="small" icon={<EditOutlined />} title={t('debitNotes.edit')} onClick={() => openEditModal(record)} />
+                <Popconfirm title={t('debitNotes.deleteConfirm')} onConfirm={async () => {
+                  try {
+                    await deleteDebitNote(record.backendId).unwrap();
+                    message.success(t('debitNotes.deleteSuccess'));
+                  } catch (err) {
+                    message.error(err?.data?.message || t('debitNotes.deleteError'));
+                  }
+                }}>
+                  <Button size="small" danger icon={<DeleteOutlined />} title={t('debitNotes.delete')} />
+                </Popconfirm>
+              </>
+            )}
+            {isDraft && (
               <Popconfirm title={t('debitNotes.postConfirm')} onConfirm={() => handlePost(record)}>
                 <Button type="primary" size="small" icon={<CheckCircleOutlined />} title={t('debitNotes.post')} />
               </Popconfirm>
@@ -565,11 +613,11 @@ export default function DebitNotesPage() {
         title={
           <Space>
             <FileAddOutlined />
-            {t('debitNotes.createTitle')}
+            {editingRecord ? t('debitNotes.editTitle') : t('debitNotes.createTitle')}
           </Space>
         }
         open={modalOpen}
-        onCancel={() => setModalOpen(false)}
+        onCancel={() => { setModalOpen(false); setEditingRecord(null); }}
         onOk={() => form.submit()}
         confirmLoading={saving}
         destroyOnHidden

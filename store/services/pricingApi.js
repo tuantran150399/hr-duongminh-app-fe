@@ -51,6 +51,23 @@ export const pricingApi = createApi({
         return items || [];
       },
       providesTags: [{ type: 'Pricing', id: 'LOOKUP' }]
+    }),
+
+    updateServicePrice: builder.mutation({
+      query: ({ id, ...body }) => ({
+        url: `/pricing/${id}`,
+        method: 'PUT',
+        data: body
+      }),
+      invalidatesTags: (_result, _error, { id }) => [
+        { type: 'Pricing', id },
+        { type: 'Pricing', id: 'LIST' }
+      ]
+    }),
+
+    deleteServicePrice: builder.mutation({
+      query: (id) => ({ url: `/pricing/${id}`, method: 'DELETE' }),
+      invalidatesTags: [{ type: 'Pricing', id: 'LIST' }]
     })
   })
 });
@@ -59,5 +76,7 @@ export const {
   useGetServicePricesQuery,
   useCreateServicePriceMutation,
   useImportServicePricesMutation,
-  useLookupPricingQuery
+  useLookupPricingQuery,
+  useUpdateServicePriceMutation,
+  useDeleteServicePriceMutation
 } = pricingApi;

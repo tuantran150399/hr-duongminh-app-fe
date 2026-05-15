@@ -47,8 +47,11 @@ export default function DebtPoliciesPage() {
     [partners]
   );
 
+  const [editingRecord, setEditingRecord] = useState(null);
+
   function openUpsertModal(record = null) {
     form.resetFields();
+    setEditingRecord(record);
     if (record) {
       form.setFieldsValue({
         partnerId: record.partnerId,
@@ -193,7 +196,7 @@ export default function DebtPoliciesPage() {
               optionFilterProp="label"
               options={partnerOptions}
               placeholder={t('debtPolicies.selectPartner')}
-              disabled={Boolean(form.getFieldValue('partnerId')) && modalOpen}
+              disabled={Boolean(editingRecord)}
             />
           </Form.Item>
 

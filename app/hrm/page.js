@@ -7,8 +7,8 @@ import {
 } from 'antd';
 import {
   CheckCircleOutlined, ClockCircleOutlined,
-  DollarOutlined, FileAddOutlined, FileExcelOutlined,
-  SearchOutlined, TeamOutlined, UserAddOutlined
+  DollarOutlined, EditOutlined, EyeOutlined, FileAddOutlined, FileExcelOutlined,
+  LockOutlined, SearchOutlined, TeamOutlined, UserAddOutlined
 } from '@ant-design/icons';
 import { useState, useMemo } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
@@ -56,6 +56,8 @@ export default function HRMPage() {
   const [payrollModalOpen, setPayrollModalOpen] = useState(false);
   const [form] = Form.useForm();
   const [payrollForm] = Form.useForm();
+  const [viewEmployee, setViewEmployee] = useState(null);
+  const [editingEmployee, setEditingEmployee] = useState(null);
 
   const { data: empData, isLoading: loadingEmp, error: empError } = useGetEmployeesQuery();
   const { data: attData, isLoading: loadingAtt, error: attError } = useGetAttendanceQuery();
@@ -124,16 +126,47 @@ export default function HRMPage() {
 
   async function saveEmployee(values) {
     try {
-      await createEmployee({
-        ...values,
-        hireDate: values.hireDate?.format ? values.hireDate.format('YYYY-MM-DD') : values.hireDate,
-        status: 'ACTIVE'
-      }).unwrap();
-      message.success(t('hrm.addEmpSuccess'));
+      if (editingEmployee) {
+        await updateEmployee({
+          id: editingEmployee.id,
+          ...values,
+          hireDate: values.hireDate?.format ? values.hireDate.format('YYYY-MM-DD') : values.hireDate
+        }).unwrap();
+        message.success(t('hrm.updateEmpSuccess'));
+      } else {
+        await createEmployee({
+          ...values,
+          hireDate: values.hireDate?.format ? values.hireDate.format('YYYY-MM-DD') : values.hireDate,
+          status: 'ACTIVE'
+        }).unwrap();
+        message.success(t('hrm.addEmpSuccess'));
+      }
       setModalOpen(false);
+      setEditingEmployee(null);
       form.resetFields();
     } catch {
-      message.error(t('hrm.addEmpError'));
+      message.error(editingEmployee ? t('hrm.updateEmpError') : t('hrm.addEmpError'));
+    }
+  }
+
+  function openEditEmployee(record) {
+    setEditingEmployee(record);
+    form.setFieldsValue({
+      employeeCode: record.employeeCode,
+      fullName: record.fullName,
+      phone: record.phone,
+      department: record.department,
+      position: record.position
+    });
+    setModalOpen(true);
+  }
+
+  async function handleDeactivateEmployee(record) {
+    try {
+      await updateEmployee({ id: record.id, status: 'TERMINATED' }).unwrap();
+      message.success(t('hrm.deactivateSuccess'));
+    } catch {
+      message.error(t('hrm.deactivateError'));
     }
   }
 
@@ -190,7 +223,22 @@ export default function HRMPage() {
         return <Tag color="default">{t('hrm.inactive')}</Tag>;
       }
     },
-    { title: t('hrm.actions'), key: 'actions', render: () => <Button type="link">{t('hrm.viewProfile')}</Button> }
+    {
+      title: t('hrm.actions'),
+      key: 'actions',
+      width: 120,
+      render: (_, record) => (
+        <Space size={4}>
+          <Button type="text" size="small" icon={<EyeOutlined />} title={t('hrm.viewProfile')} onClick={() => setViewEmployee(record)} />
+          <Button type="text" size="small" icon={<EditOutlined />} title={t('hrm.editEmployee')} onClick={() => openEditEmployee(record)} />
+          {record.status === 'ACTIVE' && (
+            <Popconfirm title={t('hrm.deactivateConfirm')} onConfirm={() => handleDeactivateEmployee(record)}>
+              <Button type="text" size="small" danger icon={<LockOutlined />} title={t('hrm.deactivate')} />
+            </Popconfirm>
+          )}
+        </Space>
+      )
+    }
   ];
 
   const attendanceColumns = [
@@ -341,7 +389,7 @@ export default function HRMPage() {
           </Typography.Paragraph>
         </div>
         {activeTab === 'employees' && (
-          <Button type="primary" icon={<UserAddOutlined />} onClick={() => { form.resetFields(); setModalOpen(true); }}>
+          <Button type="primary" icon={<UserAddOutlined />} onClick={() => { setEditingEmployee(null); form.resetFields(); setModalOpen(true); }}>
             {t('hrm.addEmployee')}
           </Button>
         )}
@@ -365,7 +413,7 @@ export default function HRMPage() {
         <Tabs activeKey={activeTab} onChange={(key) => { setActiveTab(key); setSearch(''); }} items={tabItems} />
       </Card>
 
-      <Modal title={t('hrm.addEmpTitle')} open={modalOpen} onCancel={() => setModalOpen(false)}
+      <Modal title={editingEmployee ? t('hrm.editEmpTitle') : t('hrm.addEmpTitle')} open={modalOpen} onCancel={() => { setModalOpen(false); setEditingEmployee(null); }}
         onOk={() => form.submit()} destroyOnHidden width={600}>
         <Form form={form} layout="vertical" onFinish={saveEmployee}>
           <Row gutter={16}>
@@ -445,6 +493,40 @@ export default function HRMPage() {
             <InputNumber style={{ width: '100%' }} min={0} step={100000} />
           </Form.Item>
         </Form>
+      </Modal>
+
+      {/* Employee View Profile Modal */}
+      <Modal
+        title={t('hrm.viewProfile')}
+        open={Boolean(viewEmployee)}
+        onCancel={() => setViewEmployee(null)}
+        footer={null}
+        width={520}
+      >
+        {viewEmployee && (
+          <div style={{ lineHeight: 2.2 }}>
+            <Row gutter={16}>
+              <Col span={12}><strong>{t('hrm.empCode')}:</strong> {viewEmployee.employeeCode}</Col>
+              <Col span={12}><strong>{t('hrm.fullName')}:</strong> {viewEmployee.fullName}</Col>
+            </Row>
+            <Row gutter={16}>
+              <Col span={12}><strong>{t('hrm.department')}:</strong> <Tag color={deptColors[viewEmployee.department] || 'default'}>{viewEmployee.department || '-'}</Tag></Col>
+              <Col span={12}><strong>{t('hrm.position')}:</strong> {viewEmployee.position || '-'}</Col>
+            </Row>
+            <Row gutter={16}>
+              <Col span={12}><strong>{t('hrm.phone')}:</strong> {viewEmployee.phone || '-'}</Col>
+              <Col span={12}><strong>{t('hrm.joinDate')}:</strong> {formatDate(viewEmployee.hireDate)}</Col>
+            </Row>
+            <Row gutter={16}>
+              <Col span={12}>
+                <strong>{t('hrm.status')}:</strong>{' '}
+                {viewEmployee.status === 'ACTIVE'
+                  ? <Tag color="green" icon={<CheckCircleOutlined />}>{t('hrm.active')}</Tag>
+                  : <Tag color="red">{t('hrm.inactive')}</Tag>}
+              </Col>
+            </Row>
+          </div>
+        )}
       </Modal>
     </DashboardLayout>
   );

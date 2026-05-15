@@ -6,8 +6,8 @@ import {
   Typography, message
 } from 'antd';
 import {
-  CheckCircleOutlined, CloseCircleOutlined, DollarOutlined,
-  FileAddOutlined, SafetyCertificateOutlined, WalletOutlined
+  CheckCircleOutlined, CloseCircleOutlined, DeleteOutlined, DollarOutlined,
+  EditOutlined, FileAddOutlined, SafetyCertificateOutlined, WalletOutlined
 } from '@ant-design/icons';
 import { useState, useMemo, useEffect } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
@@ -19,7 +19,9 @@ import {
   useCreateAdvanceMutation,
   useApproveAdvanceMutation,
   useRejectAdvanceMutation,
-  useSettleAdvanceMutation
+  useSettleAdvanceMutation,
+  useUpdateAdvanceMutation,
+  useDeleteAdvanceMutation
 } from '@/store/services/advancesApi';
 
 const statusColor = {
@@ -58,6 +60,9 @@ export default function AdvancesPage() {
   const [approveAdvance] = useApproveAdvanceMutation();
   const [rejectAdvance, { isLoading: isRejecting }] = useRejectAdvanceMutation();
   const [settleAdvance, { isLoading: isSettling }] = useSettleAdvanceMutation();
+  const [updateAdvance] = useUpdateAdvanceMutation();
+  const [deleteAdvance] = useDeleteAdvanceMutation();
+  const [editingRecord, setEditingRecord] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -142,13 +147,40 @@ export default function AdvancesPage() {
     };
 
     try {
-      await createAdvance(payload).unwrap();
-      message.success(t('advances.createSuccess'));
+      if (editingRecord) {
+        await updateAdvance({ id: editingRecord.id, ...payload }).unwrap();
+        message.success(t('advances.updateSuccess'));
+      } else {
+        await createAdvance(payload).unwrap();
+        message.success(t('advances.createSuccess'));
+      }
       setModalOpen(false);
+      setEditingRecord(null);
       form.resetFields();
       refetch();
     } catch (requestError) {
       message.error(requestError?.data?.message || t('advances.createError'));
+    }
+  }
+
+  function openEditAdvance(record) {
+    setEditingRecord(record);
+    form.setFieldsValue({
+      employeeId: record.employeeId,
+      amount: record.amount,
+      currency: record.currency || 'VND',
+      purpose: record.purpose
+    });
+    setModalOpen(true);
+  }
+
+  async function handleDeleteAdvance(record) {
+    try {
+      await deleteAdvance(record.id).unwrap();
+      message.success(t('advances.deleteSuccess'));
+      refetch();
+    } catch (requestError) {
+      message.error(requestError?.data?.message || t('advances.deleteError'));
     }
   }
 
@@ -244,10 +276,14 @@ export default function AdvancesPage() {
         <Space>
           {record.status === 'PENDING' ? (
             <>
-              <Popconfirm title={t('advances.approveConfirm')} onConfirm={() => handleApprove(record)}>
-                <Button size="small" type="primary" icon={<CheckCircleOutlined />} />
+              <Button size="small" icon={<EditOutlined />} title={t('advances.edit')} onClick={() => openEditAdvance(record)} />
+              <Popconfirm title={t('advances.deleteConfirm')} onConfirm={() => handleDeleteAdvance(record)}>
+                <Button size="small" danger icon={<DeleteOutlined />} title={t('advances.delete')} />
               </Popconfirm>
-              <Button size="small" danger icon={<CloseCircleOutlined />} onClick={() => openRejectModal(record)} />
+              <Popconfirm title={t('advances.approveConfirm')} onConfirm={() => handleApprove(record)}>
+                <Button size="small" type="primary" icon={<CheckCircleOutlined />} title={t('advances.approve')} />
+              </Popconfirm>
+              <Button size="small" danger icon={<CloseCircleOutlined />} title={t('advances.reject')} onClick={() => openRejectModal(record)} />
             </>
           ) : null}
           {['APPROVED', 'OVERDUE'].includes(record.status) ? (
@@ -255,11 +291,10 @@ export default function AdvancesPage() {
               size="small"
               type="primary"
               icon={<SafetyCertificateOutlined />}
+              title={t('advances.reimburse')}
               style={record.status === 'OVERDUE' ? { backgroundColor: '#ff4d4f', borderColor: '#ff4d4f' } : { backgroundColor: '#52c41a', borderColor: '#52c41a' }}
               onClick={() => openSettleModal(record)}
-            >
-              {t('advances.reimburse')}
-            </Button>
+            />
           ) : null}
         </Space>
       )
@@ -279,6 +314,7 @@ export default function AdvancesPage() {
           type="primary"
           icon={<FileAddOutlined />}
           onClick={() => {
+            setEditingRecord(null);
             form.resetFields();
             form.setFieldsValue({ currency: 'VND' });
             setModalOpen(true);
@@ -337,9 +373,9 @@ export default function AdvancesPage() {
       </Card>
 
       <Modal
-        title={t('advances.createModalTitle')}
+        title={editingRecord ? t('advances.editModalTitle') : t('advances.createModalTitle')}
         open={modalOpen}
-        onCancel={() => setModalOpen(false)}
+        onCancel={() => { setModalOpen(false); setEditingRecord(null); }}
         onOk={() => form.submit()}
         confirmLoading={isCreating}
         destroyOnHidden

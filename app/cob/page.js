@@ -22,6 +22,8 @@ import {
 } from 'antd';
 import {
   CheckCircleOutlined,
+  DeleteOutlined,
+  EditOutlined,
   FileAddOutlined,
   ReloadOutlined,
   SwapOutlined
@@ -33,9 +35,13 @@ import {
   useGetCobEntriesQuery,
   useCreateCobEntryMutation,
   useSettleCobEntryMutation,
+  useUpdateCobEntryMutation,
+  useDeleteCobEntryMutation,
   useGetCollectOnBehalfEntriesQuery,
   useCreateCollectOnBehalfEntryMutation,
-  useSettleCollectOnBehalfMutation
+  useSettleCollectOnBehalfMutation,
+  useUpdateCollectOnBehalfEntryMutation,
+  useDeleteCollectOnBehalfEntryMutation
 } from '@/store/services/cobApi';
 import { useGetJobsQuery } from '@/store/services/jobsApi';
 import { useGetPartnersQuery } from '@/store/services/partnersApi';
@@ -57,8 +63,12 @@ export default function CobPage() {
 
   const [createCobEntry] = useCreateCobEntryMutation();
   const [settleCobEntry] = useSettleCobEntryMutation();
+  const [updateCobEntry] = useUpdateCobEntryMutation();
+  const [deleteCobEntry] = useDeleteCobEntryMutation();
   const [createCollectEntry] = useCreateCollectOnBehalfEntryMutation();
   const [settleCollectEntry] = useSettleCollectOnBehalfMutation();
+  const [updateCollectEntry] = useUpdateCollectOnBehalfEntryMutation();
+  const [deleteCollectEntry] = useDeleteCollectOnBehalfEntryMutation();
 
   const cobEntries = cobData?.items || [];
   const collectEntries = collectData?.items || [];
@@ -185,9 +195,21 @@ export default function CobPage() {
       render: (_, record) => {
         const isOpen = record.status?.toUpperCase() !== 'SETTLED';
         return isOpen ? (
-          <Popconfirm title={t('cob.settleConfirm')} onConfirm={() => handleSettleCob(record)}>
-            <Button type="primary" size="small" icon={<CheckCircleOutlined />} />
-          </Popconfirm>
+          <Space size={4}>
+            <Popconfirm title={t('cob.settleConfirm')} onConfirm={() => handleSettleCob(record)}>
+              <Button type="primary" size="small" icon={<CheckCircleOutlined />} title={t('cob.settle')} />
+            </Popconfirm>
+            <Popconfirm title={t('cob.deleteConfirm')} onConfirm={async () => {
+              try {
+                await deleteCobEntry(record.backendId).unwrap();
+                message.success(t('cob.deleteSuccess'));
+              } catch (err) {
+                message.error(err?.data?.message || t('cob.deleteError'));
+              }
+            }}>
+              <Button size="small" danger icon={<DeleteOutlined />} title={t('cob.delete')} />
+            </Popconfirm>
+          </Space>
         ) : null;
       }
     }
@@ -234,9 +256,21 @@ export default function CobPage() {
       render: (_, record) => {
         const isOpen = record.status?.toUpperCase() !== 'SETTLED';
         return isOpen ? (
-          <Popconfirm title={t('cob.settleConfirm')} onConfirm={() => handleSettleCollect(record)}>
-            <Button type="primary" size="small" icon={<CheckCircleOutlined />} />
-          </Popconfirm>
+          <Space size={4}>
+            <Popconfirm title={t('cob.settleConfirm')} onConfirm={() => handleSettleCollect(record)}>
+              <Button type="primary" size="small" icon={<CheckCircleOutlined />} title={t('cob.settle')} />
+            </Popconfirm>
+            <Popconfirm title={t('cob.deleteConfirm')} onConfirm={async () => {
+              try {
+                await deleteCollectEntry(record.backendId).unwrap();
+                message.success(t('cob.deleteSuccess'));
+              } catch (err) {
+                message.error(err?.data?.message || t('cob.deleteError'));
+              }
+            }}>
+              <Button size="small" danger icon={<DeleteOutlined />} title={t('cob.delete')} />
+            </Popconfirm>
+          </Space>
         ) : null;
       }
     }

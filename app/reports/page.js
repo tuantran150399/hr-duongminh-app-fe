@@ -4,7 +4,7 @@ import {
   Alert, Button, Card, Col, Row, Table, Tabs,
   Typography, DatePicker, message
 } from 'antd';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { useLanguage } from '@/components/AppProviders';
 import {
@@ -18,6 +18,9 @@ import {
   useGetOverdueReceivablesQuery,
   useGetOverduePayablesQuery
 } from '@/store/services/reportsApi';
+import { useGetBranchesQuery } from '@/store/services/adminExtApi';
+import { useGetPartnersQuery } from '@/store/services/partnersApi';
+import { useGetJobsQuery } from '@/store/services/jobsApi';
 import { formatCurrency } from '@/utils/format';
 import api from '@/services/api';
 
@@ -95,6 +98,19 @@ export default function ReportsPage() {
   const { isLoading, error } = activeQuery;
   const data = normalizeItems(activeQuery.data);
 
+  // Lookup data for ID-to-name mapping
+  const { data: branchesRaw = [] } = useGetBranchesQuery();
+  const { data: partnersData } = useGetPartnersQuery();
+  const { data: jobsData } = useGetJobsQuery();
+
+  const branches = Array.isArray(branchesRaw) ? branchesRaw : branchesRaw?.items || [];
+  const partners = partnersData?.items || [];
+  const jobs = jobsData?.items || [];
+
+  const branchMap = useMemo(() => branches.reduce((m, b) => ({ ...m, [b.backendId]: b }), {}), [branches]);
+  const partnerMap = useMemo(() => partners.reduce((m, p) => ({ ...m, [p.backendId]: p }), {}), [partners]);
+  const jobMap = useMemo(() => jobs.reduce((m, j) => ({ ...m, [j.backendId]: j }), {}), [jobs]);
+
   async function handleExport() {
     try {
       const reportKey = activeTab === 'job-status' ? 'job-status-summary' : activeTab;
@@ -115,13 +131,13 @@ export default function ReportsPage() {
 
   const columnsMap = {
     'branch-summary': [
-      { title: t('reports.branchId'), dataIndex: 'branchId', key: 'branchId' },
+      { title: t('reports.branchId'), dataIndex: 'branchId', key: 'branchId', render: (id) => branchMap[id]?.name || id },
       { title: t('reports.totalRevenue'), dataIndex: 'totalRevenue', key: 'totalRevenue', render: v => formatCurrency(v) },
       { title: t('reports.totalCost'), dataIndex: 'totalCost', key: 'totalCost', render: v => formatCurrency(v) },
       { title: t('reports.profit'), dataIndex: 'profit', key: 'profit', render: v => formatCurrency(v) }
     ],
     'customer-summary': [
-      { title: t('reports.customerId'), dataIndex: 'partnerId', key: 'partnerId' },
+      { title: t('reports.customerId'), dataIndex: 'partnerId', key: 'partnerId', render: (id) => partnerMap[id]?.name || id },
       { title: t('reports.totalRevenue'), dataIndex: 'totalRevenue', key: 'totalRevenue', render: v => formatCurrency(v) },
       { title: t('reports.totalCost'), dataIndex: 'totalCost', key: 'totalCost', render: v => formatCurrency(v) },
       { title: t('reports.profit'), dataIndex: 'profit', key: 'profit', render: v => formatCurrency(v) }
@@ -142,13 +158,13 @@ export default function ReportsPage() {
     ],
     'overdue-receivables': [
       { title: t('reports.entryId'), dataIndex: 'id', key: 'id' },
-      { title: t('reports.jobId'), dataIndex: 'jobId', key: 'jobId' },
+      { title: t('reports.jobId'), dataIndex: 'jobId', key: 'jobId', render: (id) => jobMap[id]?.job_no || id },
       { title: t('reports.amount'), dataIndex: 'localAmount', key: 'localAmount', render: v => formatCurrency(v) },
       { title: t('reports.dueDate'), dataIndex: 'dueDate', key: 'dueDate' }
     ],
     'overdue-payables': [
       { title: t('reports.entryId'), dataIndex: 'id', key: 'id' },
-      { title: t('reports.jobId'), dataIndex: 'jobId', key: 'jobId' },
+      { title: t('reports.jobId'), dataIndex: 'jobId', key: 'jobId', render: (id) => jobMap[id]?.job_no || id },
       { title: t('reports.amount'), dataIndex: 'localAmount', key: 'localAmount', render: v => formatCurrency(v) },
       { title: t('reports.dueDate'), dataIndex: 'dueDate', key: 'dueDate' }
     ],

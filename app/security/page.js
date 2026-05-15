@@ -168,20 +168,15 @@ export default function SecurityPage() {
       title: t('security.actions'), key: 'actions',
       render: (_, record) => record.status === 'OPEN' ? (
         <Space size={4}>
-          <Button size="small" onClick={() => handleAlertAction(record.backendId, 'ACKNOWLEDGED')}>
-            {t('security.acknowledge')}
-          </Button>
-          <Button size="small" type="primary" icon={<CheckCircleOutlined />}
-            onClick={() => handleAlertAction(record.backendId, 'RESOLVED')}>
-            {t('security.resolve')}
-          </Button>
+          <Button size="small" icon={<CheckCircleOutlined />} title={t('security.acknowledge')}
+            onClick={() => handleAlertAction(record.backendId, 'ACKNOWLEDGED')} />
+          <Button size="small" type="primary" icon={<CheckCircleOutlined />} title={t('security.resolve')}
+            onClick={() => handleAlertAction(record.backendId, 'RESOLVED')} />
         </Space>
       ) : record.status === 'ACKNOWLEDGED' ? (
-        <Button size="small" type="primary" icon={<CheckCircleOutlined />}
-          onClick={() => handleAlertAction(record.backendId, 'RESOLVED')}>
-          {t('security.resolve')}
-        </Button>
-      ) : <Tag color="green" icon={<CheckCircleOutlined />}>Resolved</Tag>
+        <Button size="small" type="primary" icon={<CheckCircleOutlined />} title={t('security.resolve')}
+          onClick={() => handleAlertAction(record.backendId, 'RESOLVED')} />
+      ) : <Tag color="green" icon={<CheckCircleOutlined />}>{t('security.resolved')}</Tag>
     }
   ];
 
@@ -208,12 +203,10 @@ export default function SecurityPage() {
       title: t('security.actions'), key: 'actions',
       render: (_, record) => (
         <Space size={4}>
-          <Button size="small" icon={<EditOutlined />} onClick={() => openEditRule(record)}>
-            {t('security.editRule')}
-          </Button>
+          <Button size="small" icon={<EditOutlined />} title={t('security.editRule')} onClick={() => openEditRule(record)} />
           <Popconfirm title={t('security.deleteRuleConfirm')}
             onConfirm={() => handleDeleteRule(record.backendId)}>
-            <Button size="small" danger icon={<DeleteOutlined />}>{t('security.deleteRule')}</Button>
+            <Button size="small" danger icon={<DeleteOutlined />} title={t('security.deleteRule')} />
           </Popconfirm>
         </Space>
       )

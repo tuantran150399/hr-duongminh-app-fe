@@ -82,6 +82,34 @@ export const cobApi = createApi({
         data: body
       }),
       invalidatesTags: ['COB']
+    }),
+
+    updateCobEntry: builder.mutation({
+      query: ({ id, ...body }) => ({
+        url: `/accounting/cob/${id}`,
+        method: 'PUT',
+        data: body
+      }),
+      invalidatesTags: ['COB']
+    }),
+
+    deleteCobEntry: builder.mutation({
+      query: (id) => ({ url: `/accounting/cob/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['COB']
+    }),
+
+    updateCollectOnBehalfEntry: builder.mutation({
+      query: ({ id, ...body }) => ({
+        url: `/accounting/collect-on-behalf/${id}`,
+        method: 'PUT',
+        data: body
+      }),
+      invalidatesTags: ['COB']
+    }),
+
+    deleteCollectOnBehalfEntry: builder.mutation({
+      query: (id) => ({ url: `/accounting/collect-on-behalf/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['COB']
     })
   })
 });
@@ -93,5 +121,9 @@ export const {
   useSettleCobEntryMutation,
   useGetCollectOnBehalfEntriesQuery,
   useCreateCollectOnBehalfEntryMutation,
-  useSettleCollectOnBehalfMutation
+  useSettleCollectOnBehalfMutation,
+  useUpdateCobEntryMutation,
+  useDeleteCobEntryMutation,
+  useUpdateCollectOnBehalfEntryMutation,
+  useDeleteCollectOnBehalfEntryMutation
 } = cobApi;

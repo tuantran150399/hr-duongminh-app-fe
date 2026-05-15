@@ -12,6 +12,7 @@ import {
   Alert,
   message,
   Modal,
+  Popconfirm,
   Row,
   Select,
   Space,
@@ -23,6 +24,8 @@ import {
 } from 'antd';
 import {
   CloudUploadOutlined,
+  DeleteOutlined,
+  EditOutlined,
   PlusOutlined,
   RiseOutlined,
   SearchOutlined,
@@ -33,7 +36,7 @@ import { useMemo, useState } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { useLanguage } from '@/components/AppProviders';
 import { formatCurrency } from '@/utils/format';
-import { useGetServicePricesQuery, useCreateServicePriceMutation, useImportServicePricesMutation } from '@/store/services/pricingApi';
+import { useGetServicePricesQuery, useCreateServicePriceMutation, useImportServicePricesMutation, useUpdateServicePriceMutation, useDeleteServicePriceMutation } from '@/store/services/pricingApi';
 import { useGetPartnersQuery } from '@/store/services/partnersApi';
 
 export default function PricingPage() {
@@ -47,6 +50,9 @@ export default function PricingPage() {
   const { data: partnersData } = useGetPartnersQuery();
   const [createServicePrice] = useCreateServicePriceMutation();
   const [importServicePrices] = useImportServicePricesMutation();
+  const [updateServicePrice] = useUpdateServicePriceMutation();
+  const [deleteServicePrice] = useDeleteServicePriceMutation();
+  const [editingRecord, setEditingRecord] = useState(null);
 
   const data = pricingData?.items || [];
   const partners = (partnersData?.items || []).filter(p => p.isActive);
@@ -95,23 +101,58 @@ export default function PricingPage() {
     setSaving(true);
 
     try {
-      await createServicePrice({
+      const payload = {
         ...values,
         amount: Number(values.amount),
         minQuantity: values.minQuantity === undefined ? undefined : Number(values.minQuantity),
         maxQuantity: values.maxQuantity === undefined ? undefined : Number(values.maxQuantity),
         effectiveFrom: values.effectiveFrom?.format('YYYY-MM-DD'),
         effectiveTo: values.effectiveTo?.format('YYYY-MM-DD')
-      }).unwrap();
-      message.success(t('pricing.createSuccess'));
+      };
+
+      if (editingRecord) {
+        await updateServicePrice({ id: editingRecord.id, ...payload }).unwrap();
+        message.success(t('pricing.updateSuccess'));
+      } else {
+        await createServicePrice(payload).unwrap();
+        message.success(t('pricing.createSuccess'));
+      }
 
       setModalOpen(false);
+      setEditingRecord(null);
       form.resetFields();
       
     } catch (err) {
       message.error(err?.data?.message || t('pricing.createError'));
     } finally {
       setSaving(false);
+    }
+  }
+
+  function openEditModal(record) {
+    setEditingRecord(record);
+    form.setFieldsValue({
+      partnerId: record.partnerId,
+      serviceType: record.serviceType,
+      shipmentMode: record.shipmentMode,
+      routeFrom: record.routeFrom,
+      routeTo: record.routeTo,
+      unit: record.unit,
+      currency: record.currency || 'VND',
+      amount: record.amount,
+      minQuantity: record.minQuantity,
+      maxQuantity: record.maxQuantity,
+      notes: record.notes
+    });
+    setModalOpen(true);
+  }
+
+  async function handleDelete(record) {
+    try {
+      await deleteServicePrice(record.id).unwrap();
+      message.success(t('pricing.deleteSuccess'));
+    } catch (err) {
+      message.error(err?.data?.message || t('pricing.deleteError'));
     }
   }
 
@@ -160,6 +201,19 @@ export default function PricingPage() {
       dataIndex: 'isActive',
       key: 'status',
       render: value => <Tag color={value === false ? 'red' : 'green'}>{value === false ? t('pricing.inactive') : t('pricing.active')}</Tag>
+    },
+    {
+      title: t('pricing.actions'),
+      key: 'actions',
+      width: 100,
+      render: (_, record) => (
+        <Space size={4}>
+          <Button size="small" icon={<EditOutlined />} title={t('pricing.edit')} onClick={() => openEditModal(record)} />
+          <Popconfirm title={t('pricing.deleteConfirm')} onConfirm={() => handleDelete(record)}>
+            <Button size="small" danger icon={<DeleteOutlined />} title={t('pricing.delete')} />
+          </Popconfirm>
+        </Space>
+      )
     }
   ];
 
@@ -176,7 +230,7 @@ export default function PricingPage() {
           <Upload accept=".xlsx,.xls,.csv" showUploadList={false} customRequest={handleImport}>
             <Button icon={<CloudUploadOutlined />}>{t('pricing.importExcel')}</Button>
           </Upload>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => { form.resetFields(); setModalOpen(true); }}>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => { setEditingRecord(null); form.resetFields(); setModalOpen(true); }}>
             {t('pricing.addTariff')}
           </Button>
         </Space>
@@ -223,9 +277,9 @@ export default function PricingPage() {
       </Card>
 
       <Modal
-        title={t('pricing.addTariffTitle')}
+        title={editingRecord ? t('pricing.editTariffTitle') : t('pricing.addTariffTitle')}
         open={modalOpen}
-        onCancel={() => setModalOpen(false)}
+        onCancel={() => { setModalOpen(false); setEditingRecord(null); }}
         onOk={() => form.submit()}
         confirmLoading={saving}
         width={600}

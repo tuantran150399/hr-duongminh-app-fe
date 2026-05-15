@@ -55,6 +55,18 @@ export const advancesApi = createApi({
         data: payload
       }),
       invalidatesTags: ['Advances']
+    }),
+    updateAdvance: builder.mutation({
+      query: ({ id, ...body }) => ({
+        url: `/advances/${id}`,
+        method: 'PUT',
+        data: body
+      }),
+      invalidatesTags: ['Advances']
+    }),
+    deleteAdvance: builder.mutation({
+      query: (id) => ({ url: `/advances/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['Advances']
     })
   })
 });
@@ -64,5 +76,7 @@ export const {
   useCreateAdvanceMutation,
   useApproveAdvanceMutation,
   useRejectAdvanceMutation,
-  useSettleAdvanceMutation
+  useSettleAdvanceMutation,
+  useUpdateAdvanceMutation,
+  useDeleteAdvanceMutation
 } = advancesApi;

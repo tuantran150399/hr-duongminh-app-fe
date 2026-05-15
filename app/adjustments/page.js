@@ -190,9 +190,7 @@ export default function AdjustmentsPage() {
         <Space size={4}>
           {!record.approvedAt && (
             <Popconfirm title={t('adjustments.approveConfirm')} onConfirm={() => handleApprove(record.backendId)}>
-              <Button size="small" type="primary" icon={<CheckCircleOutlined />}>
-                {t('adjustments.approve')}
-              </Button>
+              <Button size="small" type="primary" icon={<CheckCircleOutlined />} title={t('adjustments.approve')} />
             </Popconfirm>
           )}
           {!record.approvedAt && (

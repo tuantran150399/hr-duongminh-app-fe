@@ -23,6 +23,8 @@ import {
 import {
   CheckCircleOutlined,
   CloseCircleOutlined,
+  DeleteOutlined,
+  EditOutlined,
   FileAddOutlined,
   SafetyCertificateOutlined
 } from '@ant-design/icons';
@@ -34,7 +36,9 @@ import {
   useCreatePaymentRequestMutation,
   useApprovePaymentRequestMutation,
   useFinalApprovePaymentRequestMutation,
-  useRejectPaymentRequestMutation
+  useRejectPaymentRequestMutation,
+  useUpdatePaymentRequestMutation,
+  useDeletePaymentRequestMutation
 } from '@/store/services/paymentRequestsApi';
 import { useGetJobsQuery } from '@/store/services/jobsApi';
 import { useGetPartnersQuery } from '@/store/services/partnersApi';
@@ -52,6 +56,7 @@ export default function PaymentRequestsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
+  const [editingRecord, setEditingRecord] = useState(null);
 
   const statusColor = {
     PENDING_DEPARTMENT_APPROVAL: 'orange',
@@ -74,6 +79,8 @@ export default function PaymentRequestsPage() {
   const [approvePaymentRequest] = useApprovePaymentRequestMutation();
   const [finalApprovePaymentRequest] = useFinalApprovePaymentRequestMutation();
   const [rejectPaymentRequest] = useRejectPaymentRequestMutation();
+  const [updatePaymentRequest] = useUpdatePaymentRequestMutation();
+  const [deletePaymentRequest] = useDeletePaymentRequestMutation();
 
   const requests = requestsData?.items || [];
   const jobs = jobsData?.items || [];
@@ -94,9 +101,22 @@ export default function PaymentRequestsPage() {
   );
 
   function openCreateModal() {
+    setEditingRecord(null);
     form.resetFields();
     form.setFieldsValue({
       currency: 'VND'
+    });
+    setModalOpen(true);
+  }
+
+  function openEditModal(record) {
+    setEditingRecord(record);
+    form.setFieldsValue({
+      vendorId: record.vendorId || record.raw?.vendorId,
+      jobId: record.jobId || record.raw?.jobId,
+      amount: record.amount,
+      currency: record.currency || 'VND',
+      reason: record.reason || record.raw?.reason
     });
     setModalOpen(true);
   }
@@ -109,13 +129,28 @@ export default function PaymentRequestsPage() {
         amount: Number(values.amount),
         requestedPaymentDate: toDateString(values.requestedPaymentDate)
       };
-      await createPaymentRequest(payload).unwrap();
-      message.success(t('paymentRequests.createSuccess'));
+      if (editingRecord) {
+        await updatePaymentRequest({ id: editingRecord.backendId, ...payload }).unwrap();
+        message.success(t('paymentRequests.updateSuccess'));
+      } else {
+        await createPaymentRequest(payload).unwrap();
+        message.success(t('paymentRequests.createSuccess'));
+      }
       setModalOpen(false);
+      setEditingRecord(null);
     } catch (err) {
       message.error(err?.data?.message || t('paymentRequests.createError'));
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleDelete(record) {
+    try {
+      await deletePaymentRequest(record.backendId).unwrap();
+      message.success(t('paymentRequests.deleteSuccess'));
+    } catch (err) {
+      message.error(err?.data?.message || t('paymentRequests.deleteError'));
     }
   }
 
@@ -214,29 +249,37 @@ export default function PaymentRequestsPage() {
         const isPending = record.status === 'PENDING_DEPARTMENT_APPROVAL';
         const isDeptApproved = record.status === 'DEPARTMENT_APPROVED';
 
-        return (
-          <Space>
-            {isPending && (
-              <Popconfirm title={t('paymentRequests.approveConfirm')} onConfirm={() => handleApprove(record)}>
-                <Button type="primary" size="small" icon={<CheckCircleOutlined />} title={t('paymentRequests.departmentApprove')} />
-              </Popconfirm>
-            )}
-            {isDeptApproved && (
-              <Popconfirm title={t('paymentRequests.finalApproveConfirm')} onConfirm={() => handleFinalApprove(record)}>
-                <Button
-                  type="primary"
-                  size="small"
-                  icon={<SafetyCertificateOutlined />}
-                  title={t('paymentRequests.finalApprove')}
-                  style={{ backgroundColor: '#52c41a' }}
-                />
-              </Popconfirm>
-            )}
-            {(isPending || isDeptApproved) && (
-              <Button danger size="small" icon={<CloseCircleOutlined />} title={t('paymentRequests.reject')} onClick={() => openRejectModal(record)} />
-            )}
-          </Space>
-        );
+          return (
+            <Space>
+              {isPending && (
+                <>
+                  <Button size="small" icon={<EditOutlined />} title={t('paymentRequests.edit')} onClick={() => openEditModal(record)} />
+                  <Popconfirm title={t('paymentRequests.deleteConfirm')} onConfirm={() => handleDelete(record)}>
+                    <Button size="small" danger icon={<DeleteOutlined />} title={t('paymentRequests.delete')} />
+                  </Popconfirm>
+                </>
+              )}
+              {isPending && (
+                <Popconfirm title={t('paymentRequests.approveConfirm')} onConfirm={() => handleApprove(record)}>
+                  <Button type="primary" size="small" icon={<CheckCircleOutlined />} title={t('paymentRequests.departmentApprove')} />
+                </Popconfirm>
+              )}
+              {isDeptApproved && (
+                <Popconfirm title={t('paymentRequests.finalApproveConfirm')} onConfirm={() => handleFinalApprove(record)}>
+                  <Button
+                    type="primary"
+                    size="small"
+                    icon={<SafetyCertificateOutlined />}
+                    title={t('paymentRequests.finalApprove')}
+                    style={{ backgroundColor: '#52c41a' }}
+                  />
+                </Popconfirm>
+              )}
+              {(isPending || isDeptApproved) && (
+                <Button danger size="small" icon={<CloseCircleOutlined />} title={t('paymentRequests.reject')} onClick={() => openRejectModal(record)} />
+              )}
+            </Space>
+          );
       }
     }
   ];
@@ -289,9 +332,9 @@ export default function PaymentRequestsPage() {
       </Card>
 
       <Modal
-        title={t('paymentRequests.modalTitle')}
+        title={editingRecord ? t('paymentRequests.editModalTitle') : t('paymentRequests.modalTitle')}
         open={modalOpen}
-        onCancel={() => setModalOpen(false)}
+        onCancel={() => { setModalOpen(false); setEditingRecord(null); }}
         onOk={() => form.submit()}
         confirmLoading={saving}
         destroyOnHidden
