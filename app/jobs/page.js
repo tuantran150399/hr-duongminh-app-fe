@@ -15,7 +15,7 @@ import {
   ReloadOutlined,
   SettingOutlined
 } from '@ant-design/icons';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import PageHeader from '@/components/PageHeader';
@@ -136,6 +136,23 @@ export default function JobsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateRange, setDateRange] = useState(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const settingsRef = useRef(null);
+
+  const allColumnKeys = ['job_no', 'customer', 'status', 'origin', 'destination', 'etd', 'eta'];
+  const [visibleColumns, setVisibleColumns] = useState(allColumnKeys);
+
+  // Close settings dropdown when clicking outside
+  useEffect(() => {
+    if (!settingsOpen) return;
+    function handleClickOutside(e) {
+      if (settingsRef.current && !settingsRef.current.contains(e.target)) {
+        setSettingsOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [settingsOpen]);
 
   const { data: jobsData, isLoading: jobsLoading, error: jobsError, refetch } = useGetJobsQuery();
   const { data: partnersData } = useGetPartnersQuery();
@@ -188,7 +205,17 @@ export default function JobsPage() {
     return matchesSearch && matchesStatus && matchesDate;
   });
 
-  const columns = [
+  const columnLabelMap = {
+    job_no: t('jobs.jobNo'),
+    customer: t('jobs.customer'),
+    status: t('jobs.status'),
+    origin: t('jobs.origin'),
+    destination: t('jobs.destination'),
+    etd: t('jobs.etd'),
+    eta: t('jobs.eta')
+  };
+
+  const allColumnsDefinition = [
     {
       title: t('jobs.jobNo'),
       dataIndex: 'job_no',
@@ -203,6 +230,14 @@ export default function JobsPage() {
     { title: t('jobs.etd'), dataIndex: 'etd', key: 'etd', render: formatDisplayDate },
     { title: t('jobs.eta'), dataIndex: 'eta', key: 'eta', render: formatDisplayDate }
   ];
+
+  const columns = allColumnsDefinition.filter((col) => visibleColumns.includes(col.key));
+
+  function toggleColumn(key) {
+    setVisibleColumns((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+    );
+  }
 
   const errorMessage = jobsError ? t('jobs.loadError') : '';
 
@@ -252,7 +287,7 @@ export default function JobsPage() {
         {errorMessage ? <Alert type="error" showIcon message={errorMessage} style={{ margin: 16 }} /> : null}
         <div className="shipment-toolbar">
           <span className="shipment-toolbar-total">{t('jobs.totalLabel')}: {filteredJobs.length}</span>
-          <div className="toolbar-actions">
+          <div className="toolbar-actions" style={{ position: 'relative' }} ref={settingsRef}>
             <Button
               className="toolbar-icon-button"
               icon={<ReloadOutlined />}
@@ -263,7 +298,41 @@ export default function JobsPage() {
               className="toolbar-icon-button"
               icon={<SettingOutlined />}
               aria-label="Table settings"
+              onClick={() => setSettingsOpen((prev) => !prev)}
             />
+            {settingsOpen && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  right: 0,
+                  zIndex: 10,
+                  background: '#fff',
+                  border: '1px solid #e8e8e8',
+                  borderRadius: 8,
+                  padding: '8px 12px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+                  minWidth: 180
+                }}
+              >
+                <div style={{ fontWeight: 600, marginBottom: 6, fontSize: 13, color: '#555' }}>
+                  {t('jobs.columnSettings') || 'Columns'}
+                </div>
+                {allColumnKeys.map((key) => (
+                  <div key={key}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', padding: '4px 0' }}>
+                      <input
+                        type="checkbox"
+                        checked={visibleColumns.includes(key)}
+                        onChange={() => toggleColumn(key)}
+                        style={{ cursor: 'pointer' }}
+                      />
+                      {columnLabelMap[key]}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

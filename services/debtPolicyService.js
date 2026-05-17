@@ -1,15 +1,15 @@
 import api from '@/services/api';
-import { extractPaginatedItems, normalizeEntry } from '@/utils/apiMappers';
+import { extractPaginatedItems, normalizeDebtPolicy } from '@/utils/apiMappers';
 
 export async function getDebtPolicies(params) {
   const response = await api.get('/debt-policies', { params: { page: 1, limit: 50, ...params } });
   const { items, meta } = extractPaginatedItems(response.data);
-  return { items: items.map(normalizeEntry).filter(Boolean), meta };
+  return { items: items.map(normalizeDebtPolicy).filter(Boolean), meta };
 }
 
 export async function getDebtPolicyById(id) {
   const response = await api.get(`/debt-policies/${id}`);
-  return normalizeEntry(response.data);
+  return normalizeDebtPolicy(response.data);
 }
 
 export async function upsertDebtPolicy(payload) {

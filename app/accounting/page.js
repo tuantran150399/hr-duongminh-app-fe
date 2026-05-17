@@ -55,80 +55,140 @@ import { useMarkCostAsCobMutation } from '@/store/services/cobApi';
 import { formatCurrency } from '@/utils/format';
 import { useLanguage } from '@/components/AppProviders';
 
-const CHART_COLORS = [
-  '#0057c2', '#52c41a', '#fa8c16', '#ff4d4f',
-  '#13c2c2', '#722ed1', '#eb2f96', '#fadb14'
-];
+function formatCompactCurrency(value) {
+  const amount = Number(value || 0);
+  if (!Number.isFinite(amount)) return '0';
+  if (Math.abs(amount) >= 1000000000) return `${(amount / 1000000000).toFixed(1).replace(/\.0$/, '')}B`;
+  if (Math.abs(amount) >= 1000000) return `${(amount / 1000000).toFixed(1).replace(/\.0$/, '')}M`;
+  if (Math.abs(amount) >= 1000) return `${(amount / 1000).toFixed(0)}K`;
+  return `${amount}`;
+}
 
-function ChartRow({ revenueChart, costChart, t }) {
-  function extractEntries(data) {
-    if (!data) return [];
-    return Array.isArray(data?.data) ? data.data
-      : Array.isArray(data) ? data
-      : Object.entries(data ?? {}).map(([status, total]) => ({ status, total }));
+function formatPeriodLabel(period, locale = 'vi-VN') {
+  if (!period) return '-';
+  if (/^\d{4}-\d{2}$/.test(period)) {
+    const [year, month] = period.split('-');
+    return locale === 'vi-VN' ? `T${Number(month)}/${year}` : `${month}/${year}`;
   }
 
-  function renderMonthlyChart(data, titleKey, barColor, accentColor) {
-    const entries = extractEntries(data);
+  const date = new Date(period);
+  if (!Number.isNaN(date.getTime())) {
+    return new Intl.DateTimeFormat(locale, { month: 'short', year: '2-digit' }).format(date);
+  }
+
+  return String(period);
+}
+
+function ChartRow({ revenueChart, costChart, t, language }) {
+  const isVietnamese = language === 'vi';
+  const chartText = {
+    revenueTitle: t('accounting.chart.revenueTitle') === 'accounting.chart.revenueTitle'
+      ? (isVietnamese ? 'Xu hướng doanh thu' : 'Revenue Trend')
+      : t('accounting.chart.revenueTitle'),
+    costTitle: t('accounting.chart.costTitle') === 'accounting.chart.costTitle'
+      ? (isVietnamese ? 'Xu hướng chi phí' : 'Cost Trend')
+      : t('accounting.chart.costTitle'),
+    noData: t('accounting.chart.noData') === 'accounting.chart.noData'
+      ? (isVietnamese ? 'Chưa có dữ liệu biểu đồ' : 'No chart data available')
+      : t('accounting.chart.noData'),
+    amount: t('accounting.chart.amount') === 'accounting.chart.amount'
+      ? (isVietnamese ? 'Số tiền' : 'Amount')
+      : t('accounting.chart.amount'),
+    entries: t('accounting.chart.entries') === 'accounting.chart.entries'
+      ? (isVietnamese ? 'bút toán' : 'entries')
+      : t('accounting.chart.entries')
+  };
+
+  function extractEntries(data) {
+    if (!data) return [];
+    return Array.isArray(data?.data)
+      ? data.data
+      : Array.isArray(data)
+        ? data
+        : Object.entries(data ?? {}).map(([status, total]) => ({ status, total }));
+  }
+
+  function renderMonthlyChart(data, title, barColor, accentColor) {
+    const entries = extractEntries(data)
+      .map((entry, index) => ({
+        ...entry,
+        chartKey: entry.period || entry.status || index,
+        chartValue: Number(entry.totalAmount ?? entry.total ?? 0),
+        chartCount: Number(entry.count ?? 0),
+        chartLabel: entry.period || entry.status || `#${index + 1}`
+      }))
+      .filter((entry) => Number.isFinite(entry.chartValue));
+
     if (!entries.length) {
       return (
         <Card style={{ height: 320 }}>
-          <div style={{ fontWeight: 600, marginBottom: 12, fontSize: 15 }}>{t(titleKey)}</div>
-          <div style={{ color: '#aaa', textAlign: 'center', paddingTop: 80 }}>
-            {t('accounting.chart.noData')}
+          <div style={{ fontWeight: 700, marginBottom: 12, fontSize: 16, color: '#0f172a' }}>{title}</div>
+          <div style={{ color: '#94a3b8', textAlign: 'center', paddingTop: 80 }}>
+            {chartText.noData}
           </div>
         </Card>
       );
     }
 
-    const maxVal = Math.max(...entries.map(e => Number(e.totalAmount ?? e.total ?? 0)), 1);
-    const totalValue = entries.reduce((s, e) => s + Number(e.totalAmount ?? e.total ?? 0), 0);
-    const totalCount = entries.reduce((s, e) => s + Number(e.count ?? 0), 0);
+    const maxVal = Math.max(...entries.map((entry) => entry.chartValue), 1);
+    const totalValue = entries.reduce((sum, entry) => sum + entry.chartValue, 0);
+    const totalCount = entries.reduce((sum, entry) => sum + entry.chartCount, 0);
     const barWidth = Math.max(24, Math.min(48, Math.floor(320 / entries.length)));
+    const locale = language === 'vi' ? 'vi-VN' : 'en-US';
 
     return (
       <Card style={{ height: 320 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 16 }}>
-          <div style={{ fontWeight: 600, fontSize: 15 }}>{t(titleKey)}</div>
-          <div style={{ fontSize: 12, color: '#8c8c8c' }}>
-            {totalCount} {t('accounting.chart.entries')} · {formatCurrency(totalValue)}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 16 }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontWeight: 700, fontSize: 16, color: '#0f172a' }}>{title}</div>
+            <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>
+              {totalCount} {chartText.entries}
+            </div>
+          </div>
+          <div style={{ fontSize: 14, color: '#0f172a', fontWeight: 700, whiteSpace: 'nowrap' }}>
+            {formatCurrency(totalValue)}
           </div>
         </div>
 
-        {/* Vertical bar chart */}
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: 180, padding: '0 4px' }}>
-          {entries.map((e, i) => {
-            const val = Number(e.totalAmount ?? e.total ?? 0);
-            const pct = (val / maxVal * 100).toFixed(1);
-            const heightPx = Math.max(4, (val / maxVal) * 160);
+          {entries.map((entry) => {
+            const val = entry.chartValue;
+            const heightPx = Math.max(8, (val / maxVal) * 160);
             return (
               <Tooltip
-                key={e.period || e.status || i}
+                key={entry.chartKey}
                 title={
                   <div>
-                    <div style={{ fontWeight: 600 }}>{e.period || e.status}</div>
-                    <div>{t('accounting.chart.amount')}: {formatCurrency(val)}</div>
-                    {e.count !== undefined && <div>{t('accounting.chart.entries')}: {e.count}</div>}
+                    <div style={{ fontWeight: 600 }}>{formatPeriodLabel(entry.chartLabel, locale)}</div>
+                    <div>{chartText.amount}: {formatCurrency(val)}</div>
+                    {entry.chartCount > 0 ? <div>{chartText.entries}: {entry.chartCount}</div> : null}
                   </div>
                 }
               >
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 0 }}>
-                  <div style={{
-                    fontSize: 10, color: '#595959', marginBottom: 4,
-                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                    maxWidth: barWidth + 8
-                  }}>
-                    {val > 0 ? formatCurrency(val) : ''}
+                  <div
+                    style={{
+                      fontSize: 10,
+                      color: '#64748b',
+                      marginBottom: 6,
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      maxWidth: barWidth + 10
+                    }}
+                  >
+                    {val > 0 ? formatCompactCurrency(val) : ''}
                   </div>
                   <div
                     style={{
                       width: barWidth,
                       height: heightPx,
                       background: `linear-gradient(180deg, ${barColor} 0%, ${accentColor} 100%)`,
-                      borderRadius: '4px 4px 0 0',
+                      borderRadius: '8px 8px 0 0',
+                      boxShadow: `0 10px 20px ${accentColor}33`,
                       transition: 'height 0.5s ease',
                       cursor: 'pointer',
-                      minHeight: 4
+                      minHeight: 8
                     }}
                   />
                 </div>
@@ -137,14 +197,21 @@ function ChartRow({ revenueChart, costChart, t }) {
           })}
         </div>
 
-        {/* Period labels */}
         <div style={{ display: 'flex', gap: 4, padding: '6px 4px 0', borderTop: '1px solid #f0f0f0' }}>
-          {entries.map((e, i) => (
-            <div key={e.period || i} style={{
-              flex: 1, textAlign: 'center', fontSize: 11, color: '#8c8c8c',
-              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
-            }}>
-              {(e.period || '').replace(/^\d{4}-/, '')}
+          {entries.map((entry) => (
+            <div
+              key={entry.chartKey}
+              style={{
+                flex: 1,
+                textAlign: 'center',
+                fontSize: 11,
+                color: '#8c8c8c',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
+              }}
+            >
+              {formatPeriodLabel(entry.chartLabel, locale)}
             </div>
           ))}
         </div>
@@ -155,10 +222,10 @@ function ChartRow({ revenueChart, costChart, t }) {
   return (
     <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
       <Col xs={24} md={12}>
-        {renderMonthlyChart(revenueChart, 'accounting.chart.revenueTitle', '#0057c2', '#40a9ff')}
+        {renderMonthlyChart(revenueChart, chartText.revenueTitle, '#0057c2', '#40a9ff')}
       </Col>
       <Col xs={24} md={12}>
-        {renderMonthlyChart(costChart, 'accounting.chart.costTitle', '#ff4d4f', '#ff7a7a')}
+        {renderMonthlyChart(costChart, chartText.costTitle, '#ff4d4f', '#ff7a7a')}
       </Col>
     </Row>
   );
@@ -175,11 +242,7 @@ const statusColor = {
   Unpaid: 'red'
 };
 
-const paymentOptions = [
-  { value: 'UNPAID', label: 'Unpaid' },
-  { value: 'PARTIAL', label: 'Partial' },
-  { value: 'PAID', label: 'Paid' }
-];
+const paymentOptionsKeys = ['UNPAID', 'PARTIAL', 'PAID'];
 
 function safeNumber(value) {
   const parsed = Number(value);
@@ -212,13 +275,32 @@ function cleanPayload(values) {
 }
 
 export default function AccountingPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [form] = Form.useForm();
   const [activeTab, setActiveTab] = useState('revenue');
   const [saving, setSaving] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+
+  const statusLabelMap = {
+    Draft: t('accounting.statusDraft'),
+    Posted: t('accounting.statusPosted'),
+    Voided: t('accounting.statusVoided'),
+    Reversed: t('accounting.statusReversed'),
+    Closed: t('accounting.statusClosed')
+  };
+
+  const paymentLabelMap = {
+    UNPAID: t('accounting.unpaid'),
+    PARTIAL: t('accounting.partial'),
+    PAID: t('accounting.paid')
+  };
+
+  const paymentOptions = paymentOptionsKeys.map((key) => ({
+    value: key,
+    label: paymentLabelMap[key] || key
+  }));
 
   // COB modal state
   const [cobModalOpen, setCobModalOpen] = useState(false);
@@ -254,6 +336,9 @@ export default function AccountingPage() {
   const loadError = (revenueError || costError) ? t('accounting.loadError') : '';
 
   const activeRows = activeTab === 'revenue' ? revenue : cost;
+  const allStatusesLabel = t('accounting.allStatuses') === 'accounting.allStatuses'
+    ? t('common.allStatuses')
+    : t('accounting.allStatuses');
   const statusOptions = useMemo(
     () => ['all', ...Array.from(new Set(activeRows.map((row) => row.status).filter(Boolean)))],
     [activeRows]
@@ -374,10 +459,10 @@ export default function AccountingPage() {
     try {
       const result = await importCostEntries(file).unwrap();
       const errorSuffix = result.errorCount ? ` ${result.errorCount} row(s) failed.` : '';
-      message.success(`Imported ${result.createdCount || 0} cost row(s).${errorSuffix}`);
+      message.success(t('accounting.importSuccess', { count: result.createdCount || 0 }) + errorSuffix);
       onSuccess?.(result);
     } catch (err) {
-      const errorMessage = err?.data?.message || 'Unable to import cost file.';
+      const errorMessage = err?.data?.message || t('accounting.unableToImport');
       message.error(errorMessage);
       onError?.(err);
     }
@@ -447,7 +532,7 @@ export default function AccountingPage() {
       dataIndex: 'status',
       key: 'status',
       width: 150,
-      render: (value) => <Tag color={statusColor[value] || 'default'}>{value}</Tag>
+      render: (value) => <Tag color={statusColor[value] || 'default'}>{statusLabelMap[value] || value}</Tag>
     },
     {
       title: t('accounting.paymentStatus'),
@@ -583,7 +668,7 @@ export default function AccountingPage() {
         </Row>
 
         {/* Revenue / Cost chart row */}
-        <ChartRow revenueChart={revenueChartData} costChart={costChartData} t={t} />
+        <ChartRow revenueChart={revenueChartData} costChart={costChartData} t={t} language={language} />
 
         <Card className="table-card" style={{ marginTop: 16 }}>
           <div className="accounting-card-toolbar">
@@ -597,24 +682,24 @@ export default function AccountingPage() {
                 setSearch('');
               }}
             />
-            <Space wrap className="page-actions">
+            <div className="accounting-table-filters">
               <Input.Search
                 allowClear
                 value={search}
                 placeholder={t('accountingForm.searchPlaceholder')}
                 onChange={(event) => setSearch(event.target.value)}
-                style={{ width: 280 }}
+                className="accounting-table-search"
               />
               <Select
                 value={statusFilter}
                 onChange={setStatusFilter}
-                style={{ width: 160 }}
+                className="accounting-table-status"
                 options={statusOptions.map((status) => ({
                   value: status,
-                  label: status === 'all' ? t('accounting.allStatuses') : status
+                  label: status === 'all' ? allStatusesLabel : (statusLabelMap[status] || status)
                 }))}
               />
-            </Space>
+            </div>
           </div>
 
           <Table

@@ -396,8 +396,8 @@ export default function AdjustmentsPage() {
                 <Select
                   allowClear
                   options={[
-                    { value: 'REVENUE', label: 'Revenue' },
-                    { value: 'COST',    label: 'Cost'    }
+                    { value: 'REVENUE', label: t('adjustments.revenueType') },
+                    { value: 'COST',    label: t('adjustments.costType')    }
                   ]}
                 />
               </Form.Item>

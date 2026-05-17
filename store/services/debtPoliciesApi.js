@@ -1,6 +1,6 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 import { axiosBaseQuery } from '@/store/axiosBaseQuery';
-import { extractPaginatedItems, normalizeEntry } from '@/utils/apiMappers';
+import { extractPaginatedItems, normalizeDebtPolicy } from '@/utils/apiMappers';
 
 export const debtPoliciesApi = createApi({
   reducerPath: 'debtPoliciesApi',
@@ -15,7 +15,7 @@ export const debtPoliciesApi = createApi({
       }),
       transformResponse: (response) => {
         const { items, meta } = extractPaginatedItems(response);
-        return { items: items.map(normalizeEntry).filter(Boolean), meta };
+        return { items: items.map(normalizeDebtPolicy).filter(Boolean), meta };
       },
       providesTags: (result) =>
         result?.items
@@ -28,7 +28,7 @@ export const debtPoliciesApi = createApi({
 
     getDebtPolicyById: builder.query({
       query: (id) => ({ url: `/debt-policies/${id}`, method: 'GET' }),
-      transformResponse: (response) => normalizeEntry(response),
+      transformResponse: (response) => normalizeDebtPolicy(response),
       providesTags: (_result, _error, id) => [{ type: 'DebtPolicy', id }]
     }),
 

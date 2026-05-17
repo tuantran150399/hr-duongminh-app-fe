@@ -101,7 +101,8 @@ const dictionary = {
       customerRequired: 'Customer is required.',
       cargoTypeRequired: 'Cargo type is required.',
       jobTypeRequired: 'Job type is required.',
-      shipmentModeRequired: 'Shipment mode is required.'
+      shipmentModeRequired: 'Shipment mode is required.',
+      columnSettings: 'Columns'
     },
     partners: {
       title: 'Partners',
@@ -237,7 +238,17 @@ const dictionary = {
       entryCreated: 'Entry created.',
       unableToCreate: 'Unable to create accounting entry.',
       importSuccess: 'Imported {count} row(s).',
-      unableToImport: 'Unable to import cost file.'
+      unableToImport: 'Unable to import cost file.',
+      allStatuses: 'All statuses',
+      statusDraft: 'Draft',
+      statusPosted: 'Posted',
+      statusVoided: 'Voided',
+      statusReversed: 'Reversed',
+      statusClosed: 'Closed',
+      unpaid: 'Unpaid',
+      partial: 'Partial',
+      paid: 'Paid',
+      paymentStatus: 'Payment Status'
     },
     hrm: {
       title: 'Human Resources (HRM)',
@@ -469,7 +480,17 @@ const dictionary = {
       pendingDepartmentApproval: 'Pending Approval',
       departmentApproved: 'Dept. Approved',
       rejectedStatus: 'Rejected',
-      finalApprovedStatus: 'Final Approved'
+      finalApprovedStatus: 'Final Approved',
+      viewDetail: 'View Detail',
+      close: 'Close',
+      edit: 'Edit',
+      delete: 'Delete',
+      deleteConfirm: 'Delete this payment request?',
+      deleteSuccess: 'Payment request deleted.',
+      deleteError: 'Unable to delete payment request.',
+      updateSuccess: 'Payment request updated.',
+      editModalTitle: 'Edit Payment Request',
+      job: 'Job'
     },
     debitNotes: {
       title: 'Debit Notes',
@@ -528,7 +549,11 @@ const dictionary = {
       noPricingFound: 'No applicable pricing tariffs found for this customer/job combination.',
       pricingHint: 'Pricing tariffs matching this customer/job',
       tariffAvailable: 'tariff(s) available',
-      autoFilledFromPricing: 'Auto-filled from pricing table'
+      autoFilledFromPricing: 'Auto-filled from pricing table',
+      statusDraft: 'Draft',
+      statusPosted: 'Posted',
+      statusSent: 'Sent',
+      statusVoided: 'Voided'
     },
     cob: {
       title: 'Charge & Collect on Behalf',
@@ -645,7 +670,9 @@ const dictionary = {
       originalEntryType: 'Original Entry Type',
       originalEntryId: 'Original Entry ID',
       notesLabel: 'Notes',
-      notesPlaceholder: 'Additional notes...'
+      notesPlaceholder: 'Additional notes...',
+      revenueType: 'Revenue',
+      costType: 'Cost'
     },
     security: {
       title: 'Security Center',
@@ -1152,7 +1179,8 @@ const dictionary = {
       customerRequired: 'Khách hàng là bắt buộc.',
       cargoTypeRequired: 'Loại hàng hóa là bắt buộc.',
       jobTypeRequired: 'Loại nghiệp vụ là bắt buộc.',
-      shipmentModeRequired: 'Phương thức vận chuyển là bắt buộc.'
+      shipmentModeRequired: 'Phương thức vận chuyển là bắt buộc.',
+      columnSettings: 'Hiển thị cột'
     },
     partners: {
       title: 'Đối tác',
@@ -1288,7 +1316,17 @@ const dictionary = {
       entryCreated: 'Đã tạo bút toán.',
       unableToCreate: 'Không thể tạo bút toán kế toán.',
       importSuccess: 'Đã nhập thành công {count} dòng chi phí.',
-      unableToImport: 'Không thể nhập tệp chi phí.'
+      unableToImport: 'Không thể nhập tệp chi phí.',
+      allStatuses: 'Tất cả trạng thái',
+      statusDraft: 'Nháp',
+      statusPosted: 'Đã chốt',
+      statusVoided: 'Đã hủy',
+      statusReversed: 'Đã đảo',
+      statusClosed: 'Đã đóng',
+      unpaid: 'Chưa thanh toán',
+      partial: 'Thanh toán một phần',
+      paid: 'Đã thanh toán',
+      paymentStatus: 'Trạng thái thanh toán'
     },
     hrm: {
       title: 'Nhân sự (HRM)',
@@ -1520,7 +1558,17 @@ const dictionary = {
       pendingDepartmentApproval: 'Chờ duyệt',
       departmentApproved: 'Đã duyệt phòng ban',
       rejectedStatus: 'Từ chối',
-      finalApprovedStatus: 'Đã duyệt cuối'
+      finalApprovedStatus: 'Đã duyệt cuối',
+      viewDetail: 'Xem chi tiết',
+      close: 'Đóng',
+      edit: 'Sửa',
+      delete: 'Xóa',
+      deleteConfirm: 'Xóa yêu cầu thanh toán này?',
+      deleteSuccess: 'Đã xóa yêu cầu thanh toán.',
+      deleteError: 'Không thể xóa yêu cầu thanh toán.',
+      updateSuccess: 'Đã cập nhật yêu cầu thanh toán.',
+      editModalTitle: 'Sửa yêu cầu thanh toán',
+      job: 'Job'
     },
     debitNotes: {
       title: 'Bảng kê / Debit Note',
@@ -1579,7 +1627,11 @@ const dictionary = {
       noPricingFound: 'Không tìm thấy biểu giá phù hợp cho khách hàng/lô hàng này.',
       pricingHint: 'Biểu giá phù hợp cho khách hàng/lô hàng',
       tariffAvailable: 'biểu giá khả dụng',
-      autoFilledFromPricing: 'Tự động áp từ bảng giá'
+      autoFilledFromPricing: 'Tự động áp từ bảng giá',
+      statusDraft: 'Nháp',
+      statusPosted: 'Đã chốt',
+      statusSent: 'Đã gửi',
+      statusVoided: 'Đã hủy'
     },
     cob: {
       title: 'Chi hộ & Thu hộ',
@@ -1696,7 +1748,9 @@ const dictionary = {
       originalEntryType: 'Loại bút toán gốc',
       originalEntryId: 'Mã bút toán gốc',
       notesLabel: 'Ghi chú',
-      notesPlaceholder: 'Ghi chú thêm...'
+      notesPlaceholder: 'Ghi chú thêm...',
+      revenueType: 'Doanh thu',
+      costType: 'Chi phí'
     },
     security: {
       title: 'Trung tâm Bảo mật',

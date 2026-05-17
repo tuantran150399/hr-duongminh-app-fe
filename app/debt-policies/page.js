@@ -33,25 +33,51 @@ export default function DebtPoliciesPage() {
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editingPolicy, setEditingPolicy] = useState(null);
 
   const { data: policiesData, isLoading: loading, error: loadErrorObj } = useGetDebtPoliciesQuery();
   const { data: partnersData } = useGetPartnersQuery();
   const [upsertDebtPolicy] = useUpsertDebtPolicyMutation();
 
   const policies = policiesData?.items || [];
-  const partners = (partnersData?.items || []).filter((partner) => partner.isActive);
+  const allPartners = partnersData?.items || [];
+  const partners = allPartners.filter((partner) => partner.isActive);
   const loadError = loadErrorObj ? t('debtPolicies.loadError') : '';
 
-  const partnerOptions = useMemo(
-    () => partners.map((partner) => ({ value: partner.backendId, label: `${partner.code} - ${partner.name}` })),
-    [partners]
+  const partnersById = useMemo(
+    () => allPartners.reduce((map, partner) => {
+      map[partner.backendId] = partner;
+      return map;
+    }, {}),
+    [allPartners]
   );
 
-  const [editingRecord, setEditingRecord] = useState(null);
+  const partnerOptions = useMemo(
+    () => {
+      const customerPartners = partners.filter((partner) => ['CUSTOMER', 'BOTH'].includes(partner.partnerType));
+      const options = customerPartners.map((partner) => ({
+        value: partner.backendId,
+        label: `${partner.code} - ${partner.name}`
+      }));
+
+      if (editingPolicy?.partnerId && !options.some((option) => option.value === editingPolicy.partnerId)) {
+        const selectedPartner = partnersById[editingPolicy.partnerId];
+        if (selectedPartner) {
+          options.unshift({
+            value: selectedPartner.backendId,
+            label: `${selectedPartner.code} - ${selectedPartner.name}`
+          });
+        }
+      }
+
+      return options;
+    },
+    [partners, partnersById, editingPolicy]
+  );
 
   function openUpsertModal(record = null) {
     form.resetFields();
-    setEditingRecord(record);
+    setEditingPolicy(record);
     if (record) {
       form.setFieldsValue({
         partnerId: record.partnerId,
@@ -75,6 +101,7 @@ export default function DebtPoliciesPage() {
       await upsertDebtPolicy(payload).unwrap();
       message.success(t('debtPolicies.saveSuccess'));
       setModalOpen(false);
+      setEditingPolicy(null);
     } catch (err) {
       message.error(err?.data?.message || t('debtPolicies.saveError'));
     } finally {
@@ -88,8 +115,8 @@ export default function DebtPoliciesPage() {
       key: 'partner',
       width: 250,
       render: (_, record) => {
-        const partner = partners.find((item) => item.backendId === record.partnerId);
-        return <strong>{partner ? partner.name : `Partner ID: ${record.partnerId}`}</strong>;
+        const partner = partnersById[record.partnerId];
+        return <strong>{partner ? `${partner.code} - ${partner.name}` : `Partner ID: ${record.partnerId ?? '-'}`}</strong>;
       }
     },
     {
@@ -179,7 +206,10 @@ export default function DebtPoliciesPage() {
       <Modal
         title={t('debtPolicies.modalTitle')}
         open={modalOpen}
-        onCancel={() => setModalOpen(false)}
+        onCancel={() => {
+          setModalOpen(false);
+          setEditingPolicy(null);
+        }}
         onOk={() => form.submit()}
         confirmLoading={saving}
         destroyOnHidden
@@ -196,7 +226,7 @@ export default function DebtPoliciesPage() {
               optionFilterProp="label"
               options={partnerOptions}
               placeholder={t('debtPolicies.selectPartner')}
-              disabled={Boolean(editingRecord)}
+              disabled={Boolean(editingPolicy)}
             />
           </Form.Item>
 

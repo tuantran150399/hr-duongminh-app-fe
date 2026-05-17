@@ -510,7 +510,13 @@ export default function DebitNotesPage() {
       width: 120,
       render: (value) => {
         const raw = value?.toUpperCase().replace(/\s/g, '_');
-        return <Tag color={statusColor[raw] || 'default'}>{value}</Tag>;
+        const dnStatusLabel = {
+          DRAFT: t('debitNotes.statusDraft'),
+          POSTED: t('debitNotes.statusPosted'),
+          SENT: t('debitNotes.statusSent'),
+          VOIDED: t('debitNotes.statusVoided')
+        };
+        return <Tag color={statusColor[raw] || 'default'}>{dnStatusLabel[raw] || value}</Tag>;
       }
     },
     {

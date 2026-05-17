@@ -77,6 +77,28 @@ export function normalizeEntry(entry) {
   };
 }
 
+export function normalizeDebtPolicy(policy) {
+  if (!policy) return null;
+
+  return {
+    id: String(policy.id),
+    backendId: policy.id,
+    partnerId: policy.partnerId,
+    maxDebtAmount:
+      policy.maxDebtAmount === null || policy.maxDebtAmount === undefined
+        ? null
+        : Number(policy.maxDebtAmount),
+    maxDebtAgeDays:
+      policy.maxDebtAgeDays === null || policy.maxDebtAgeDays === undefined
+        ? null
+        : Number(policy.maxDebtAgeDays),
+    isActive: policy.isActive !== false,
+    createdAt: policy.createdAt || null,
+    updatedAt: policy.updatedAt || null,
+    raw: policy
+  };
+}
+
 export function normalizeUser(user) {
   if (!user) return null;
 

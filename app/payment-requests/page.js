@@ -6,6 +6,7 @@ import {
   Card,
   Col,
   DatePicker,
+  Descriptions,
   Form,
   Input,
   InputNumber,
@@ -25,6 +26,7 @@ import {
   CloseCircleOutlined,
   DeleteOutlined,
   EditOutlined,
+  EyeOutlined,
   FileAddOutlined,
   SafetyCertificateOutlined
 } from '@ant-design/icons';
@@ -57,6 +59,7 @@ export default function PaymentRequestsPage() {
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [editingRecord, setEditingRecord] = useState(null);
+  const [viewRecord, setViewRecord] = useState(null);
 
   const statusColor = {
     PENDING_DEPARTMENT_APPROVAL: 'orange',
@@ -244,18 +247,26 @@ export default function PaymentRequestsPage() {
     {
       title: t('paymentRequests.actions'),
       key: 'actions',
-      width: 180,
+      width: 200,
+      fixed: 'right',
       render: (_, record) => {
         const isPending = record.status === 'PENDING_DEPARTMENT_APPROVAL';
         const isDeptApproved = record.status === 'DEPARTMENT_APPROVED';
 
           return (
-            <Space>
+            <Space size={4}>
+              <Button
+                type="text"
+                size="small"
+                icon={<EyeOutlined />}
+                title={t('paymentRequests.viewDetail')}
+                onClick={() => setViewRecord(record)}
+              />
               {isPending && (
                 <>
-                  <Button size="small" icon={<EditOutlined />} title={t('paymentRequests.edit')} onClick={() => openEditModal(record)} />
+                  <Button type="text" size="small" icon={<EditOutlined />} title={t('paymentRequests.edit')} onClick={() => openEditModal(record)} />
                   <Popconfirm title={t('paymentRequests.deleteConfirm')} onConfirm={() => handleDelete(record)}>
-                    <Button size="small" danger icon={<DeleteOutlined />} title={t('paymentRequests.delete')} />
+                    <Button type="text" size="small" danger icon={<DeleteOutlined />} title={t('paymentRequests.delete')} />
                   </Popconfirm>
                 </>
               )}
@@ -276,7 +287,7 @@ export default function PaymentRequestsPage() {
                 </Popconfirm>
               )}
               {(isPending || isDeptApproved) && (
-                <Button danger size="small" icon={<CloseCircleOutlined />} title={t('paymentRequests.reject')} onClick={() => openRejectModal(record)} />
+                <Button type="text" danger size="small" icon={<CloseCircleOutlined />} title={t('paymentRequests.reject')} onClick={() => openRejectModal(record)} />
               )}
             </Space>
           );
@@ -395,6 +406,64 @@ export default function PaymentRequestsPage() {
             <Input.TextArea rows={3} placeholder={t('paymentRequests.explainReject')} />
           </Form.Item>
         </Form>
+      </Modal>
+
+      {/* View Detail Modal */}
+      <Modal
+        title={t('paymentRequests.viewDetail')}
+        open={Boolean(viewRecord)}
+        onCancel={() => setViewRecord(null)}
+        footer={
+          <Space>
+            {viewRecord?.status === 'PENDING_DEPARTMENT_APPROVAL' && (
+              <>
+                <Button icon={<EditOutlined />} onClick={() => { setViewRecord(null); openEditModal(viewRecord); }}>{t('paymentRequests.edit')}</Button>
+                <Popconfirm title={t('paymentRequests.approveConfirm')} onConfirm={() => { handleApprove(viewRecord); setViewRecord(null); }}>
+                  <Button type="primary" icon={<CheckCircleOutlined />}>{t('paymentRequests.departmentApprove')}</Button>
+                </Popconfirm>
+              </>
+            )}
+            {viewRecord?.status === 'DEPARTMENT_APPROVED' && (
+              <Popconfirm title={t('paymentRequests.finalApproveConfirm')} onConfirm={() => { handleFinalApprove(viewRecord); setViewRecord(null); }}>
+                <Button type="primary" icon={<SafetyCertificateOutlined />} style={{ backgroundColor: '#52c41a' }}>{t('paymentRequests.finalApprove')}</Button>
+              </Popconfirm>
+            )}
+            {(viewRecord?.status === 'PENDING_DEPARTMENT_APPROVAL' || viewRecord?.status === 'DEPARTMENT_APPROVED') && (
+              <Button danger icon={<CloseCircleOutlined />} onClick={() => { setViewRecord(null); openRejectModal(viewRecord); }}>{t('paymentRequests.reject')}</Button>
+            )}
+            <Button onClick={() => setViewRecord(null)}>{t('paymentRequests.close')}</Button>
+          </Space>
+        }
+        width={600}
+      >
+        {viewRecord && (
+          <Descriptions bordered column={1} size="small">
+            <Descriptions.Item label={t('paymentRequests.id')}>{viewRecord.backendId}</Descriptions.Item>
+            <Descriptions.Item label={t('paymentRequests.vendor')}>
+              {(() => { const vendor = partners.find((p) => p.backendId === viewRecord.vendorId); return vendor ? `${vendor.code} - ${vendor.name}` : viewRecord.vendorId; })()}
+            </Descriptions.Item>
+            <Descriptions.Item label={t('paymentRequests.job')}>
+              {(() => { const job = jobs.find((j) => j.backendId === viewRecord.jobId); return job ? `${job.job_no || job.id} - ${job.customer || ''}` : (viewRecord.jobId || '-'); })()}
+            </Descriptions.Item>
+            <Descriptions.Item label={t('paymentRequests.amount')}>
+              <strong>{formatCurrency(viewRecord.amount)} {viewRecord.currency}</strong>
+            </Descriptions.Item>
+            <Descriptions.Item label={t('paymentRequests.requestedDate')}>
+              {viewRecord.requestedPaymentDate || '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label={t('paymentRequests.status')}>
+              <Tag color={statusColor[viewRecord.status]}>{statusLabel[viewRecord.status] || viewRecord.status}</Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label={t('paymentRequests.reason')}>
+              {viewRecord.reason || viewRecord.raw?.reason || '-'}
+            </Descriptions.Item>
+            {(viewRecord.status === 'REJECTED' && (viewRecord.rejectionReason || viewRecord.raw?.rejectionReason)) && (
+              <Descriptions.Item label={t('paymentRequests.rejectionReason')}>
+                <Typography.Text type="danger">{viewRecord.rejectionReason || viewRecord.raw?.rejectionReason}</Typography.Text>
+              </Descriptions.Item>
+            )}
+          </Descriptions>
+        )}
       </Modal>
     </DashboardLayout>
   );
