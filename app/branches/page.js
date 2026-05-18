@@ -1,7 +1,7 @@
 'use client';
 
 import { Alert, Button, Card, Form, Input, Modal, Space, Switch, Table, Tag, message } from 'antd';
-import { PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import { EditOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import { useState } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { useLanguage } from '@/components/AppProviders';
@@ -58,7 +58,7 @@ export default function BranchesPage() {
       title: t('branches.actions'),
       key: 'actions',
       align: 'right',
-      render: (_, record) => <Button size="small" onClick={() => openModal(record)}>{t('branches.edit')}</Button>
+      render: (_, record) => <Button size="small" icon={<EditOutlined />} title={t('branches.edit')} onClick={() => openModal(record)} />
     }
   ];
 

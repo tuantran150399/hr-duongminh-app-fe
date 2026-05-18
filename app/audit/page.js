@@ -1,7 +1,7 @@
 'use client';
 
 import { Alert, Button, Card, DatePicker, Descriptions, Drawer, Form, Input, Select, Space, Table, Tag } from 'antd';
-import { ReloadOutlined, SearchOutlined } from '@ant-design/icons';
+import { EyeOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 import { useState } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { useLanguage } from '@/components/AppProviders';
@@ -46,7 +46,7 @@ export default function AuditPage() {
       title: t('audit.actions'),
       key: 'actions',
       align: 'right',
-      render: (_, record) => <Button size="small" onClick={() => setSelected(record)}>{t('audit.view')}</Button>
+      render: (_, record) => <Button size="small" icon={<EyeOutlined />} title={t('audit.view')} onClick={() => setSelected(record)} />
     }
   ];
 

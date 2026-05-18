@@ -59,8 +59,12 @@ export default function UsersPage() {
     [branches]
   );
   const permissionOptions = useMemo(
-    () => permissions.map((permission) => ({ label: permission.name, value: permission.id })),
-    [permissions]
+    () => permissions.map((permission) => {
+      const trans = t(`permissions.${permission.name}`);
+      const label = trans !== `permissions.${permission.name}` ? trans : permission.name;
+      return { label, value: permission.id };
+    }),
+    [permissions, t]
   );
 
   function openUserModal(record = null) {
@@ -197,9 +201,11 @@ export default function UsersPage() {
       key: 'permissions',
       render: (_, record) => (
         <Space wrap size={[4, 4]}>
-          {(record.raw?.permissions || []).slice(0, 6).map((permission) => (
-            <Tag key={permission.id}>{permission.name}</Tag>
-          ))}
+          {(record.raw?.permissions || []).slice(0, 6).map((permission) => {
+            const trans = t(`permissions.${permission.name}`);
+            const label = trans !== `permissions.${permission.name}` ? trans : permission.name;
+            return <Tag key={permission.id}>{label}</Tag>;
+          })}
           {(record.raw?.permissions || []).length > 6 ? <Tag>+{record.raw.permissions.length - 6}</Tag> : null}
         </Space>
       )
