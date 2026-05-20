@@ -277,11 +277,14 @@ function cleanPayload(values) {
 export default function AccountingPage() {
   const { t, language } = useLanguage();
   const [form] = Form.useForm();
+  const [paymentForm] = Form.useForm();
   const [activeTab, setActiveTab] = useState('revenue');
   const [saving, setSaving] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [pendingPaymentChange, setPendingPaymentChange] = useState(null);
 
   const statusLabelMap = {
     Draft: t('accounting.statusDraft'),
@@ -301,6 +304,16 @@ export default function AccountingPage() {
     value: key,
     label: paymentLabelMap[key] || key
   }));
+
+  const paymentMethodLabelMap = {
+    CASH: t('accounting.paymentMethodCash'),
+    BANK: t('accounting.paymentMethodBank')
+  };
+
+  const paymentMethodOptions = [
+    { value: 'CASH', label: paymentMethodLabelMap.CASH },
+    { value: 'BANK', label: paymentMethodLabelMap.BANK }
+  ];
 
   // COB modal state
   const [cobModalOpen, setCobModalOpen] = useState(false);
@@ -439,18 +452,44 @@ export default function AccountingPage() {
     }
   }
 
-  async function handlePaymentStatus(record, paymentStatus) {
+  async function savePaymentStatus(record, payload) {
     try {
       if (activeTab === 'revenue') {
-        await updateRevenuePaymentStatus({ id: record.backendId, paymentStatus }).unwrap();
+        await updateRevenuePaymentStatus({ id: record.backendId, ...payload }).unwrap();
       } else {
-        await updateCostPaymentStatus({ id: record.backendId, paymentStatus }).unwrap();
+        await updateCostPaymentStatus({ id: record.backendId, ...payload }).unwrap();
       }
       message.success(t('accountingForm.paymentUpdated'));
       
     } catch (err) {
       message.error(err?.data?.message || t('accountingForm.paymentError'));
     }
+  }
+
+  async function handlePaymentStatus(record, paymentStatus) {
+    if (paymentStatus === 'UNPAID') {
+      await savePaymentStatus(record, { paymentStatus });
+      return;
+    }
+
+    setPendingPaymentChange({ record, paymentStatus });
+    paymentForm.resetFields();
+    paymentForm.setFieldsValue({
+      paymentMethod: record.paymentMethod || 'CASH',
+      accountRef: record.paymentAccountRef || ''
+    });
+    setPaymentModalOpen(true);
+  }
+
+  async function submitPaymentMethod(values) {
+    if (!pendingPaymentChange) return;
+    await savePaymentStatus(pendingPaymentChange.record, {
+      paymentStatus: pendingPaymentChange.paymentStatus,
+      paymentMethod: values.paymentMethod,
+      accountRef: values.accountRef
+    });
+    setPaymentModalOpen(false);
+    setPendingPaymentChange(null);
   }
 
   async function handleCostImport(options) {
@@ -538,16 +577,23 @@ export default function AccountingPage() {
       title: t('accounting.paymentStatus'),
       dataIndex: 'paymentStatus',
       key: 'paymentStatus',
-      width: 150,
+      width: 180,
       render: (value, record) => (
-        <Select
-          value={value === '-' ? 'UNPAID' : String(value).toUpperCase()}
-          options={paymentOptions}
-          size="small"
-          disabled={record.status !== 'Posted'}
-          onChange={(nextValue) => handlePaymentStatus(record, nextValue)}
-          style={{ width: 120 }}
-        />
+        <Space direction="vertical" size={4}>
+          <Select
+            value={value === '-' ? 'UNPAID' : String(value).toUpperCase()}
+            options={paymentOptions}
+            size="small"
+            disabled={record.status !== 'Posted'}
+            onChange={(nextValue) => handlePaymentStatus(record, nextValue)}
+            style={{ width: 130 }}
+          />
+          {record.paymentMethod ? (
+            <Tag color={record.paymentMethod === 'BANK' ? 'blue' : 'green'}>
+              {paymentMethodLabelMap[record.paymentMethod] || record.paymentMethod}
+            </Tag>
+          ) : null}
+        </Space>
       )
     },
     {
@@ -791,6 +837,28 @@ export default function AccountingPage() {
         </Modal>
 
         {/* COB Modal — Mark cost as charge-on-behalf */}
+        <Modal
+          title={t('accounting.paymentMethod')}
+          open={paymentModalOpen}
+          onCancel={() => { setPaymentModalOpen(false); setPendingPaymentChange(null); }}
+          onOk={() => paymentForm.submit()}
+          destroyOnHidden
+          width={460}
+        >
+          <Form form={paymentForm} layout="vertical" onFinish={submitPaymentMethod}>
+            <Form.Item
+              name="paymentMethod"
+              label={t('accounting.paymentMethod')}
+              rules={[{ required: true, message: t('accounting.paymentMethodRequired') }]}
+            >
+              <Select options={paymentMethodOptions} />
+            </Form.Item>
+            <Form.Item name="accountRef" label={t('accounting.accountRef')}>
+              <Input placeholder={t('accounting.accountRefPlaceholder')} />
+            </Form.Item>
+          </Form>
+        </Modal>
+
         <Modal
           title={
             <Space>

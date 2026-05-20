@@ -2,7 +2,7 @@
 
 import {
   Alert, Button, Card, Col, Row, Table, Tabs,
-  Typography, DatePicker, message
+  Typography, DatePicker, Select, message
 } from 'antd';
 import { useMemo, useState } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
@@ -53,6 +53,8 @@ const REPORT_QUERY_MAP = {
   'overdue-payables': 'overduePayables'
 };
 
+const DEBT_REPORT_KEYS = new Set(['receivables', 'payables', 'overdue-receivables', 'overdue-payables']);
+
 function normalizeItems(raw) {
   if (!raw) return [];
   if (Array.isArray(raw)) return raw;
@@ -64,12 +66,19 @@ export default function ReportsPage() {
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('branch-summary');
   const [dateRange, setDateRange] = useState([null, null]);
+  const [selectedJobId, setSelectedJobId] = useState(null);
 
   const params = {};
   if (dateRange[0] && dateRange[1]) {
     params.dateFrom = dateRange[0].format('YYYY-MM-DD');
     params.dateTo = dateRange[1].format('YYYY-MM-DD');
   }
+  if (selectedJobId) {
+    params.jobId = selectedJobId;
+  }
+  const isDebtReport = DEBT_REPORT_KEYS.has(activeTab);
+  const isMissingRequiredJob = isDebtReport && !selectedJobId;
+  const skipDebtReport = !selectedJobId;
 
   // All reports are fetched but only the active one is used/shown
   const branchSummary = useGetBranchSummaryQuery(params);
@@ -77,10 +86,10 @@ export default function ReportsPage() {
   const pnl = useGetPnlQuery(params);
   const cashFlow = useGetCashFlowQuery(params);
   const jobStatus = useGetJobStatusSummaryQuery(params);
-  const receivables = useGetReceivablesQuery(params);
-  const payables = useGetPayablesQuery(params);
-  const overdueReceivables = useGetOverdueReceivablesQuery(params);
-  const overduePayables = useGetOverduePayablesQuery(params);
+  const receivables = useGetReceivablesQuery(params, { skip: skipDebtReport });
+  const payables = useGetPayablesQuery(params, { skip: skipDebtReport });
+  const overdueReceivables = useGetOverdueReceivablesQuery(params, { skip: skipDebtReport });
+  const overduePayables = useGetOverduePayablesQuery(params, { skip: skipDebtReport });
 
   const queryMap = {
     'branch-summary': branchSummary,
@@ -96,22 +105,34 @@ export default function ReportsPage() {
 
   const activeQuery = queryMap[activeTab] || {};
   const { isLoading, error } = activeQuery;
-  const data = normalizeItems(activeQuery.data);
+  const data = isMissingRequiredJob ? [] : normalizeItems(activeQuery.data);
 
   // Lookup data for ID-to-name mapping
   const { data: branchesRaw = [] } = useGetBranchesQuery();
   const { data: partnersData } = useGetPartnersQuery();
   const { data: jobsData } = useGetJobsQuery();
 
-  const branches = Array.isArray(branchesRaw) ? branchesRaw : branchesRaw?.items || [];
-  const partners = partnersData?.items || [];
-  const jobs = jobsData?.items || [];
+  const branches = useMemo(() => (Array.isArray(branchesRaw) ? branchesRaw : branchesRaw?.items || []), [branchesRaw]);
+  const partners = useMemo(() => partnersData?.items || [], [partnersData]);
+  const jobs = useMemo(() => jobsData?.items || [], [jobsData]);
 
   const branchMap = useMemo(() => branches.reduce((m, b) => ({ ...m, [b.backendId]: b }), {}), [branches]);
   const partnerMap = useMemo(() => partners.reduce((m, p) => ({ ...m, [p.backendId]: p }), {}), [partners]);
   const jobMap = useMemo(() => jobs.reduce((m, j) => ({ ...m, [j.backendId]: j }), {}), [jobs]);
+  const jobOptions = useMemo(
+    () => jobs.map((job) => ({
+      value: job.backendId,
+      label: `${job.job_no || job.raw?.jobCode || job.id} - ${job.customer || ''}`
+    })),
+    [jobs]
+  );
 
   async function handleExport() {
+    if (isMissingRequiredJob) {
+      message.warning(t('reports.jobRequiredForDebt'));
+      return;
+    }
+
     try {
       const reportKey = activeTab === 'job-status' ? 'job-status-summary' : activeTab;
       const { blob, fileName } = await exportReport(reportKey, params);
@@ -209,15 +230,39 @@ export default function ReportsPage() {
       </div>
 
       <Card style={{ marginBottom: 16 }}>
-        <Row gutter={16} align="middle">
-          <Col span={24}>
+        <Row gutter={[16, 16]} align="middle">
+          <Col xs={24} lg={12}>
             <div className="report-filter-row">
               <span className="report-filter-label">{t('reports.dateRange')}:</span>
               <RangePicker value={dateRange} onChange={setDateRange} style={{ width: '100%', maxWidth: 360 }} />
             </div>
           </Col>
+          <Col xs={24} lg={12}>
+            <div className="report-filter-row">
+              <span className="report-filter-label">{t('reports.jobNo')}:</span>
+              <Select
+                allowClear
+                showSearch
+                optionFilterProp="label"
+                value={selectedJobId}
+                onChange={setSelectedJobId}
+                options={jobOptions}
+                placeholder={t('reports.selectJob')}
+                style={{ width: '100%', maxWidth: 420 }}
+              />
+            </div>
+          </Col>
         </Row>
       </Card>
+
+      {isMissingRequiredJob && (
+        <Alert
+          type="warning"
+          showIcon
+          message={t('reports.jobRequiredForDebt')}
+          style={{ marginBottom: 16 }}
+        />
+      )}
 
       {error && <Alert type="error" showIcon message={t('reports.loadError')} style={{ marginBottom: 16 }} />}
 

@@ -231,6 +231,14 @@ export default function UsersPage() {
 
         {error ? <Alert type="error" showIcon message={t('users.loadError')} style={{ marginBottom: 16 }} /> : null}
 
+        <Alert
+          type="info"
+          showIcon
+          message={t('users.adminAssignmentTitle')}
+          description={t('users.adminAssignmentDescription')}
+          style={{ marginBottom: 16 }}
+        />
+
         <Tabs
           items={[
             {

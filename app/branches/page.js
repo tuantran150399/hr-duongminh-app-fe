@@ -1,7 +1,31 @@
 'use client';
 
-import { Alert, Button, Card, Form, Input, Modal, Space, Switch, Table, Tag, message } from 'antd';
-import { EditOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import {
+  Alert,
+  Button,
+  Card,
+  Col,
+  Form,
+  Input,
+  Modal,
+  Row,
+  Space,
+  Statistic,
+  Switch,
+  Table,
+  Tag,
+  Typography,
+  message
+} from 'antd';
+import {
+  BankOutlined,
+  CheckCircleOutlined,
+  EditOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+  SafetyCertificateOutlined,
+  UserSwitchOutlined
+} from '@ant-design/icons';
 import { useState } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { useLanguage } from '@/components/AppProviders';
@@ -21,6 +45,35 @@ export default function BranchesPage() {
   const [updateBranch, { isLoading: isUpdating }] = useUpdateBranchMutation();
 
   const saving = isCreating || isUpdating;
+  const activeBranchCount = branches.filter((branch) => branch.isActive).length;
+  const inactiveBranchCount = branches.length - activeBranchCount;
+
+  const managementHighlights = [
+    {
+      key: 'multiBranch',
+      icon: <BankOutlined />,
+      title: t('branches.multiBranchTitle'),
+      description: t('branches.multiBranchDescription')
+    },
+    {
+      key: 'dataScope',
+      icon: <SafetyCertificateOutlined />,
+      title: t('branches.dataScopeTitle'),
+      description: t('branches.dataScopeDescription')
+    },
+    {
+      key: 'approvalFlow',
+      icon: <CheckCircleOutlined />,
+      title: t('branches.approvalFlowTitle'),
+      description: t('branches.approvalFlowDescription')
+    },
+    {
+      key: 'adminAssignment',
+      icon: <UserSwitchOutlined />,
+      title: t('branches.adminAssignmentTitle'),
+      description: t('branches.adminAssignmentDescription')
+    }
+  ];
 
   function openModal(record = null) {
     setModal({ open: true, record });
@@ -76,6 +129,50 @@ export default function BranchesPage() {
       </div>
 
       {error ? <Alert type="error" showIcon message={t('branches.loadError')} style={{ marginBottom: 16 }} /> : null}
+
+      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+        <Col xs={24} md={8}>
+          <Card>
+            <Statistic title={t('branches.totalBranches')} value={branches.length} />
+          </Card>
+        </Col>
+        <Col xs={24} md={8}>
+          <Card>
+            <Statistic title={t('branches.activeBranches')} value={activeBranchCount} valueStyle={{ color: '#52c41a' }} />
+          </Card>
+        </Col>
+        <Col xs={24} md={8}>
+          <Card>
+            <Statistic title={t('branches.inactiveBranches')} value={inactiveBranchCount} valueStyle={{ color: inactiveBranchCount ? '#cf1322' : undefined }} />
+          </Card>
+        </Col>
+      </Row>
+
+      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+        {managementHighlights.map((item) => (
+          <Col xs={24} md={12} xl={6} key={item.key}>
+            <Card className="branch-management-card" style={{ height: '100%' }}>
+              <Space align="start" size={12}>
+                <span className="branch-management-icon">{item.icon}</span>
+                <div>
+                  <Typography.Title level={5} style={{ marginBottom: 6 }}>{item.title}</Typography.Title>
+                  <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
+                    {item.description}
+                  </Typography.Paragraph>
+                </div>
+              </Space>
+            </Card>
+          </Col>
+        ))}
+      </Row>
+
+      <Alert
+        type="info"
+        showIcon
+        message={t('branches.scopeNoticeTitle')}
+        description={t('branches.scopeNoticeDescription')}
+        style={{ marginBottom: 16 }}
+      />
 
       <Card className="table-card">
         <Table rowKey="id" loading={isLoading} columns={columns} dataSource={branches} pagination={{ pageSize: 10 }} />

@@ -4,6 +4,7 @@ import {
   Alert,
   Button,
   Card,
+  Checkbox,
   Col,
   DatePicker,
   Descriptions,
@@ -60,6 +61,7 @@ export default function PaymentRequestsPage() {
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [editingRecord, setEditingRecord] = useState(null);
   const [viewRecord, setViewRecord] = useState(null);
+  const isChargeOnBehalf = Form.useWatch('isChargeOnBehalf', form);
 
   const statusColor = {
     PENDING_DEPARTMENT_APPROVAL: 'orange',
@@ -103,11 +105,20 @@ export default function PaymentRequestsPage() {
     [partners]
   );
 
+  const customerOptions = useMemo(
+    () =>
+      partners
+        .filter((partner) => ['CUSTOMER', 'BOTH'].includes(partner.partnerType))
+        .map((partner) => ({ value: partner.backendId, label: `${partner.code} - ${partner.name}` })),
+    [partners]
+  );
+
   function openCreateModal() {
     setEditingRecord(null);
     form.resetFields();
     form.setFieldsValue({
-      currency: 'VND'
+      currency: 'VND',
+      isChargeOnBehalf: false
     });
     setModalOpen(true);
   }
@@ -119,6 +130,8 @@ export default function PaymentRequestsPage() {
       jobId: record.jobId || record.raw?.jobId,
       amount: record.amount,
       currency: record.currency || 'VND',
+      isChargeOnBehalf: Boolean(record.raw?.isChargeOnBehalf),
+      chargeToPartnerId: record.raw?.chargeToPartnerId,
       reason: record.reason || record.raw?.reason
     });
     setModalOpen(true);
@@ -129,6 +142,8 @@ export default function PaymentRequestsPage() {
     try {
       const payload = {
         ...values,
+        isChargeOnBehalf: Boolean(values.isChargeOnBehalf),
+        chargeToPartnerId: values.isChargeOnBehalf ? values.chargeToPartnerId : undefined,
         amount: Number(values.amount),
         requestedPaymentDate: toDateString(values.requestedPaymentDate)
       };
@@ -213,6 +228,11 @@ export default function PaymentRequestsPage() {
           <div>
             {job && <div style={{ fontSize: 12, color: '#666' }}>{t('paymentRequests.jobLabel', { jobNo: job.job_no })}</div>}
             {vendor && <strong>{vendor.name}</strong>}
+            {record.raw?.isChargeOnBehalf && (
+              <div style={{ marginTop: 4 }}>
+                <Tag color="blue">{t('paymentRequests.chargeOnBehalf')}</Tag>
+              </div>
+            )}
           </div>
         );
       }
@@ -355,9 +375,30 @@ export default function PaymentRequestsPage() {
           <Form.Item name="vendorId" label={t('paymentRequests.vendor')} rules={[{ required: true, message: t('paymentRequests.vendorRequired') }]}>
             <Select showSearch optionFilterProp="label" options={vendorOptions} placeholder={t('paymentRequests.selectVendor')} />
           </Form.Item>
-          <Form.Item name="jobId" label={t('paymentRequests.jobOptional')}>
+          <Form.Item
+            name="jobId"
+            label={t('paymentRequests.jobOptional')}
+            rules={[{ required: Boolean(isChargeOnBehalf), message: t('paymentRequests.jobRequired') }]}
+          >
             <Select showSearch allowClear optionFilterProp="label" options={jobOptions} placeholder={t('paymentRequests.selectJob')} />
           </Form.Item>
+
+          <Form.Item name="isChargeOnBehalf" valuePropName="checked" style={{ marginBottom: isChargeOnBehalf ? 12 : 24 }}>
+            <Checkbox>{t('paymentRequests.chargeOnBehalf')}</Checkbox>
+          </Form.Item>
+
+          {isChargeOnBehalf && (
+            <>
+              <Alert type="info" showIcon message={t('paymentRequests.chargeOnBehalfHint')} style={{ marginBottom: 16 }} />
+              <Form.Item
+                name="chargeToPartnerId"
+                label={t('paymentRequests.chargeToCustomer')}
+                rules={[{ required: true, message: t('paymentRequests.customerRequired') }]}
+              >
+                <Select showSearch optionFilterProp="label" options={customerOptions} placeholder={t('paymentRequests.selectCustomer')} />
+              </Form.Item>
+            </>
+          )}
 
           <Row gutter={16}>
             <Col span={12}>
@@ -454,6 +495,22 @@ export default function PaymentRequestsPage() {
             <Descriptions.Item label={t('paymentRequests.status')}>
               <Tag color={statusColor[viewRecord.status]}>{statusLabel[viewRecord.status] || viewRecord.status}</Tag>
             </Descriptions.Item>
+            {viewRecord.raw?.isChargeOnBehalf && (
+              <>
+                <Descriptions.Item label={t('paymentRequests.chargeOnBehalf')}>
+                  <Tag color="blue">{t('paymentRequests.chargeOnBehalf')}</Tag>
+                </Descriptions.Item>
+                <Descriptions.Item label={t('paymentRequests.chargeToCustomer')}>
+                  {(() => {
+                    const customer = partners.find((p) => p.backendId === viewRecord.raw?.chargeToPartnerId);
+                    return customer ? `${customer.code} - ${customer.name}` : viewRecord.raw?.chargeToPartnerId;
+                  })()}
+                </Descriptions.Item>
+                <Descriptions.Item label={t('paymentRequests.receivableEntry')}>
+                  {viewRecord.raw?.receivableEntryId || '-'}
+                </Descriptions.Item>
+              </>
+            )}
             <Descriptions.Item label={t('paymentRequests.reason')}>
               {viewRecord.reason || viewRecord.raw?.reason || '-'}
             </Descriptions.Item>

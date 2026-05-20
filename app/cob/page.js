@@ -70,10 +70,13 @@ export default function CobPage() {
   const [updateCollectEntry] = useUpdateCollectOnBehalfEntryMutation();
   const [deleteCollectEntry] = useDeleteCollectOnBehalfEntryMutation();
 
-  const cobEntries = cobData?.items || [];
-  const collectEntries = collectData?.items || [];
-  const jobs = jobsData?.items || [];
-  const partners = (partnersData?.items || []).filter((p) => p.isActive);
+  const cobEntries = useMemo(() => cobData?.items || [], [cobData]);
+  const collectEntries = useMemo(() => collectData?.items || [], [collectData]);
+  const jobs = useMemo(() => jobsData?.items || [], [jobsData]);
+  const partners = useMemo(
+    () => (partnersData?.items || []).filter((p) => p.isActive),
+    [partnersData]
+  );
 
   const jobOptions = useMemo(
     () => jobs.map((j) => ({ value: j.backendId, label: `${j.job_no || j.id} - ${j.customer || ''}` })),
@@ -173,6 +176,15 @@ export default function CobPage() {
       key: 'job',
       width: 140,
       render: (_, r) => getJobNo(r.jobId || r.raw?.jobId)
+    },
+    {
+      title: t('cob.receivableEntry'),
+      key: 'receivableEntryId',
+      width: 150,
+      render: (_, r) => {
+        const receivableEntryId = r.raw?.receivableEntryId;
+        return receivableEntryId ? <Tag color="blue">#{receivableEntryId}</Tag> : '-';
+      }
     },
     {
       title: t('cob.amount'),
@@ -382,13 +394,19 @@ export default function CobPage() {
         width={600}
       >
         <Form form={cobForm} layout="vertical" onFinish={submitCob}>
+          <Alert
+            type="info"
+            showIcon
+            message={t('cob.autoReceivableNotice')}
+            style={{ marginBottom: 16 }}
+          />
           <Form.Item name="vendorId" label={t('cob.vendor')} rules={[{ required: true, message: t('cob.vendorRequired') }]}>
             <Select showSearch optionFilterProp="label" options={vendorOptions} placeholder={t('cob.selectVendor')} />
           </Form.Item>
           <Form.Item name="partnerId" label={t('cob.chargeToCustomer')} rules={[{ required: true, message: t('cob.customerRequired') }]}>
             <Select showSearch optionFilterProp="label" options={customerOptions} placeholder={t('cob.selectCustomer')} />
           </Form.Item>
-          <Form.Item name="jobId" label={t('cob.jobOptional')}>
+          <Form.Item name="jobId" label={t('cob.job')} rules={[{ required: true, message: t('cob.jobRequired') }]}>
             <Select showSearch allowClear optionFilterProp="label" options={jobOptions} placeholder={t('cob.selectJob')} />
           </Form.Item>
           <Row gutter={16}>

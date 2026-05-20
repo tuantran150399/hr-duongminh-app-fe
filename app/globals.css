@@ -283,6 +283,24 @@ a {
   gap: 8px;
 }
 
+.branch-management-card .ant-card-body {
+  height: 100%;
+}
+
+.branch-management-icon {
+  align-items: center;
+  background: #e6f4ff;
+  border: 1px solid #bae0ff;
+  border-radius: 10px;
+  color: #0057c2;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 18px;
+  height: 38px;
+  justify-content: center;
+  width: 38px;
+}
+
 /* Table toolbar */
 .shipment-toolbar {
   display: flex;
