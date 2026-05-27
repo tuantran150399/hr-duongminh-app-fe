@@ -17,6 +17,7 @@ import {
   Spin,
   Statistic,
   Table,
+  Tag,
   message
 } from 'antd';
 import {
@@ -192,6 +193,13 @@ function JobDetailContent() {
   const revenueTotal = revenueEntries.reduce((sum, item) => sum + Number(item.amount || 0), 0);
   const costTotal = costEntries.reduce((sum, item) => sum + Number(item.amount || 0), 0);
   const profitTotal = Number(raw.profitSummary?.profit ?? revenueTotal - costTotal);
+  const paymentStatus = raw.paymentSummary?.status;
+  const paymentLabels = {
+    UNPAID: t('jobForm.paymentUnpaid'),
+    PARTIAL: t('jobForm.paymentPartial'),
+    PAID: t('jobForm.paymentPaid')
+  };
+  const paymentColors = { UNPAID: 'orange', PARTIAL: 'blue', PAID: 'green' };
 
   const entryColumns = [
     { title: t('jobForm.description'), dataIndex: 'description', key: 'description' },
@@ -386,6 +394,9 @@ function JobDetailContent() {
                   </Row>
                   <Descriptions column={1} size="small" bordered>
                     <Descriptions.Item label={t('jobForm.backendProfitStatus')}>{raw.profitSummary?.status || t('jobForm.cannotVerify')}</Descriptions.Item>
+                    <Descriptions.Item label={t('jobForm.paymentStatus')}>
+                      {paymentStatus ? <Tag color={paymentColors[paymentStatus]}>{paymentLabels[paymentStatus] || paymentStatus}</Tag> : t('jobForm.cannotVerify')}
+                    </Descriptions.Item>
                   </Descriptions>
                   <h4 style={{ marginTop: 20 }}>{t('jobForm.revenue')}</h4>
                   <Table rowKey="id" columns={entryColumns} dataSource={revenueEntries} pagination={false} size="small" />

@@ -43,7 +43,8 @@ import {
   useDeleteDebitNoteMutation,
   usePostDebitNoteMutation,
   useVoidDebitNoteMutation,
-  useSendDebitNoteMutation
+  useSendDebitNoteMutation,
+  useRecordDebitNotePaymentMutation
 } from '@/store/services/debitNotesApi';
 import { useGetJobsQuery } from '@/store/services/jobsApi';
 import { useGetPartnersQuery } from '@/store/services/partnersApi';
@@ -53,6 +54,11 @@ import { formatCurrency } from '@/utils/format';
 function toDateString(value) {
   return value?.format ? value.format('YYYY-MM-DD') : value || undefined;
 }
+
+const paymentMethodOptions = [
+  { value: 'CASH', labelKey: 'debitNotes.paymentMethodCash' },
+  { value: 'BANK', labelKey: 'debitNotes.paymentMethodBank' }
+];
 
 // ─── Auto-Pricing Line Items Component ────────────────────────────────────────
 
@@ -285,9 +291,11 @@ export default function DebitNotesPage() {
   const { t } = useLanguage();
   const [form] = Form.useForm();
   const [voidForm] = Form.useForm();
+  const [paymentForm] = Form.useForm();
   const [saving, setSaving] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [voidModalOpen, setVoidModalOpen] = useState(false);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [lineItems, setLineItems] = useState([]);
   const [selectedPartnerId, setSelectedPartnerId] = useState(null);
@@ -311,11 +319,15 @@ export default function DebitNotesPage() {
   const [postDebitNote] = usePostDebitNoteMutation();
   const [voidDebitNote] = useVoidDebitNoteMutation();
   const [sendDebitNote] = useSendDebitNoteMutation();
+  const [recordDebitNotePayment] = useRecordDebitNotePaymentMutation();
 
-  const notes = notesData?.items || [];
-  const jobs = jobsData?.items || [];
-  const partners = (partnersData?.items || []).filter((p) => p.isActive);
-  const allPrices = pricingData?.items || [];
+  const notes = useMemo(() => notesData?.items || [], [notesData]);
+  const jobs = useMemo(() => jobsData?.items || [], [jobsData]);
+  const partners = useMemo(
+    () => (partnersData?.items || []).filter((p) => p.isActive),
+    [partnersData]
+  );
+  const allPrices = useMemo(() => pricingData?.items || [], [pricingData]);
   const loadError = loadErrorObj ? t('debitNotes.loadError') : '';
 
   const jobOptions = useMemo(
@@ -361,6 +373,8 @@ export default function DebitNotesPage() {
       partnerId: record.raw?.partnerId,
       jobId: record.jobId,
       currency: record.currency || 'VND',
+      paymentMethod: record.raw?.paymentMethod,
+      paymentAccountRef: record.raw?.paymentAccountRef,
       description: record.raw?.description || ''
     });
     setSelectedPartnerId(record.raw?.partnerId);
@@ -391,9 +405,10 @@ export default function DebitNotesPage() {
       const totalAmount = lineItems.reduce((sum, line) => sum + Number(line.amount || 0), 0);
 
       const payload = {
-        partnerId: values.partnerId,
-        jobId: values.jobId || undefined,
+        jobId: values.jobId,
         currency: values.currency,
+        paymentMethod: values.paymentMethod || undefined,
+        paymentAccountRef: values.paymentAccountRef || undefined,
         docDate: toDateString(values.docDate),
         dueDate: toDateString(values.dueDate),
         description: values.description || '',
@@ -409,8 +424,13 @@ export default function DebitNotesPage() {
         }))
       };
 
-      await createDebitNote(payload).unwrap();
-      message.success(t('debitNotes.createSuccess'));
+      if (editingRecord) {
+        await updateDebitNote({ id: editingRecord.backendId, ...payload }).unwrap();
+        message.success(t('debitNotes.updateSuccess'));
+      } else {
+        await createDebitNote(payload).unwrap();
+        message.success(t('debitNotes.createSuccess'));
+      }
       setModalOpen(false);
       setEditingRecord(null);
     } catch (err) {
@@ -442,6 +462,37 @@ export default function DebitNotesPage() {
     setSelectedRecord(record);
     voidForm.resetFields();
     setVoidModalOpen(true);
+  }
+
+  function openPaymentModal(record) {
+    setSelectedRecord(record);
+    paymentForm.resetFields();
+    paymentForm.setFieldsValue({
+      amount: Math.max(Number(record.amount || 0) - Number(record.raw?.paidAmount || 0), 0),
+      paymentMethod: record.raw?.paymentMethod || 'BANK',
+      paymentAccountRef: record.raw?.paymentAccountRef
+    });
+    setPaymentModalOpen(true);
+  }
+
+  async function handleRecordPayment(values) {
+    setSaving(true);
+    try {
+      await recordDebitNotePayment({
+        id: selectedRecord.backendId,
+        amount: Number(values.amount),
+        paymentMethod: values.paymentMethod,
+        paymentAccountRef: values.paymentAccountRef || undefined,
+        paymentDate: toDateString(values.paymentDate)
+      }).unwrap();
+      message.success(t('debitNotes.paymentRecorded'));
+      setPaymentModalOpen(false);
+      setSelectedRecord(null);
+    } catch (err) {
+      message.error(err?.data?.message || t('debitNotes.paymentRecordError'));
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleVoid(values) {
@@ -492,6 +543,16 @@ export default function DebitNotesPage() {
       render: (_, record) => <strong>{formatCurrency(record.amount)} {record.currency}</strong>
     },
     {
+      title: t('debitNotes.paymentMethod'),
+      key: 'paymentMethod',
+      width: 140,
+      render: (_, record) => {
+        const method = record.raw?.paymentMethod;
+        if (!method) return '-';
+        return method === 'CASH' ? t('debitNotes.paymentMethodCash') : t('debitNotes.paymentMethodBank');
+      }
+    },
+    {
       title: t('debitNotes.docDate'),
       dataIndex: 'date',
       key: 'date',
@@ -520,6 +581,21 @@ export default function DebitNotesPage() {
       }
     },
     {
+      title: t('debitNotes.paymentStatus'),
+      key: 'paymentStatus',
+      width: 130,
+      render: (_, record) => {
+        const status = record.raw?.paymentStatus || 'UNPAID';
+        const labels = {
+          UNPAID: t('debitNotes.paymentUnpaid'),
+          PARTIAL: t('debitNotes.paymentPartial'),
+          PAID: t('debitNotes.paymentPaid')
+        };
+        const colors = { UNPAID: 'orange', PARTIAL: 'blue', PAID: 'green' };
+        return <Tag color={colors[status] || 'default'}>{labels[status] || status}</Tag>;
+      }
+    },
+    {
       title: t('debitNotes.actions'),
       key: 'actions',
       width: 200,
@@ -527,6 +603,7 @@ export default function DebitNotesPage() {
         const raw = record.status?.toUpperCase().replace(/\s/g, '_');
         const isDraft = raw === 'DRAFT';
         const isPosted = raw === 'POSTED';
+        const isPaid = record.raw?.paymentStatus === 'PAID';
 
         return (
           <Space>
@@ -554,6 +631,9 @@ export default function DebitNotesPage() {
               <Popconfirm title={t('debitNotes.sendConfirm')} onConfirm={() => handleSend(record)}>
                 <Button size="small" icon={<SendOutlined />} title={t('debitNotes.send')} />
               </Popconfirm>
+            )}
+            {!isPaid && raw !== 'VOIDED' && (
+              <Button size="small" icon={<CheckCircleOutlined />} title={t('debitNotes.recordPayment')} onClick={() => openPaymentModal(record)} />
             )}
             {(isDraft || isPosted) && (
               <Button danger size="small" icon={<CloseCircleOutlined />} title={t('debitNotes.void')} onClick={() => openVoidModal(record)} />
@@ -632,18 +712,7 @@ export default function DebitNotesPage() {
         <Form form={form} layout="vertical" onFinish={submitEntry}>
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item name="partnerId" label={t('debitNotes.customer')} rules={[{ required: true, message: t('debitNotes.customerRequired') }]}>
-                <Select
-                  showSearch
-                  optionFilterProp="label"
-                  options={customerOptions}
-                  placeholder={t('debitNotes.selectCustomer')}
-                  onChange={(value) => setSelectedPartnerId(value)}
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="jobId" label={t('debitNotes.jobOptional')}>
+              <Form.Item name="jobId" label={t('debitNotes.jobNo')} rules={[{ required: true, message: t('debitNotes.jobRequired') }]}>
                 <Select
                   showSearch
                   allowClear
@@ -651,6 +720,17 @@ export default function DebitNotesPage() {
                   options={jobOptions}
                   placeholder={t('debitNotes.selectJob')}
                   onChange={handleJobChange}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="partnerId" label={t('debitNotes.customer')} rules={[{ required: true, message: t('debitNotes.customerRequired') }]}>
+                <Select
+                  showSearch
+                  optionFilterProp="label"
+                  options={customerOptions}
+                  placeholder={t('debitNotes.customerFromJob')}
+                  disabled
                 />
               </Form.Item>
             </Col>
@@ -662,6 +742,26 @@ export default function DebitNotesPage() {
                 <Select options={[{ value: 'VND', label: 'VND' }, { value: 'USD', label: 'USD' }, { value: 'EUR', label: 'EUR' }]} />
               </Form.Item>
             </Col>
+            <Col span={8}>
+              <Form.Item name="paymentMethod" label={t('debitNotes.paymentMethod')}>
+                <Select
+                  allowClear
+                  options={paymentMethodOptions.map((option) => ({
+                    value: option.value,
+                    label: t(option.labelKey)
+                  }))}
+                  placeholder={t('debitNotes.selectPaymentMethod')}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="paymentAccountRef" label={t('debitNotes.paymentAccountRef')}>
+                <Input placeholder={t('debitNotes.paymentAccountRefPlaceholder')} />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
             <Col span={8}>
               <Form.Item name="docDate" label={t('debitNotes.docDate')}>
                 <DatePicker format="YYYY-MM-DD" style={{ width: '100%' }} />
@@ -689,6 +789,35 @@ export default function DebitNotesPage() {
           jobs={jobs}
           t={t}
         />
+      </Modal>
+
+      <Modal
+        title={t('debitNotes.recordPayment')}
+        open={paymentModalOpen}
+        onCancel={() => setPaymentModalOpen(false)}
+        onOk={() => paymentForm.submit()}
+        confirmLoading={saving}
+        destroyOnHidden
+      >
+        <Form form={paymentForm} layout="vertical" onFinish={handleRecordPayment}>
+          <Form.Item name="amount" label={t('debitNotes.paymentAmount')} rules={[{ required: true, message: t('debitNotes.amountRequired') }]}>
+            <InputNumber min={0.01} precision={2} style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item name="paymentMethod" label={t('debitNotes.paymentMethod')} rules={[{ required: true, message: t('debitNotes.selectPaymentMethod') }]}>
+            <Select
+              options={paymentMethodOptions.map((option) => ({
+                value: option.value,
+                label: t(option.labelKey)
+              }))}
+            />
+          </Form.Item>
+          <Form.Item name="paymentAccountRef" label={t('debitNotes.paymentAccountRef')}>
+            <Input placeholder={t('debitNotes.paymentAccountRefPlaceholder')} />
+          </Form.Item>
+          <Form.Item name="paymentDate" label={t('debitNotes.paymentDate')}>
+            <DatePicker format="YYYY-MM-DD" style={{ width: '100%' }} />
+          </Form.Item>
+        </Form>
       </Modal>
 
       {/* Void Modal */}

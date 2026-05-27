@@ -248,6 +248,15 @@ export default function CobPage() {
       render: (_, r) => getJobNo(r.jobId || r.raw?.jobId)
     },
     {
+      title: t('cob.relatedCobEntry'),
+      key: 'relatedCobEntryId',
+      width: 150,
+      render: (_, r) => {
+        const relatedCobEntryId = r.raw?.relatedCobEntryId;
+        return relatedCobEntryId ? <Tag color="purple">#{relatedCobEntryId}</Tag> : '-';
+      }
+    },
+    {
       title: t('cob.amount'),
       key: 'amount',
       align: 'right',
