@@ -369,7 +369,19 @@ const dictionary = {
       rejectSuccess: 'Advance rejected.',
       rejectError: 'Unable to reject advance.',
       settleSuccess: 'Reimbursement completed.',
-      settleError: 'Unable to complete reimbursement.'
+      settleError: 'Unable to complete reimbursement.',
+      paymentMethod: 'Payment Method',
+      paymentMethodCash: 'Cash',
+      paymentMethodBank: 'Bank Transfer',
+      selectPaymentMethod: 'Select payment method',
+      edit: 'Edit',
+      delete: 'Delete',
+      deleteConfirm: 'Delete this advance?',
+      deleteSuccess: 'Advance deleted.',
+      deleteError: 'Unable to delete advance.',
+      updateSuccess: 'Advance updated.',
+      editModalTitle: 'Edit Advance',
+      approve: 'Approve'
     },
     reports: {
       title: 'Reports',
@@ -506,7 +518,11 @@ const dictionary = {
       chargeOnBehalf: 'Charge on Behalf',
       chargeToCustomer: 'Charge to Customer',
       chargeOnBehalfHint: 'A matching receivable will be created from the selected customer and linked to the same Job No.',
-      receivableEntry: 'Receivable Entry'
+      receivableEntry: 'Receivable Entry',
+      paymentMethod: 'Payment Method',
+      paymentMethodCash: 'Cash',
+      paymentMethodBank: 'Bank Transfer',
+      selectPaymentMethod: 'Select payment method'
     },
     debitNotes: {
       title: 'Debit Notes',
@@ -666,7 +682,17 @@ const dictionary = {
       totalCob: 'Total COB',
       cobPending: 'COB Pending',
       totalCollect: 'Total Collect',
-      collectPending: 'Collect Pending'
+      collectPending: 'Collect Pending',
+      paymentMethod: 'Payment Method',
+      paymentMethodCash: 'Cash',
+      paymentMethodBank: 'Bank Transfer',
+      selectPaymentMethod: 'Select payment method',
+      settle: 'Settle',
+      delete: 'Delete',
+      deleteConfirm: 'Delete this entry?',
+      deleteSuccess: 'Entry deleted.',
+      deleteError: 'Unable to delete entry.',
+      jobRequired: 'Job is required.'
     },
     notifications: {
       title: 'Notifications',
@@ -1579,7 +1605,19 @@ const dictionary = {
       rejectSuccess: 'Đã từ chối tạm ứng.',
       rejectError: 'Không thể từ chối tạm ứng.',
       settleSuccess: 'Đã hoàn ứng thành công.',
-      settleError: 'Không thể hoàn ứng.'
+      settleError: 'Không thể hoàn ứng.',
+      paymentMethod: 'Phương thức TT',
+      paymentMethodCash: 'Tiền mặt',
+      paymentMethodBank: 'Chuyển khoản',
+      selectPaymentMethod: 'Chọn phương thức TT',
+      editModalTitle: 'Sửa tạm ứng',
+      updateSuccess: 'Đã cập nhật tạm ứng.',
+      deleteSuccess: 'Đã xóa tạm ứng.',
+      deleteError: 'Không thể xóa tạm ứng.',
+      deleteConfirm: 'Xóa tạm ứng này?',
+      edit: 'Sửa',
+      delete: 'Xóa',
+      approve: 'Duyệt'
     },
     reports: {
       title: 'Báo cáo',
@@ -1713,10 +1751,14 @@ const dictionary = {
       updateSuccess: 'Đã cập nhật yêu cầu thanh toán.',
       editModalTitle: 'Sửa yêu cầu thanh toán',
       job: 'Job',
-      chargeOnBehalf: 'Chi ho',
-      chargeToCustomer: 'Tinh cho khach hang',
-      chargeOnBehalfHint: 'He thong se tao khoan phai thu tu khach hang da chon va lien ket cung ma Job.',
-      receivableEntry: 'But toan phai thu'
+      chargeOnBehalf: 'Chi hộ',
+      chargeToCustomer: 'Tính cho khách hàng',
+      chargeOnBehalfHint: 'Hệ thống sẽ tạo khoản phải thu từ khách hàng đã chọn và liên kết cùng mã Job.',
+      receivableEntry: 'Bút toán phải thu',
+      paymentMethod: 'Phương thức TT',
+      paymentMethodCash: 'Tiền mặt',
+      paymentMethodBank: 'Chuyển khoản',
+      selectPaymentMethod: 'Chọn phương thức TT'
     },
     debitNotes: {
       title: 'Bảng kê / Debit Note',
@@ -1876,7 +1918,17 @@ const dictionary = {
       totalCob: 'Tổng chi hộ',
       cobPending: 'Chi hộ chưa TT',
       totalCollect: 'Tổng thu hộ',
-      collectPending: 'Thu hộ chưa TT'
+      collectPending: 'Thu hộ chưa TT',
+      paymentMethod: 'Phương thức TT',
+      paymentMethodCash: 'Tiền mặt',
+      paymentMethodBank: 'Chuyển khoản',
+      selectPaymentMethod: 'Chọn phương thức TT',
+      settle: 'Tất toán',
+      delete: 'Xóa',
+      deleteConfirm: 'Xóa khoản này?',
+      deleteSuccess: 'Đã xóa.',
+      deleteError: 'Không thể xóa.',
+      jobRequired: 'Vui lòng chọn Job.'
     },
     notifications: {
       title: 'Thông báo',

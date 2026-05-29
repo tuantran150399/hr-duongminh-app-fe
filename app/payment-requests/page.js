@@ -132,6 +132,7 @@ export default function PaymentRequestsPage() {
       currency: record.currency || 'VND',
       isChargeOnBehalf: Boolean(record.raw?.isChargeOnBehalf),
       chargeToPartnerId: record.raw?.chargeToPartnerId,
+      paymentMethod: record.raw?.paymentMethod,
       reason: record.reason || record.raw?.reason
     });
     setModalOpen(true);
@@ -144,6 +145,7 @@ export default function PaymentRequestsPage() {
         ...values,
         isChargeOnBehalf: Boolean(values.isChargeOnBehalf),
         chargeToPartnerId: values.isChargeOnBehalf ? values.chargeToPartnerId : undefined,
+        paymentMethod: values.paymentMethod || undefined,
         amount: Number(values.amount),
         requestedPaymentDate: toDateString(values.requestedPaymentDate)
       };
@@ -422,6 +424,16 @@ export default function PaymentRequestsPage() {
           <Form.Item name="requestedPaymentDate" label={t('paymentRequests.requestedPaymentDate')}>
             <DatePicker format="YYYY-MM-DD" style={{ width: '100%' }} />
           </Form.Item>
+          <Form.Item name="paymentMethod" label={t('paymentRequests.paymentMethod')}>
+            <Select
+              allowClear
+              placeholder={t('paymentRequests.selectPaymentMethod')}
+              options={[
+                { value: 'CASH', label: t('paymentRequests.paymentMethodCash') },
+                { value: 'BANK', label: t('paymentRequests.paymentMethodBank') }
+              ]}
+            />
+          </Form.Item>
           <Form.Item name="reason" label={t('paymentRequests.reason')} rules={[{ required: true, message: t('paymentRequests.reasonRequired') }]}>
             <Input.TextArea rows={3} placeholder={t('paymentRequests.provideReason')} />
           </Form.Item>
@@ -494,6 +506,9 @@ export default function PaymentRequestsPage() {
             </Descriptions.Item>
             <Descriptions.Item label={t('paymentRequests.status')}>
               <Tag color={statusColor[viewRecord.status]}>{statusLabel[viewRecord.status] || viewRecord.status}</Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label={t('paymentRequests.paymentMethod')}>
+              {viewRecord.raw?.paymentMethod === 'CASH' ? t('paymentRequests.paymentMethodCash') : viewRecord.raw?.paymentMethod === 'BANK' ? t('paymentRequests.paymentMethodBank') : '-'}
             </Descriptions.Item>
             {viewRecord.raw?.isChargeOnBehalf && (
               <>

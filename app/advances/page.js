@@ -142,6 +142,7 @@ export default function AdvancesPage() {
       amount: Number(values.amount),
       currency: values.currency || 'VND',
       purpose: values.purpose,
+      paymentMethod: values.paymentMethod || undefined,
       dueDate: toDateString(values.dueDate),
       ...(values.jobId ? { jobId: Number(values.jobId) } : {})
     };
@@ -169,7 +170,8 @@ export default function AdvancesPage() {
       employeeId: record.employeeId,
       amount: record.amount,
       currency: record.currency || 'VND',
-      purpose: record.purpose
+      purpose: record.purpose,
+      paymentMethod: record.paymentMethod || record.raw?.paymentMethod
     });
     setModalOpen(true);
   }
@@ -399,6 +401,16 @@ export default function AdvancesPage() {
           </Row>
           <Form.Item name="purpose" label={t('advances.purposeLabel')}>
             <Input.TextArea rows={2} placeholder={t('advances.purposePlaceholder')} />
+          </Form.Item>
+          <Form.Item name="paymentMethod" label={t('advances.paymentMethod')}>
+            <Select
+              allowClear
+              placeholder={t('advances.selectPaymentMethod')}
+              options={[
+                { value: 'CASH', label: t('advances.paymentMethodCash') },
+                { value: 'BANK', label: t('advances.paymentMethodBank') }
+              ]}
+            />
           </Form.Item>
           <Form.Item name="dueDate" label={t('advances.dueDateLabel')} rules={[{ required: true, message: t('advances.dueDateRequired') }]}>
             <DatePicker format="YYYY-MM-DD" style={{ width: '100%' }} />

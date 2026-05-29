@@ -112,7 +112,7 @@ export default function CobPage() {
   async function submitCob(values) {
     setSaving(true);
     try {
-      await createCobEntry({ ...values, amount: Number(values.amount) }).unwrap();
+      await createCobEntry({ ...values, amount: Number(values.amount), paymentMethod: values.paymentMethod || undefined }).unwrap();
       message.success(t('cob.createCobSuccess'));
       setCobModalOpen(false);
     } catch (err) {
@@ -136,7 +136,7 @@ export default function CobPage() {
   async function submitCollect(values) {
     setSaving(true);
     try {
-      await createCollectEntry({ ...values, amount: Number(values.amount) }).unwrap();
+      await createCollectEntry({ ...values, amount: Number(values.amount), paymentMethod: values.paymentMethod || undefined }).unwrap();
       message.success(t('cob.createCollectSuccess'));
       setCollectModalOpen(false);
     } catch (err) {
@@ -433,6 +433,16 @@ export default function CobPage() {
           <Form.Item name="description" label={t('cob.description')}>
             <Input.TextArea rows={2} placeholder={t('cob.descriptionPlaceholder')} />
           </Form.Item>
+          <Form.Item name="paymentMethod" label={t('cob.paymentMethod')}>
+            <Select
+              allowClear
+              placeholder={t('cob.selectPaymentMethod')}
+              options={[
+                { value: 'CASH', label: t('cob.paymentMethodCash') },
+                { value: 'BANK', label: t('cob.paymentMethodBank') }
+              ]}
+            />
+          </Form.Item>
         </Form>
       </Modal>
 
@@ -470,6 +480,16 @@ export default function CobPage() {
           </Row>
           <Form.Item name="description" label={t('cob.description')}>
             <Input.TextArea rows={2} placeholder={t('cob.descriptionPlaceholder')} />
+          </Form.Item>
+          <Form.Item name="paymentMethod" label={t('cob.paymentMethod')}>
+            <Select
+              allowClear
+              placeholder={t('cob.selectPaymentMethod')}
+              options={[
+                { value: 'CASH', label: t('cob.paymentMethodCash') },
+                { value: 'BANK', label: t('cob.paymentMethodBank') }
+              ]}
+            />
           </Form.Item>
         </Form>
       </Modal>
