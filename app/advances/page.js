@@ -262,6 +262,16 @@ export default function AdvancesPage() {
       render: (value, record) => <strong style={{ color: '#0057c2' }}>{formatCurrency(value)} {record.currency}</strong>
     },
     { title: t('advances.purpose'), dataIndex: 'purpose', key: 'purpose', render: (value) => value || '-' },
+    {
+      title: t('advances.paymentMethod'),
+      key: 'paymentMethod',
+      width: 140,
+      render: (_, record) => {
+        const method = record.paymentMethod || record.raw?.paymentMethod;
+        if (!method) return '-';
+        return <Tag color={method === 'CASH' ? 'gold' : 'cyan'}>{method === 'CASH' ? t('advances.paymentMethodCash') : t('advances.paymentMethodBank')}</Tag>;
+      }
+    },
     { title: t('advances.dueDate'), dataIndex: 'dueDate', key: 'dueDate', width: 140, render: (value) => value || '-' },
     {
       title: t('advances.status'),

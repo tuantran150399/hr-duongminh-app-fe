@@ -194,6 +194,16 @@ export default function CobPage() {
       render: (_, r) => <strong>{formatCurrency(r.amount)} {r.currency}</strong>
     },
     {
+      title: t('cob.paymentMethod'),
+      key: 'paymentMethod',
+      width: 140,
+      render: (_, r) => {
+        const method = r.paymentMethod || r.raw?.paymentMethod;
+        if (!method) return '-';
+        return <Tag color={method === 'CASH' ? 'gold' : 'cyan'}>{method === 'CASH' ? t('cob.paymentMethodCash') : t('cob.paymentMethodBank')}</Tag>;
+      }
+    },
+    {
       title: t('cob.status'),
       dataIndex: 'status',
       key: 'status',
@@ -262,6 +272,16 @@ export default function CobPage() {
       align: 'right',
       width: 140,
       render: (_, r) => <strong>{formatCurrency(r.amount)} {r.currency}</strong>
+    },
+    {
+      title: t('cob.paymentMethod'),
+      key: 'paymentMethod',
+      width: 140,
+      render: (_, r) => {
+        const method = r.paymentMethod || r.raw?.paymentMethod;
+        if (!method) return '-';
+        return <Tag color={method === 'CASH' ? 'gold' : 'cyan'}>{method === 'CASH' ? t('cob.paymentMethodCash') : t('cob.paymentMethodBank')}</Tag>;
+      }
     },
     {
       title: t('cob.status'),

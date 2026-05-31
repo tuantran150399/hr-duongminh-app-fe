@@ -260,6 +260,16 @@ export default function PaymentRequestsPage() {
       ellipsis: true
     },
     {
+      title: t('paymentRequests.paymentMethod'),
+      key: 'paymentMethod',
+      width: 140,
+      render: (_, record) => {
+        const method = record.paymentMethod || record.raw?.paymentMethod;
+        if (!method) return '-';
+        return <Tag color={method === 'CASH' ? 'gold' : 'cyan'}>{method === 'CASH' ? t('paymentRequests.paymentMethodCash') : t('paymentRequests.paymentMethodBank')}</Tag>;
+      }
+    },
+    {
       title: t('paymentRequests.status'),
       dataIndex: 'status',
       key: 'status',
