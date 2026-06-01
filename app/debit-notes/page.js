@@ -60,6 +60,20 @@ const paymentMethodOptions = [
   { value: 'BANK', labelKey: 'debitNotes.paymentMethodBank' }
 ];
 
+function normalizeMatchText(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function isBlankRoute(value) {
+  return normalizeMatchText(value) === '';
+}
+
+function sortByServiceAndEffectiveDate(a, b) {
+  const serviceCompare = String(a.serviceType || '').localeCompare(String(b.serviceType || ''));
+  if (serviceCompare !== 0) return serviceCompare;
+  return new Date(b.effectiveFrom || 0).getTime() - new Date(a.effectiveFrom || 0).getTime();
+}
+
 // ─── Auto-Pricing Line Items Component ────────────────────────────────────────
 
 function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId, selectedJobId, jobs, t }) {
@@ -69,26 +83,20 @@ function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId
 
     const selectedJob = jobs.find((j) => j.backendId === selectedJobId);
 
-    return allPrices.filter((price) => {
-      if (price.isActive === false) return false;
+    const origin = normalizeMatchText(selectedJob?.origin || selectedJob?.raw?.pol || '');
+    const destination = normalizeMatchText(selectedJob?.destination || selectedJob?.raw?.pod || '');
+    const customerPrices = allPrices.filter((price) => price.isActive !== false && price.partnerId === selectedPartnerId);
 
-      // Match by partner: customer-specific or general tariff
-      const partnerMatch = !price.partnerId || price.partnerId === selectedPartnerId;
-      if (!partnerMatch) return false;
+    if (origin && destination) {
+      const routePrices = customerPrices
+        .filter((price) => normalizeMatchText(price.routeFrom) === origin && normalizeMatchText(price.routeTo) === destination)
+        .sort(sortByServiceAndEffectiveDate);
+      if (routePrices.length) return routePrices;
+    }
 
-      // If a job is selected, try to match route
-      if (selectedJob) {
-        const origin = (selectedJob.origin || selectedJob.raw?.pol || '').toLowerCase();
-        const dest = (selectedJob.destination || selectedJob.raw?.pod || '').toLowerCase();
-        const routeFrom = (price.routeFrom || '').toLowerCase();
-        const routeTo = (price.routeTo || '').toLowerCase();
-
-        if (routeFrom && origin && !origin.includes(routeFrom) && !routeFrom.includes(origin)) return false;
-        if (routeTo && dest && !dest.includes(routeTo) && !routeTo.includes(dest)) return false;
-      }
-
-      return true;
-    });
+    return customerPrices
+      .filter((price) => isBlankRoute(price.routeFrom) && isBlankRoute(price.routeTo))
+      .sort(sortByServiceAndEffectiveDate);
   }, [allPrices, selectedPartnerId, selectedJobId, jobs]);
 
   function applyPricing() {
