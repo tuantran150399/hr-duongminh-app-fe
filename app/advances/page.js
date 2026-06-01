@@ -14,6 +14,7 @@ import DashboardLayout from '@/layouts/DashboardLayout';
 import { useLanguage } from '@/components/AppProviders';
 import { formatCurrency } from '@/utils/format';
 import { getEmployees } from '@/services/hrmService';
+import { toDatePickerValue } from '@/utils/formUtils';
 import {
   useGetAdvancesQuery,
   useCreateAdvanceMutation,
@@ -171,7 +172,8 @@ export default function AdvancesPage() {
       amount: record.amount,
       currency: record.currency || 'VND',
       purpose: record.purpose,
-      paymentMethod: record.paymentMethod || record.raw?.paymentMethod
+      paymentMethod: record.paymentMethod || record.raw?.paymentMethod,
+      dueDate: toDatePickerValue(record.dueDate)
     });
     setModalOpen(true);
   }

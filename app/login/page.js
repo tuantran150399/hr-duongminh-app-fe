@@ -12,6 +12,7 @@ import {
   clearLoginError
 } from '@/store/slices/authSlice';
 import { useEffect, useState } from 'react';
+import duongminhLogo from '@/asset/image/duongminh.svg';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -65,10 +66,11 @@ export default function LoginPage() {
   return (
     <main className="login-page">
       <div className="login-card">
-        <Typography.Title level={1} className="login-brand-title">
-          HR LOGISTIC
-        </Typography.Title>
-        <div className="login-brand-subtitle">MAKE IT EASY</div>
+        <img
+          src={duongminhLogo.src || duongminhLogo}
+          alt="Dương Minh Logistics"
+          style={{ height: 52, width: 'auto', marginBottom: 24 }}
+        />
 
         {/* Persistent inline error banner */}
         {errorMsg && (

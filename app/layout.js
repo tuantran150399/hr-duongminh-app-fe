@@ -3,8 +3,8 @@ import { AppProviders } from '@/components/AppProviders';
 import './globals.css';
 
 export const metadata = {
-  title: 'LogisticsPro - ERP',
-  description: 'Internal ERP Logistics frontend demo'
+  title: 'Dương Minh Logistics - ERP',
+  description: 'Hệ thống quản lý nhân sự và vận hành Dương Minh Logistics'
 };
 
 export default function RootLayout({ children }) {

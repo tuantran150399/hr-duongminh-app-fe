@@ -234,7 +234,7 @@ export default function ReportsPage() {
           <Col xs={24} lg={12}>
             <div className="report-filter-row">
               <span className="report-filter-label">{t('reports.dateRange')}:</span>
-              <RangePicker value={dateRange} onChange={setDateRange} style={{ width: '100%', maxWidth: 360 }} />
+              <RangePicker value={dateRange} onChange={(val) => setDateRange(val || [null, null])} style={{ width: '100%', maxWidth: 360 }} />
             </div>
           </Col>
           <Col xs={24} lg={12}>

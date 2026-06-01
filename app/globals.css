@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+/* System font: Helvetica, sans-serif */
 @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
 
 * {
@@ -9,7 +9,7 @@ html,
 body {
   min-height: 100%;
   margin: 0;
-  font-family: 'Inter', sans-serif;
+  font-family: Helvetica, sans-serif;
   background: #f9f9f9; /* surface */
   color: #1b1b1b; /* on-surface */
   overflow-x: hidden;
@@ -472,10 +472,19 @@ a {
 .sider-brand {
   min-height: 76px;
   padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .sider-brand.is-collapsed {
   justify-content: center;
+}
+
+.sider-brand-logo {
+  display: block;
+  object-fit: contain;
+  transition: height 0.2s ease;
 }
 
 .sider-brand-copy {

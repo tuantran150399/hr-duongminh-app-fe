@@ -19,6 +19,7 @@ import { clearAllTokens } from '@/utils/auth';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { logout, selectUser, selectUserPermissions } from '@/store/slices/authSlice';
 import { getAuthorizedMenuItems, APP_ROUTES } from '@/config/routes';
+import duongminhLogo from '@/asset/image/duongminh.svg';
 
 const { Header, Content, Sider } = Layout;
 const { useBreakpoint } = Grid;
@@ -133,13 +134,12 @@ export default function DashboardLayout({ children }) {
           trigger={null}
         >
           <div className={`sider-brand ${collapsed ? 'is-collapsed' : ''}`}>
-            <div className="sider-brand-icon">HR</div>
-            {!collapsed ? (
-              <div className="sider-brand-copy">
-                <div className="sider-brand-title">HR LOGISTIC</div>
-                <div className="sider-brand-sub">MAKE IT EASY</div>
-              </div>
-            ) : null}
+            <img
+              src={duongminhLogo.src || duongminhLogo}
+              alt="Dương Minh Logistics"
+              className="sider-brand-logo"
+              style={{ height: collapsed ? 28 : 40, width: 'auto' }}
+            />
           </div>
 
           <div className="sider-section-label">{collapsed ? 'NAV' : t('menu.navigation')}</div>
