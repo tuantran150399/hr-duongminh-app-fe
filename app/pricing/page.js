@@ -54,8 +54,8 @@ export default function PricingPage() {
   const [deleteServicePrice] = useDeleteServicePriceMutation();
   const [editingRecord, setEditingRecord] = useState(null);
 
-  const data = pricingData?.items || [];
-  const partners = (partnersData?.items || []).filter(p => p.isActive);
+  const data = useMemo(() => pricingData?.items || [], [pricingData]);
+  const partners = useMemo(() => (partnersData?.items || []).filter(p => p.isActive), [partnersData]);
   const loadError = loadErrorObj ? t('pricing.loadError') : '';
 
   const serviceTypeOptions = [
