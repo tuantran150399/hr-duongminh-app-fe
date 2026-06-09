@@ -76,10 +76,11 @@ export default function UsersPage() {
           email: record.email,
           fullName: record.fullName,
           branchId: record.branchId,
+          canAccessAllBranches: Boolean(record.raw?.canAccessAllBranches),
           roleIds: roleIdsFromUser(record.raw),
           isActive: record.isActive
         }
-        : { isActive: true, roleIds: [] }
+        : { isActive: true, roleIds: [], canAccessAllBranches: false }
     );
   }
 
@@ -102,6 +103,7 @@ export default function UsersPage() {
       email: values.email,
       fullName: values.fullName,
       branchId: values.branchId,
+      canAccessAllBranches: Boolean(values.canAccessAllBranches),
       roleIds: values.roleIds || [],
       isActive: values.isActive
     };
@@ -152,7 +154,9 @@ export default function UsersPage() {
       title: t('users.branch'),
       dataIndex: 'branchId',
       key: 'branchId',
-      render: (value) => branches.find((branch) => branch.backendId === value)?.name || '-'
+      render: (value, record) => record.raw?.canAccessAllBranches
+        ? t('users.allBranches')
+        : branches.find((branch) => branch.backendId === value)?.name || '-'
     },
     {
       title: t('users.roles'),
@@ -300,8 +304,15 @@ export default function UsersPage() {
             >
               <Input.Password />
             </Form.Item>
-            <Form.Item name="branchId" label={t('users.branch')}>
-              <Select allowClear options={branchOptions} />
+            <Form.Item name="canAccessAllBranches" label={t('users.branchScope')} valuePropName="checked">
+              <Switch checkedChildren={t('users.allBranches')} unCheckedChildren={t('users.singleBranch')} />
+            </Form.Item>
+            <Form.Item noStyle shouldUpdate={(prev, next) => prev.canAccessAllBranches !== next.canAccessAllBranches}>
+              {({ getFieldValue }) => (
+                <Form.Item name="branchId" label={t('users.branch')}>
+                  <Select allowClear options={branchOptions} disabled={getFieldValue('canAccessAllBranches')} />
+                </Form.Item>
+              )}
             </Form.Item>
             <Form.Item name="roleIds" label={t('users.roles')}>
               <Select mode="multiple" allowClear options={roleOptions} />
