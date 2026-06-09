@@ -155,6 +155,7 @@ export const APP_ROUTES = [
 ];
 
 export const PUBLIC_ROUTES = ['/login'];
+export const AUTHENTICATED_FALLBACK_ROUTES = ['/no-access'];
 
 export function getAuthorizedMenuItems(userPermissions, t) {
   const hasWildcard = userPermissions.includes('*');
@@ -170,8 +171,18 @@ export function getAuthorizedMenuItems(userPermissions, t) {
   }));
 }
 
+export function getFirstAuthorizedPath(userPermissions) {
+  const hasWildcard = userPermissions.includes('*');
+  const firstRoute = APP_ROUTES.find((route) => {
+    if (!route.permission) return true;
+    return hasWildcard || userPermissions.includes(route.permission);
+  });
+  return firstRoute?.path || '/no-access';
+}
+
 export function canAccessPath(pathname, userPermissions) {
   if (PUBLIC_ROUTES.includes(pathname)) return true;
+  if (AUTHENTICATED_FALLBACK_ROUTES.includes(pathname)) return true;
 
   const hasWildcard = userPermissions.includes('*');
   if (hasWildcard) return true;

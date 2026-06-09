@@ -144,6 +144,25 @@ const PERMISSION_ALIASES = {
   'security:manage': [PERMISSIONS.SECURITY_VIEW, PERMISSIONS.SECURITY_MANAGE]
 };
 
+export function deriveUserPermissions(user) {
+  if (!user) return [];
+
+  const roles = (user.roles ?? []).map((role) => role.name || role);
+  const explicit = user.permissions ?? [];
+
+  if (roles.includes(ROLES.SUPER_ADMIN) || explicit.includes('*')) {
+    return ['*'];
+  }
+
+  const fromRoles = roles.flatMap((role) => ROLE_PERMISSIONS[role] ?? []);
+  const expanded = [...fromRoles, ...explicit].flatMap((permission) => [
+    permission,
+    ...(PERMISSION_ALIASES[permission] ?? [])
+  ]);
+
+  return [...new Set(expanded)];
+}
+
 export const loginThunk = createAsyncThunk(
   'auth/login',
   async ({ username, password }, { rejectWithValue }) => {
@@ -243,24 +262,7 @@ export const selectUserRoles = (state) => state.auth.user?.roles ?? [];
 
 export const selectUserPermissions = createSelector(
   [(state) => state.auth.user],
-  (user) => {
-    if (!user) return [];
-
-    const roles = (user.roles ?? []).map((role) => role.name || role);
-    const explicit = user.permissions ?? [];
-
-    if (roles.includes(ROLES.SUPER_ADMIN) || explicit.includes('*')) {
-      return ['*'];
-    }
-
-    const fromRoles = roles.flatMap((role) => ROLE_PERMISSIONS[role] ?? []);
-    const expanded = [...fromRoles, ...explicit].flatMap((permission) => [
-      permission,
-      ...(PERMISSION_ALIASES[permission] ?? [])
-    ]);
-
-    return [...new Set(expanded)];
-  }
+  (user) => deriveUserPermissions(user)
 );
 
 export const selectHasPermission = (permission) => (state) => {

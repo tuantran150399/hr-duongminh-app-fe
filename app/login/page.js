@@ -5,11 +5,13 @@ import { Alert, Button, Form, Input, Modal, Typography, message } from 'antd';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/components/AppProviders';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { getFirstAuthorizedPath } from '@/config/routes';
 import {
   loginThunk,
   selectLoginLoading,
   selectLoginError,
-  clearLoginError
+  clearLoginError,
+  deriveUserPermissions
 } from '@/store/slices/authSlice';
 import { useEffect, useState } from 'react';
 import duongminhLogo from '@/asset/image/duongminh.svg';
@@ -31,8 +33,6 @@ export default function LoginPage() {
         typeof loginError === 'string'
           ? loginError
           : loginError?.message || loginError?.data?.message || t('login.loginError');
-
-      setErrorMsg(detail);
 
       Modal.error({
         title: t('login.loginErrorTitle') || 'Login Failed',
@@ -59,7 +59,13 @@ export default function LoginPage() {
 
     if (loginThunk.fulfilled.match(result)) {
       message.success(t('login.loginSuccess'));
-      router.replace('/dashboard');
+      router.replace(getFirstAuthorizedPath(deriveUserPermissions(result.payload.user)));
+    } else {
+      const detail =
+        typeof result.payload === 'string'
+          ? result.payload
+          : result.payload?.message || result.payload?.data?.message || t('login.loginError');
+      setErrorMsg(detail);
     }
   }
 

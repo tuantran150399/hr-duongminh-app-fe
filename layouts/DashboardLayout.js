@@ -49,7 +49,7 @@ export default function DashboardLayout({ children }) {
 
   const currentSection =
     menuItems.find((item) => item.key === selectedKey)?.label ||
-    t('menu.dashboard');
+    (pathname === '/no-access' ? t('noAccess.navLabel') : t('menu.dashboard'));
 
   useEffect(() => {
     const timer = window.setTimeout(() => {

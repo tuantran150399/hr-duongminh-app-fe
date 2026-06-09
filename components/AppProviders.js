@@ -179,6 +179,11 @@ const dictionary = {
       signIn: 'Sign in',
       version: 'Version 1.0.2'
     },
+    noAccess: {
+      navLabel: 'Access Status',
+      title: 'Your account is signed in but has no page access yet',
+      subtitle: 'Please contact an administrator to assign at least one application permission.'
+    },
     accounting: {
       breadcrumb1: 'Operations',
       breadcrumb2: 'Finance',
@@ -1411,6 +1416,11 @@ const dictionary = {
       forgotPassword: 'Quên mật khẩu?',
       signIn: 'Đăng nhập',
       version: 'Phiên bản 1.0.2'
+    },
+    noAccess: {
+      navLabel: 'Trạng thái truy cập',
+      title: 'Tài khoản đã đăng nhập nhưng chưa được cấp quyền vào trang nào',
+      subtitle: 'Vui lòng liên hệ quản trị viên để được gán ít nhất một quyền truy cập ứng dụng.'
     },
     accounting: {
       breadcrumb1: 'Vận hành',

@@ -8,9 +8,10 @@ import {
   logout,
   restoreSessionThunk,
   selectSessionStatus,
+  selectUser,
   selectUserPermissions
 } from '@/store/slices/authSlice';
-import { canAccessPath, PUBLIC_ROUTES } from '@/config/routes';
+import { canAccessPath, getFirstAuthorizedPath, PUBLIC_ROUTES } from '@/config/routes';
 
 /**
  * AuthGuard — bảo vệ toàn bộ ứng dụng.
@@ -26,6 +27,7 @@ export default function AuthGuard({ children }) {
   const dispatch = useAppDispatch();
 
   const sessionStatus = useAppSelector(selectSessionStatus);
+  const user = useAppSelector(selectUser);
   const userPermissions = useAppSelector(selectUserPermissions);
 
   const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
@@ -50,7 +52,7 @@ export default function AuthGuard({ children }) {
 
   // Session đã ready — kiểm tra auth
   if (!isPublicRoute) {
-    const isAuthenticated = userPermissions.length > 0;
+    const isAuthenticated = Boolean(user);
 
     // Không có session → redirect login
     if (!isAuthenticated) {
@@ -64,6 +66,16 @@ export default function AuthGuard({ children }) {
 
     // Có session nhưng không đủ quyền truy cập path hiện tại
     if (!canAccessPath(pathname, userPermissions)) {
+      const fallbackPath = getFirstAuthorizedPath(userPermissions);
+      if (pathname !== fallbackPath && fallbackPath !== '/no-access') {
+        router.replace(fallbackPath);
+        return (
+          <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}>
+            <Spin size="large" />
+          </div>
+        );
+      }
+
       return (
         <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}>
           <Result
@@ -72,11 +84,11 @@ export default function AuthGuard({ children }) {
             subTitle="Bạn không có quyền xem trang này. Vui lòng liên hệ quản trị viên."
             extra={[
               <Button
-                key="dashboard"
+                key="fallback"
                 type="primary"
-                onClick={() => router.push('/dashboard')}
+                onClick={() => router.push(fallbackPath)}
               >
-                Về trang chủ
+                {fallbackPath === '/no-access' ? 'Xem trạng thái tài khoản' : 'Đi đến trang được cấp quyền'}
               </Button>,
               <Button
                 key="logout"
