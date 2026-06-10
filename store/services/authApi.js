@@ -27,6 +27,11 @@ export const authApi = createApi({
     changePassword: builder.mutation({
       query: (data) => ({ url: '/change-password', method: 'POST', data }),
       invalidatesTags: [{ type: 'Auth', id: 'ME' }]
+    }),
+
+    updateProfile: builder.mutation({
+      query: (data) => ({ url: '/users/me', method: 'PATCH', data }),
+      invalidatesTags: [{ type: 'Auth', id: 'ME' }]
     })
   })
 });
@@ -35,5 +40,6 @@ export const {
   useLoginMutation,
   useGetMeQuery,
   useLogoutMutation,
-  useChangePasswordMutation
+  useChangePasswordMutation,
+  useUpdateProfileMutation
 } = authApi;

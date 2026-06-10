@@ -140,13 +140,21 @@ function JobDetailContent() {
     [branchesData]
   );
 
+  const selectedBranchId = Form.useWatch('branchId', form);
+
   const userOptions = useMemo(
     () =>
-      (usersData || []).map((item) => ({
-        value: item.backendId,
-        label: item.fullName || item.username
-      })),
-    [usersData]
+      (usersData || [])
+        .filter((u) => {
+          if (!u.isActive) return false;
+          if (selectedBranchId && u.branchId && u.branchId !== selectedBranchId) return false;
+          return true;
+        })
+        .map((item) => ({
+          value: item.backendId,
+          label: item.fullName || item.username
+        })),
+    [usersData, selectedBranchId]
   );
 
   // Populate form when job data loads

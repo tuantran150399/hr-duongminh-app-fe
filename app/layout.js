@@ -1,6 +1,7 @@
 import '@ant-design/v5-patch-for-react-19';
 import { AppProviders } from '@/components/AppProviders';
 import './globals.css';
+import favicon from '@/asset/image/favicon.ico';
 
 export const metadata = {
   title: 'Dương Minh Logistics - ERP',
@@ -10,6 +11,9 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="vi">
+      <head>
+        <link rel="icon" href={favicon.src} sizes="any" />
+      </head>
       <body>
         <AppProviders>{children}</AppProviders>
       </body>

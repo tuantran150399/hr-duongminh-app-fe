@@ -72,12 +72,18 @@ export default function CreateJobPage() {
     [branchesData]
   );
 
+  const selectedBranchId = Form.useWatch('branchId', form);
+
   const userOptions = useMemo(
     () =>
       (usersData || [])
-        .filter((u) => u.isActive)
+        .filter((u) => {
+          if (!u.isActive) return false;
+          if (selectedBranchId && u.branchId && u.branchId !== selectedBranchId) return false;
+          return true;
+        })
         .map((item) => ({ value: item.backendId, label: item.fullName || item.username })),
-    [usersData]
+    [usersData, selectedBranchId]
   );
 
   async function onFinish(values) {

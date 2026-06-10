@@ -1243,6 +1243,32 @@ const dictionary = {
       'role:manage': 'Manage Roles',
       'branch:manage': 'Manage Branches',
       'auditlog:view': 'View Audit Logs'
+    },
+    account: {
+      settingsTitle: 'Account Settings',
+      profileTab: 'Profile',
+      passwordTab: 'Change Password',
+      fullName: 'Full Name',
+      fullNameRequired: 'Full name is required',
+      email: 'Email',
+      emailRequired: 'Email is required',
+      emailInvalid: 'Please enter a valid email',
+      saveProfile: 'Save Profile',
+      profileUpdated: 'Profile updated successfully.',
+      profileError: 'Unable to update profile.',
+      currentPassword: 'Current Password',
+      currentPasswordRequired: 'Current password is required',
+      newPassword: 'New Password',
+      newPasswordRequired: 'New password is required',
+      confirmPassword: 'Confirm Password',
+      confirmPasswordRequired: 'Please confirm your new password',
+      passwordMismatch: 'Passwords do not match',
+      passwordMin: 'Password must be at least 6 characters',
+      changePasswordBtn: 'Change Password',
+      passwordChanged: 'Password changed successfully.',
+      passwordError: 'Unable to change password. Please check your current password.',
+      passwordNoticeTitle: 'Password Security',
+      passwordNoticeDesc: 'Choose a strong password with at least 6 characters. After changing your password, you will remain signed in.'
     }
   },
   vi: {
@@ -2487,6 +2513,32 @@ const dictionary = {
       'role:manage': 'Quản lý Nhóm quyền',
       'branch:manage': 'Quản lý Chi nhánh',
       'auditlog:view': 'Xem Nhật ký'
+    },
+    account: {
+      settingsTitle: 'Cài đặt tài khoản',
+      profileTab: 'Thông tin cá nhân',
+      passwordTab: 'Đổi mật khẩu',
+      fullName: 'Họ tên',
+      fullNameRequired: 'Họ tên là bắt buộc',
+      email: 'Email',
+      emailRequired: 'Email là bắt buộc',
+      emailInvalid: 'Vui lòng nhập email hợp lệ',
+      saveProfile: 'Lưu thông tin',
+      profileUpdated: 'Đã cập nhật thông tin thành công.',
+      profileError: 'Không thể cập nhật thông tin.',
+      currentPassword: 'Mật khẩu hiện tại',
+      currentPasswordRequired: 'Vui lòng nhập mật khẩu hiện tại',
+      newPassword: 'Mật khẩu mới',
+      newPasswordRequired: 'Vui lòng nhập mật khẩu mới',
+      confirmPassword: 'Xác nhận mật khẩu',
+      confirmPasswordRequired: 'Vui lòng xác nhận mật khẩu mới',
+      passwordMismatch: 'Mật khẩu xác nhận không khớp',
+      passwordMin: 'Mật khẩu phải có ít nhất 6 ký tự',
+      changePasswordBtn: 'Đổi mật khẩu',
+      passwordChanged: 'Đã đổi mật khẩu thành công.',
+      passwordError: 'Không thể đổi mật khẩu. Vui lòng kiểm tra mật khẩu hiện tại.',
+      passwordNoticeTitle: 'Bảo mật mật khẩu',
+      passwordNoticeDesc: 'Chọn mật khẩu mạnh với ít nhất 6 ký tự. Sau khi đổi mật khẩu, bạn vẫn giữ phiên đăng nhập.'
     }
   }
 };

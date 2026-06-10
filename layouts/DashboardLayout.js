@@ -8,6 +8,7 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   QuestionCircleOutlined,
+  SettingOutlined,
   UserOutlined
 } from '@ant-design/icons';
 import { Avatar, Button, Dropdown, Grid, Layout, Menu, Tooltip, Typography } from 'antd';
@@ -15,6 +16,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useLanguage } from '@/components/AppProviders';
 import AuthGuard from '@/components/AuthGuard';
 import NotificationBell from '@/components/NotificationBell';
+import AccountSettingsModal from '@/components/AccountSettingsModal';
 import { clearAllTokens } from '@/utils/auth';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { logout, selectUser, selectUserPermissions } from '@/store/slices/authSlice';
@@ -30,6 +32,7 @@ export default function DashboardLayout({ children }) {
   const dispatch = useAppDispatch();
   const [collapsed, setCollapsed] = useState(false);
   const [currentDateLabel, setCurrentDateLabel] = useState('');
+  const [accountModalOpen, setAccountModalOpen] = useState(false);
   const { language, setLanguage, options, t } = useLanguage();
   const screens = useBreakpoint();
   const isBelowDesktop = screens.lg === false;
@@ -103,6 +106,11 @@ export default function DashboardLayout({ children }) {
       disabled: true
     },
     { type: 'divider' },
+    {
+      key: 'settings',
+      icon: <SettingOutlined />,
+      label: t('account.settingsTitle')
+    },
     {
       key: 'logout',
       icon: <LogoutOutlined />,
@@ -227,6 +235,7 @@ export default function DashboardLayout({ children }) {
                   items: userMenuItems,
                   onClick: ({ key }) => {
                     if (key === 'logout') handleLogout();
+                    if (key === 'settings') setAccountModalOpen(true);
                   }
                 }}
                 trigger={['click']}
@@ -256,6 +265,11 @@ export default function DashboardLayout({ children }) {
           <Content className="dashboard-content">{children}</Content>
         </Layout>
       </Layout>
+
+      <AccountSettingsModal
+        open={accountModalOpen}
+        onClose={() => setAccountModalOpen(false)}
+      />
     </AuthGuard>
   );
 }

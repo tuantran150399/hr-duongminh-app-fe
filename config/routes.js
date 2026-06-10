@@ -155,7 +155,7 @@ export const APP_ROUTES = [
 ];
 
 export const PUBLIC_ROUTES = ['/login'];
-export const AUTHENTICATED_FALLBACK_ROUTES = ['/no-access'];
+export const AUTHENTICATED_FALLBACK_ROUTES = ['/no-access', '/account'];
 
 export function getAuthorizedMenuItems(userPermissions, t) {
   const hasWildcard = userPermissions.includes('*');

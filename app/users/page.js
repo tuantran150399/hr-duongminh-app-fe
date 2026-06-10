@@ -8,6 +8,8 @@ import { DeleteOutlined, EditOutlined, PlusOutlined, ReloadOutlined } from '@ant
 import { useMemo, useState } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { useLanguage } from '@/components/AppProviders';
+import { useAppSelector } from '@/store/hooks';
+import { selectHasPermission, PERMISSIONS } from '@/store/slices/authSlice';
 import {
   useGetUsersQuery,
   useCreateUserMutation,
@@ -30,6 +32,8 @@ function permissionIdsFromRole(role) {
 
 export default function UsersPage() {
   const { t } = useLanguage();
+  const canManageUsers = useAppSelector(selectHasPermission(PERMISSIONS.USER_MANAGE));
+  const canManageRoles = useAppSelector(selectHasPermission(PERMISSIONS.ROLE_MANAGE));
   const [userModal, setUserModal] = useState({ open: false, record: null });
   const [roleModal, setRoleModal] = useState({ open: false, record: null });
   const [userForm] = Form.useForm();
@@ -180,18 +184,22 @@ export default function UsersPage() {
       align: 'right',
       render: (_, record) => (
         <Space>
-          <Button size="small" icon={<EditOutlined />} title={t('users.edit')} onClick={() => openUserModal(record)} />
-          <Popconfirm
-            title={t('users.deactivateConfirm')}
-            okText={t('users.deactivate')}
-            okButtonProps={{ danger: true }}
-            onConfirm={async () => {
-              await deleteUser(record.backendId).unwrap();
-              message.success(t('users.userDeactivated'));
-            }}
-          >
-            <Button size="small" danger icon={<DeleteOutlined />} title={t('users.deactivate')} />
-          </Popconfirm>
+          {canManageUsers ? (
+            <>
+              <Button size="small" icon={<EditOutlined />} title={t('users.edit')} onClick={() => openUserModal(record)} />
+              <Popconfirm
+                title={t('users.deactivateConfirm')}
+                okText={t('users.deactivate')}
+                okButtonProps={{ danger: true }}
+                onConfirm={async () => {
+                  await deleteUser(record.backendId).unwrap();
+                  message.success(t('users.userDeactivated'));
+                }}
+              >
+                <Button size="small" danger icon={<DeleteOutlined />} title={t('users.deactivate')} />
+              </Popconfirm>
+            </>
+          ) : null}
         </Space>
       )
     }
@@ -218,7 +226,7 @@ export default function UsersPage() {
       title: t('users.actions'),
       key: 'actions',
       align: 'right',
-      render: (_, record) => <Button size="small" icon={<EditOutlined />} title={t('users.edit')} onClick={() => openRoleModal(record)} />
+      render: (_, record) => canManageRoles ? <Button size="small" icon={<EditOutlined />} title={t('users.edit')} onClick={() => openRoleModal(record)} /> : null
     }
   ];
 
@@ -252,9 +260,11 @@ export default function UsersPage() {
                 <Card className="table-card">
                   <div className="shipment-toolbar">
                     <span className="shipment-toolbar-total">{t('users.userAccounts')}</span>
-                    <Button type="primary" icon={<PlusOutlined />} onClick={() => openUserModal()}>
-                      {t('users.createUser')}
-                    </Button>
+                    {canManageUsers ? (
+                      <Button type="primary" icon={<PlusOutlined />} onClick={() => openUserModal()}>
+                        {t('users.createUser')}
+                      </Button>
+                    ) : null}
                   </div>
                   <Table rowKey="id" loading={loading} columns={userColumns} dataSource={users} pagination={{ pageSize: 10 }} />
                 </Card>
@@ -267,9 +277,11 @@ export default function UsersPage() {
                 <Card className="table-card">
                   <div className="shipment-toolbar">
                     <span className="shipment-toolbar-total">{t('users.permissionGroups')}</span>
-                    <Button type="primary" icon={<PlusOutlined />} onClick={() => openRoleModal()}>
-                      {t('users.createRole')}
-                    </Button>
+                    {canManageRoles ? (
+                      <Button type="primary" icon={<PlusOutlined />} onClick={() => openRoleModal()}>
+                        {t('users.createRole')}
+                      </Button>
+                    ) : null}
                   </div>
                   <Table rowKey="id" loading={loading} columns={roleColumns} dataSource={roles} pagination={{ pageSize: 10 }} />
                 </Card>
