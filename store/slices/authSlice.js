@@ -172,7 +172,7 @@ export const loginThunk = createAsyncThunk(
       const user = await getMe();
       return { token, user };
     } catch (error) {
-      return rejectWithValue(error.message || 'Login failed');
+      return rejectWithValue(error.response?.data?.message || error.message || 'Login failed');
     }
   }
 );
@@ -186,7 +186,7 @@ export const restoreSessionThunk = createAsyncThunk(
       const user = await getMe();
       return { token, user };
     } catch (error) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error.response?.data?.message || error.message);
     }
   }
 );

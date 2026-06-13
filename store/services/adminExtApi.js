@@ -31,6 +31,16 @@ export const adminExtApi = createApi({
       invalidatesTags: (_result, _error, { id }) => [{ type: 'User', id }, { type: 'User', id: 'LIST' }]
     }),
 
+    blockUser: builder.mutation({
+      query: ({ id, ...payload }) => ({ url: `/users/${id}/block`, method: 'PATCH', data: payload }),
+      invalidatesTags: (_result, _error, { id }) => [{ type: 'User', id }, { type: 'User', id: 'LIST' }]
+    }),
+
+    unblockUser: builder.mutation({
+      query: (id) => ({ url: `/users/${id}/unblock`, method: 'PATCH' }),
+      invalidatesTags: (_result, _error, id) => [{ type: 'User', id }, { type: 'User', id: 'LIST' }]
+    }),
+
     deleteUser: builder.mutation({
       query: (id) => ({ url: `/users/${id}`, method: 'DELETE' }),
       invalidatesTags: (_result, _error, id) => [{ type: 'User', id }, { type: 'User', id: 'LIST' }]
@@ -110,6 +120,8 @@ export const {
   useGetUsersQuery,
   useCreateUserMutation,
   useUpdateUserMutation,
+  useBlockUserMutation,
+  useUnblockUserMutation,
   useDeleteUserMutation,
   useGetRolesQuery,
   useGetPermissionsQuery,
