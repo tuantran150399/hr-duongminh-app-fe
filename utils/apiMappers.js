@@ -104,6 +104,12 @@ export function normalizeDebtPolicy(policy) {
 export function normalizeUser(user) {
   if (!user) return null;
 
+  const blockedAt = user.blockedAt || user.blocked_at || null;
+  const blockedUntil = user.blockedUntil || user.blocked_until || null;
+  const now = Date.now();
+  const blockedUntilTime = blockedUntil ? new Date(blockedUntil).getTime() : null;
+  const isBlocked = Boolean(blockedAt) && (!blockedUntilTime || blockedUntilTime > now);
+
   return {
     id: String(user.id),
     backendId: user.id,
@@ -112,6 +118,13 @@ export function normalizeUser(user) {
     fullName: user.fullName || user.full_name || user.username,
     branchId: user.branchId,
     isActive: user.isActive !== false,
+    blockedAt,
+    blockedUntil,
+    blockedReason: user.blockedReason || user.blocked_reason || null,
+    blockedBy: user.blockedBy || user.blocked_by || null,
+    unblockedAt: user.unblockedAt || user.unblocked_at || null,
+    unblockedBy: user.unblockedBy || user.unblocked_by || null,
+    isBlocked,
     roles: user.roles || [],
     roleNames: (user.roles || []).map((role) => role.name || role).filter(Boolean),
     raw: user

@@ -4,7 +4,14 @@ import {
   Alert, Button, Card, Form, Input, Modal, Popconfirm,
   Select, Space, Switch, Table, Tabs, Tag, App
 } from 'antd';
-import { DeleteOutlined, EditOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import {
+  CheckCircleOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  PauseCircleOutlined,
+  PlusOutlined,
+  ReloadOutlined
+} from '@ant-design/icons';
 import { useMemo, useState } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { useLanguage } from '@/components/AppProviders';
@@ -14,6 +21,8 @@ import {
   useGetUsersQuery,
   useCreateUserMutation,
   useUpdateUserMutation,
+  useBlockUserMutation,
+  useUnblockUserMutation,
   useDeleteUserMutation,
   useGetRolesQuery,
   useGetBranchesQuery,
@@ -31,6 +40,10 @@ function permissionIdsFromRole(role) {
   return (role?.permissions || []).map((permission) => permission.id || permission.backendId).filter(Boolean);
 }
 
+function isMasterAccount(record) {
+  return ['admin', 'api.tester'].includes(record?.username);
+}
+
 export default function UsersPage() {
   const { t } = useLanguage();
   const { message } = App.useApp();
@@ -38,8 +51,10 @@ export default function UsersPage() {
   const canManageRoles = useAppSelector(selectHasPermission(PERMISSIONS.ROLE_MANAGE));
   const [userModal, setUserModal] = useState({ open: false, record: null });
   const [roleModal, setRoleModal] = useState({ open: false, record: null });
+  const [blockModal, setBlockModal] = useState({ open: false, record: null });
   const [userForm] = Form.useForm();
   const [roleForm] = Form.useForm();
+  const [blockForm] = Form.useForm();
 
   const { data: users = [], isLoading: loadingUsers, error, refetch } = useGetUsersQuery();
   const { data: roles = [], isLoading: loadingRoles } = useGetRolesQuery();
@@ -48,6 +63,8 @@ export default function UsersPage() {
 
   const [createUser, { isLoading: isCreatingUser }] = useCreateUserMutation();
   const [updateUser, { isLoading: isUpdatingUser }] = useUpdateUserMutation();
+  const [blockUser, { isLoading: isBlockingUser }] = useBlockUserMutation();
+  const [unblockUser, { isLoading: isUnblockingUser }] = useUnblockUserMutation();
   const [deleteUser] = useDeleteUserMutation();
   const [createRole, { isLoading: isCreatingRole }] = useCreateRoleMutation();
   const [updateRole, { isLoading: isUpdatingRole }] = useUpdateRoleMutation();
@@ -55,6 +72,7 @@ export default function UsersPage() {
   const loading = loadingUsers || loadingRoles;
   const savingUser = isCreatingUser || isUpdatingUser;
   const savingRole = isCreatingRole || isUpdatingRole;
+  const savingBlock = isBlockingUser || isUnblockingUser;
 
   const roleOptions = useMemo(
     () => roles.map((role) => ({ label: role.name, value: role.backendId })),
@@ -101,6 +119,11 @@ export default function UsersPage() {
         }
         : { permissionIds: [] }
     );
+  }
+
+  function openBlockModal(record) {
+    setBlockModal({ open: true, record });
+    blockForm.setFieldsValue({ reason: record?.blockedReason || '' });
   }
 
   async function submitUser(values) {
@@ -152,6 +175,31 @@ export default function UsersPage() {
     }
   }
 
+  async function submitBlock(values) {
+    if (!blockModal.record) return;
+    try {
+      await blockUser({
+        id: blockModal.record.backendId,
+        reason: values.reason
+      }).unwrap();
+      message.success(t('users.userBlocked'));
+      setBlockModal({ open: false, record: null });
+      blockForm.resetFields();
+    } catch (saveError) {
+      message.error(saveError?.data?.message || t('users.blockUserError'));
+    }
+  }
+
+  function renderUserStatus(record) {
+    if (!record.isActive) {
+      return <Tag color="red">{t('users.deactivated')}</Tag>;
+    }
+    if (record.isBlocked) {
+      return <Tag color="orange">{t('users.blocked')}</Tag>;
+    }
+    return <Tag color="green">{t('users.active')}</Tag>;
+  }
+
   const userColumns = [
     { title: t('users.username'), dataIndex: 'username', key: 'username' },
     { title: t('users.fullName'), dataIndex: 'fullName', key: 'fullName' },
@@ -178,32 +226,65 @@ export default function UsersPage() {
       title: t('users.status'),
       dataIndex: 'isActive',
       key: 'isActive',
-      render: (value) => <Tag color={value ? 'green' : 'red'}>{value ? t('users.active') : t('users.locked')}</Tag>
+      render: (_value, record) => renderUserStatus(record)
     },
     {
       title: t('users.actions'),
       key: 'actions',
       align: 'right',
-      render: (_, record) => (
-        <Space>
-          {canManageUsers ? (
-            <>
-              <Button size="small" icon={<EditOutlined />} title={t('users.edit')} onClick={() => openUserModal(record)} />
-              <Popconfirm
-                title={t('users.deactivateConfirm')}
-                okText={t('users.deactivate')}
-                okButtonProps={{ danger: true }}
-                onConfirm={async () => {
-                  await deleteUser(record.backendId).unwrap();
-                  message.success(t('users.userDeactivated'));
-                }}
-              >
-                <Button size="small" danger icon={<DeleteOutlined />} title={t('users.deactivate')} />
-              </Popconfirm>
-            </>
-          ) : null}
-        </Space>
-      )
+      render: (_, record) => {
+        const protectedAccount = isMasterAccount(record);
+        return (
+          <Space>
+            {canManageUsers ? (
+              <>
+                <Button size="small" icon={<EditOutlined />} title={t('users.edit')} onClick={() => openUserModal(record)} />
+                {!protectedAccount && record.isActive && !record.isBlocked ? (
+                  <Button
+                    size="small"
+                    icon={<PauseCircleOutlined />}
+                    title={t('users.block')}
+                    onClick={() => openBlockModal(record)}
+                  />
+                ) : null}
+                {!protectedAccount && record.isActive && record.isBlocked ? (
+                  <Popconfirm
+                    title={t('users.unblockConfirm')}
+                    okText={t('users.unblock')}
+                    onConfirm={async () => {
+                      try {
+                        await unblockUser(record.backendId).unwrap();
+                        message.success(t('users.userUnblocked'));
+                      } catch (saveError) {
+                        message.error(saveError?.data?.message || t('users.unblockUserError'));
+                      }
+                    }}
+                  >
+                    <Button size="small" icon={<CheckCircleOutlined />} title={t('users.unblock')} />
+                  </Popconfirm>
+                ) : null}
+                {!protectedAccount ? (
+                  <Popconfirm
+                    title={t('users.deactivateConfirm')}
+                    okText={t('users.deactivate')}
+                    okButtonProps={{ danger: true }}
+                    onConfirm={async () => {
+                      try {
+                        await deleteUser(record.backendId).unwrap();
+                        message.success(t('users.userDeactivated'));
+                      } catch (saveError) {
+                        message.error(saveError?.data?.message || t('users.deactivateUserError'));
+                      }
+                    }}
+                  >
+                    <Button size="small" danger icon={<DeleteOutlined />} title={t('users.deactivate')} />
+                  </Popconfirm>
+                ) : null}
+              </>
+            ) : null}
+          </Space>
+        );
+      }
     }
   ];
 
@@ -332,7 +413,29 @@ export default function UsersPage() {
               <Select mode="multiple" allowClear options={roleOptions} />
             </Form.Item>
             <Form.Item name="isActive" label={t('users.activeLabel')} valuePropName="checked">
-              <Switch />
+              <Switch disabled={isMasterAccount(userModal.record)} />
+            </Form.Item>
+          </Form>
+        </Modal>
+
+        <Modal
+          title={t('users.blockUserTitle')}
+          open={blockModal.open}
+          onCancel={() => setBlockModal({ open: false, record: null })}
+          onOk={() => blockForm.submit()}
+          confirmLoading={savingBlock}
+          destroyOnHidden
+        >
+          <Form form={blockForm} layout="vertical" onFinish={submitBlock}>
+            <Form.Item label={t('users.username')}>
+              <Input value={blockModal.record?.username || ''} disabled />
+            </Form.Item>
+            <Form.Item
+              name="reason"
+              label={t('users.blockReason')}
+              rules={[{ required: true, message: t('users.blockReasonRequired') }]}
+            >
+              <Input.TextArea rows={4} maxLength={500} showCount />
             </Form.Item>
           </Form>
         </Modal>
