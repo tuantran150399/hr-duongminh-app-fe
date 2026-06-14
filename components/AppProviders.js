@@ -884,7 +884,8 @@ const dictionary = {
       vendor: 'Vendor',
       agent: 'Agent',
       carrier: 'Carrier',
-      customerVendor: 'Customer/Vendor'
+      customerVendor: 'Customer/Vendor',
+      allTypes: 'All Types'
     },
     pricing: {
       title: 'Pricing & Tariffs',
@@ -995,7 +996,12 @@ const dictionary = {
       saveRoleError: 'Unable to save role.',
       userBlocked: 'User blocked.',
       userUnblocked: 'User unblocked.',
-      userDeactivated: 'User deactivated.'
+      userDeactivated: 'User deactivated.',
+      delete: 'Delete',
+      deleteRoleConfirm: 'Delete this role?',
+      deleteRoleDescription: 'Are you certain no users are currently holding this role? Deletion is only safe if it is unassigned.',
+      roleDeleted: 'Role deleted.',
+      deleteRoleError: 'Unable to delete role.'
     },
     branches: {
       title: 'Branches',
@@ -2227,7 +2233,8 @@ const dictionary = {
       vendor: 'Nhà cung cấp',
       agent: 'Đại lý',
       carrier: 'Hãng vận tải',
-      customerVendor: 'Khách hàng/NCC'
+      customerVendor: 'Khách hàng/NCC',
+      allTypes: 'Tất cả loại'
     },
     pricing: {
       title: 'Bảng giá & Biểu phí',
@@ -2338,7 +2345,12 @@ const dictionary = {
       saveRoleError: 'Không thể lưu vai trò.',
       userBlocked: 'Đã chặn người dùng.',
       userUnblocked: 'Đã bỏ chặn người dùng.',
-      userDeactivated: 'Đã vô hiệu hóa người dùng.'
+      userDeactivated: 'Đã vô hiệu hóa người dùng.',
+      delete: 'Xóa',
+      deleteRoleConfirm: 'Xóa vai trò này?',
+      deleteRoleDescription: 'Bạn có chắc chắn hiện không có người dùng nào giữ vai trò này không? Việc xóa chỉ an toàn nếu nó chưa được gán',
+      roleDeleted: 'Đã xóa vai trò.',
+      deleteRoleError: 'Không thể xóa vai trò.'
     },
     branches: {
       title: 'Chi nhánh',

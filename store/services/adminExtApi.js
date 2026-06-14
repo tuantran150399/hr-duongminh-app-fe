@@ -76,6 +76,11 @@ export const adminExtApi = createApi({
       invalidatesTags: [{ type: 'Role', id: 'LIST' }]
     }),
 
+    deleteRole: builder.mutation({
+      query: (id) => ({ url: `/roles/${id}`, method: 'DELETE' }),
+      invalidatesTags: [{ type: 'Role', id: 'LIST' }]
+    }),
+
     // ── Branches ─────────────────────────────────────────────────────────────
     getBranches: builder.query({
       query: () => ({ url: '/branches', method: 'GET' }),
@@ -127,6 +132,7 @@ export const {
   useGetPermissionsQuery,
   useCreateRoleMutation,
   useUpdateRoleMutation,
+  useDeleteRoleMutation,
   useGetBranchesQuery,
   useCreateBranchMutation,
   useUpdateBranchMutation,

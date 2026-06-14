@@ -27,6 +27,7 @@ export default function PartnersPage() {
   const { message } = App.useApp();
   const [form] = Form.useForm();
   const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState('all');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingPartner, setEditingPartner] = useState(null);
 
@@ -49,13 +50,14 @@ export default function PartnersPage() {
 
   const filteredData = useMemo(() => {
     const keyword = search.trim().toLowerCase();
-    if (!keyword) return partners;
-    return partners.filter((item) =>
-      [item.code, item.name, item.taxCode, item.phone, item.email, item.type]
-        .filter(Boolean)
-        .some((value) => String(value).toLowerCase().includes(keyword))
-    );
-  }, [partners, search]);
+    return partners.filter((item) => {
+      const matchesSearch = !keyword || [
+        item.code, item.name, item.taxCode, item.phone, item.email, item.type
+      ].filter(Boolean).some((value) => String(value).toLowerCase().includes(keyword));
+      const matchesType = typeFilter === 'all' || item.partnerType === typeFilter;
+      return matchesSearch && matchesType;
+    });
+  }, [partners, search, typeFilter]);
 
   function openCreateModal() {
     setEditingPartner(null);
@@ -166,14 +168,25 @@ export default function PartnersPage() {
       {error ? <Alert type="error" showIcon message={t('partners.loadError')} style={{ marginBottom: 16 }} /> : null}
 
       <Card className="table-card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, gap: 12 }}>
-          <Input.Search
-            allowClear
-            placeholder={t('partners.searchPlaceholder')}
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            style={{ maxWidth: 420 }}
-          />
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, gap: 12, flexWrap: 'wrap' }}>
+          <Space wrap>
+            <Input.Search
+              allowClear
+              placeholder={t('partners.searchPlaceholder')}
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              style={{ width: 300 }}
+            />
+            <Select
+              value={typeFilter}
+              onChange={setTypeFilter}
+              style={{ width: 200 }}
+              options={[
+                { value: 'all', label: t('partners.allTypes') },
+                ...partnerTypeOptions
+              ]}
+            />
+          </Space>
         </div>
         <Table
           rowKey="id"

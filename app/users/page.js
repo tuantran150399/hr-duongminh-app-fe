@@ -28,7 +28,8 @@ import {
   useGetBranchesQuery,
   useGetPermissionsQuery,
   useCreateRoleMutation,
-  useUpdateRoleMutation
+  useUpdateRoleMutation,
+  useDeleteRoleMutation
 } from '@/store/services/adminExtApi';
 import { getApiError } from '@/utils/getApiError';
 
@@ -68,6 +69,7 @@ export default function UsersPage() {
   const [deleteUser] = useDeleteUserMutation();
   const [createRole, { isLoading: isCreatingRole }] = useCreateRoleMutation();
   const [updateRole, { isLoading: isUpdatingRole }] = useUpdateRoleMutation();
+  const [deleteRole] = useDeleteRoleMutation();
 
   const loading = loadingUsers || loadingRoles;
   const savingUser = isCreatingUser || isUpdatingUser;
@@ -309,7 +311,32 @@ export default function UsersPage() {
       title: t('users.actions'),
       key: 'actions',
       align: 'right',
-      render: (_, record) => canManageRoles ? <Button size="small" icon={<EditOutlined />} title={t('users.edit')} onClick={() => openRoleModal(record)} /> : null
+      render: (_, record) => {
+        const isUnassigned = !record.raw?.users?.length;
+        return canManageRoles ? (
+          <Space>
+            <Button size="small" icon={<EditOutlined />} title={t('users.edit')} onClick={() => openRoleModal(record)} />
+            {isUnassigned ? (
+              <Popconfirm
+                title={t('users.deleteRoleConfirm')}
+                description={t('users.deleteRoleDescription')}
+                okText={t('users.delete')}
+                okButtonProps={{ danger: true }}
+                onConfirm={async () => {
+                  try {
+                    await deleteRole(record.backendId).unwrap();
+                    message.success(t('users.roleDeleted'));
+                  } catch (err) {
+                    message.error(err?.data?.message || t('users.deleteRoleError'));
+                  }
+                }}
+              >
+                <Button size="small" danger icon={<DeleteOutlined />} title={t('users.delete')} />
+              </Popconfirm>
+            ) : null}
+          </Space>
+        ) : null;
+      }
     }
   ];
 
