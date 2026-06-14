@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { AntdRegistry } from '@ant-design/nextjs-registry';
-import { ConfigProvider } from 'antd';
+import { App, ConfigProvider } from 'antd';
 import enUS from 'antd/locale/en_US';
 import viVN from 'antd/locale/vi_VN';
 import { StoreProvider } from '@/store/StoreProvider';
@@ -1242,7 +1242,16 @@ const dictionary = {
       'user:manage': 'Manage User',
       'role:manage': 'Manage Roles',
       'branch:manage': 'Manage Branches',
-      'auditlog:view': 'View Audit Logs'
+      'auditlog:view': 'View Audit Logs',
+      'user:create': 'Create User',
+      'user:edit': 'Edit User',
+      'user:view': 'View User Details',
+      'user:delete': 'Delete User',
+      'pricing:view': 'View Pricing & Tariffs',
+      'pricing:manage': 'Manage Pricing & Tariffs',
+      'treasury:view': 'View Treasury & Advances',
+      'treasury:manage': 'Manage Treasury & Advances',
+      'report:view': 'View Reports'
     },
     account: {
       settingsTitle: 'Account Settings',
@@ -1269,6 +1278,56 @@ const dictionary = {
       passwordError: 'Unable to change password. Please check your current password.',
       passwordNoticeTitle: 'Password Security',
       passwordNoticeDesc: 'Choose a strong password with at least 6 characters. After changing your password, you will remain signed in.'
+    },
+    apiErrors: {
+      JOB_CODE_DUPLICATE: 'Job code already exists.',
+      JOB_NOT_FOUND: 'Job not found.',
+      JOB_CANNOT_EDIT_FINALIZED: 'Cannot edit a CLOSED or CANCELLED job.',
+      JOB_ALREADY_FINALIZED: 'Job is already finalized.',
+      PARTNER_NOT_FOUND: 'Partner not found.',
+      PARTNER_CODE_DUPLICATE: 'Partner code already exists.',
+      AGENT_NOT_FOUND: 'Agent not found.',
+      BRANCH_NOT_FOUND: 'Branch not found.',
+      BRANCH_ACCESS_DENIED: 'You cannot access data from another branch.',
+      USER_NOT_FOUND: 'User not found.',
+      USER_INACTIVE: 'User is inactive.',
+      USER_BRANCH_MISMATCH: 'Assigned user does not belong to the job branch.',
+      USERNAME_EMAIL_DUPLICATE: 'Username or email already taken.',
+      EMAIL_DUPLICATE: 'Email already taken.',
+      CURRENT_PASSWORD_INCORRECT: 'Current password is incorrect.',
+      DEBT_LIMIT_EXCEEDED: 'Customer exceeds configured debt limit.',
+      DEBT_OVERDUE: 'Customer has overdue debt beyond configured policy.',
+      MILESTONE_NOT_FOUND: 'Milestone not found.',
+      ROLE_NAME_DUPLICATE: 'Role name already exists.',
+      ROLE_NOT_FOUND: 'Role not found.',
+      CASH_ACCOUNT_CODE_DUPLICATE: 'Cash account code already exists.',
+      CASH_ACCOUNT_NOT_FOUND: 'Cash account not found.',
+      CASH_ACCOUNT_INACTIVE: 'Active cash account not found.',
+      CASH_BALANCE_NEGATIVE: 'Cash account balance cannot be negative.',
+      IP_BLOCKED: 'Access from this IP address is blocked.',
+      IP_NOT_ALLOWED: 'Access from this IP address is not allowed.',
+      SECURITY_ALERT_NOT_FOUND: 'Security alert not found.',
+      IP_RULE_NOT_FOUND: 'IP access rule not found.',
+      PAYMENT_REQUEST_NOT_FOUND: 'Payment request not found.',
+      PAYMENT_REQUEST_BRANCH_ACCESS_DENIED: 'You cannot access payment requests from another branch.',
+      PAYMENT_REQUEST_BRANCH_MISMATCH: 'Payment request branch must match the selected job branch.',
+      PAYMENT_REQUEST_NOT_PENDING: 'Only pending payment requests can be approved.',
+      PAYMENT_REQUEST_NEED_DEPT_APPROVAL: 'Payment request must be department-approved first.',
+      PAYMENT_REQUEST_FINALIZED: 'Payment request is already finalized.',
+      PAYMENT_REQUEST_INVALID_TRANSITION: 'Invalid payment request transition.',
+      COB_JOB_REQUIRED: 'Job is required when marking as charge-on-behalf.',
+      COB_CUSTOMER_REQUIRED: 'Customer is required for charge-on-behalf.',
+      NOTIFICATION_NOT_FOUND: 'Notification not found.',
+      SERVICE_PRICE_NOT_FOUND: 'Service price not found.',
+      SERVICE_TYPE_REQUIRED: 'Service type is required.',
+      SERVICE_TYPE_UNSUPPORTED: 'Unsupported service type.',
+      IMPORT_EMPTY_FILE: 'The uploaded file does not contain any data rows.',
+      NO_FILE_UPLOADED: 'No file uploaded.',
+      FILE_TOO_LARGE: 'File exceeds 10 MB limit.',
+      REPORT_JOB_REQUIRED: 'Job is required for debt statistics.',
+      REPORT_UNSUPPORTED: 'Unsupported report type.',
+      VENDOR_NOT_FOUND: 'Vendor not found.',
+      CUSTOMER_NOT_FOUND: 'Customer not found.'
     }
   },
   vi: {
@@ -2512,7 +2571,16 @@ const dictionary = {
       'user:manage': 'Quản lý Người dùng',
       'role:manage': 'Quản lý Nhóm quyền',
       'branch:manage': 'Quản lý Chi nhánh',
-      'auditlog:view': 'Xem Nhật ký'
+      'auditlog:view': 'Xem Nhật ký',
+      'user:create': 'Tạo Người dùng',
+      'user:edit': 'Sửa Người dùng',
+      'user:view': 'Xem Người dùng',
+      'user:delete': 'Xóa Người dùng',
+      'pricing:view': 'Xem Bảng giá',
+      'pricing:manage': 'Quản lý Bảng giá',
+      'treasury:view': 'Xem Thu/Chi & Tạm ứng',
+      'treasury:manage': 'Quản lý Thu/Chi & Tạm ứng',
+      'report:view': 'Xem Báo cáo'
     },
     account: {
       settingsTitle: 'Cài đặt tài khoản',
@@ -2539,6 +2607,56 @@ const dictionary = {
       passwordError: 'Không thể đổi mật khẩu. Vui lòng kiểm tra mật khẩu hiện tại.',
       passwordNoticeTitle: 'Bảo mật mật khẩu',
       passwordNoticeDesc: 'Chọn mật khẩu mạnh với ít nhất 6 ký tự. Sau khi đổi mật khẩu, bạn vẫn giữ phiên đăng nhập.'
+    },
+    apiErrors: {
+      JOB_CODE_DUPLICATE: 'Mã job đã tồn tại.',
+      JOB_NOT_FOUND: 'Không tìm thấy job.',
+      JOB_CANNOT_EDIT_FINALIZED: 'Không thể sửa job đã Đóng hoặc Đã hủy.',
+      JOB_ALREADY_FINALIZED: 'Job đã hoàn tất, không thể thay đổi.',
+      PARTNER_NOT_FOUND: 'Không tìm thấy đối tác.',
+      PARTNER_CODE_DUPLICATE: 'Mã đối tác đã tồn tại.',
+      AGENT_NOT_FOUND: 'Không tìm thấy đại lý.',
+      BRANCH_NOT_FOUND: 'Không tìm thấy chi nhánh.',
+      BRANCH_ACCESS_DENIED: 'Bạn không có quyền truy cập dữ liệu chi nhánh khác.',
+      USER_NOT_FOUND: 'Không tìm thấy người dùng.',
+      USER_INACTIVE: 'Người dùng đã bị vô hiệu hóa.',
+      USER_BRANCH_MISMATCH: 'Người phụ trách không thuộc chi nhánh của job.',
+      USERNAME_EMAIL_DUPLICATE: 'Tên đăng nhập hoặc email đã được sử dụng.',
+      EMAIL_DUPLICATE: 'Email đã được sử dụng.',
+      CURRENT_PASSWORD_INCORRECT: 'Mật khẩu hiện tại không đúng.',
+      DEBT_LIMIT_EXCEEDED: 'Khách hàng vượt quá hạn mức công nợ cho phép.',
+      DEBT_OVERDUE: 'Khách hàng có công nợ quá hạn theo chính sách.',
+      MILESTONE_NOT_FOUND: 'Không tìm thấy mốc tiến độ.',
+      ROLE_NAME_DUPLICATE: 'Tên vai trò đã tồn tại.',
+      ROLE_NOT_FOUND: 'Không tìm thấy vai trò.',
+      CASH_ACCOUNT_CODE_DUPLICATE: 'Mã tài khoản quỹ đã tồn tại.',
+      CASH_ACCOUNT_NOT_FOUND: 'Không tìm thấy tài khoản quỹ.',
+      CASH_ACCOUNT_INACTIVE: 'Tài khoản quỹ không hoạt động.',
+      CASH_BALANCE_NEGATIVE: 'Số dư tài khoản quỹ không thể âm.',
+      IP_BLOCKED: 'Truy cập từ địa chỉ IP này bị chặn.',
+      IP_NOT_ALLOWED: 'Địa chỉ IP này không được phép truy cập.',
+      SECURITY_ALERT_NOT_FOUND: 'Không tìm thấy cảnh báo bảo mật.',
+      IP_RULE_NOT_FOUND: 'Không tìm thấy quy tắc IP.',
+      PAYMENT_REQUEST_NOT_FOUND: 'Không tìm thấy phiếu đề nghị chi.',
+      PAYMENT_REQUEST_BRANCH_ACCESS_DENIED: 'Bạn không có quyền truy cập phiếu chi nhánh khác.',
+      PAYMENT_REQUEST_BRANCH_MISMATCH: 'Chi nhánh phiếu chi phải khớp với chi nhánh job.',
+      PAYMENT_REQUEST_NOT_PENDING: 'Chỉ phiếu đang chờ duyệt mới được phê duyệt.',
+      PAYMENT_REQUEST_NEED_DEPT_APPROVAL: 'Phiếu chi cần được phòng ban phê duyệt trước.',
+      PAYMENT_REQUEST_FINALIZED: 'Phiếu chi đã hoàn tất.',
+      PAYMENT_REQUEST_INVALID_TRANSITION: 'Chuyển trạng thái phiếu chi không hợp lệ.',
+      COB_JOB_REQUIRED: 'Cần chọn job khi đánh dấu chi hộ.',
+      COB_CUSTOMER_REQUIRED: 'Cần chọn khách hàng cho chi hộ.',
+      NOTIFICATION_NOT_FOUND: 'Không tìm thấy thông báo.',
+      SERVICE_PRICE_NOT_FOUND: 'Không tìm thấy giá dịch vụ.',
+      SERVICE_TYPE_REQUIRED: 'Loại dịch vụ là bắt buộc.',
+      SERVICE_TYPE_UNSUPPORTED: 'Loại dịch vụ không được hỗ trợ.',
+      IMPORT_EMPTY_FILE: 'File tải lên không chứa dữ liệu.',
+      NO_FILE_UPLOADED: 'Chưa tải file lên.',
+      FILE_TOO_LARGE: 'File vượt quá giới hạn 10 MB.',
+      REPORT_JOB_REQUIRED: 'Cần chọn job để xem thống kê công nợ.',
+      REPORT_UNSUPPORTED: 'Loại báo cáo không được hỗ trợ.',
+      VENDOR_NOT_FOUND: 'Không tìm thấy nhà cung cấp.',
+      CUSTOMER_NOT_FOUND: 'Không tìm thấy khách hàng.'
     }
   }
 };
@@ -2619,7 +2737,9 @@ export function AppProviders({ children }) {
               }
             }}
           >
-            {children}
+            <App>
+              {children}
+            </App>
           </ConfigProvider>
         </LanguageContext.Provider>
       </AntdRegistry>

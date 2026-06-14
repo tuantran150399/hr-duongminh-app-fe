@@ -11,10 +11,10 @@ const DEFAULT_COLOR_MAP = {
   // Job statuses
   New: 'default',
   Draft: 'default',
-  'In Progress': 'processing',
-  InProgress: 'processing',
+  'In Progress': 'green',
+  InProgress: 'green',
   Completed: 'success',
-  Closed: 'success',
+  Closed: 'red',
   Pending: 'warning',
   Cancelled: 'error',
   Canceled: 'error',

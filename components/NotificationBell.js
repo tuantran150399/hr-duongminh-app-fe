@@ -9,7 +9,7 @@ import {
   Space,
   Tag,
   Typography,
-  message
+  App
 } from 'antd';
 import {
   BellOutlined,
@@ -73,6 +73,7 @@ function formatTimeAgo(dateString, t) {
 
 export default function NotificationBell() {
   const { t } = useLanguage();
+  const { message } = App.useApp();
   const router = useRouter();
   const [open, setOpen] = useState(false);
 

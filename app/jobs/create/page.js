@@ -10,7 +10,7 @@ import {
   Row,
   Select,
   Space,
-  message
+  App
 } from 'antd';
 import { BankOutlined, CompassOutlined, FileTextOutlined } from '@ant-design/icons';
 import { useMemo, useState } from 'react';
@@ -23,6 +23,7 @@ import { useGetPartnersQuery } from '@/store/services/partnersApi';
 import { useGetUsersQuery, useGetBranchesQuery } from '@/store/services/adminApi';
 import { normalizePartner } from '@/utils/apiMappers';
 import { cleanPayload, convertDateFields } from '@/utils/formUtils';
+import { getApiError } from '@/utils/getApiError';
 import {
   getJobTypeOptions,
   getShipmentModeOptions,
@@ -36,6 +37,7 @@ export default function CreateJobPage() {
   const router = useRouter();
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
+  const { message } = App.useApp();
 
   // RTK Query hooks
   const { data: partnersData, isLoading: partnersLoading } = useGetPartnersQuery();
@@ -96,7 +98,7 @@ export default function CreateJobPage() {
       message.success(t('jobForm.createSuccess'));
       router.push('/jobs');
     } catch (err) {
-      message.error(err?.data?.message || t('jobForm.createError'));
+      message.error(getApiError(err, t, 'jobForm.createError'));
     } finally {
       setSaving(false);
     }

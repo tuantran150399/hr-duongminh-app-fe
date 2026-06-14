@@ -20,7 +20,7 @@ import {
   Table,
   Tag,
   Typography,
-  message
+  App
 } from 'antd';
 import {
   CheckCircleOutlined,
@@ -46,6 +46,7 @@ import {
 import { useGetJobsQuery } from '@/store/services/jobsApi';
 import { useGetPartnersQuery } from '@/store/services/partnersApi';
 import { formatCurrency } from '@/utils/format';
+import { getApiError } from '@/utils/getApiError';
 
 function toDateString(value) {
   return value?.format ? value.format('YYYY-MM-DD') : value || undefined;
@@ -53,6 +54,7 @@ function toDateString(value) {
 
 export default function PaymentRequestsPage() {
   const { t } = useLanguage();
+  const { message } = App.useApp();
   const [form] = Form.useForm();
   const [rejectForm] = Form.useForm();
   const [saving, setSaving] = useState(false);
@@ -159,7 +161,7 @@ export default function PaymentRequestsPage() {
       setModalOpen(false);
       setEditingRecord(null);
     } catch (err) {
-      message.error(err?.data?.message || t('paymentRequests.createError'));
+      message.error(getApiError(err, t, 'paymentRequests.createError'));
     } finally {
       setSaving(false);
     }
@@ -170,7 +172,7 @@ export default function PaymentRequestsPage() {
       await deletePaymentRequest(record.backendId).unwrap();
       message.success(t('paymentRequests.deleteSuccess'));
     } catch (err) {
-      message.error(err?.data?.message || t('paymentRequests.deleteError'));
+      message.error(getApiError(err, t, 'paymentRequests.deleteError'));
     }
   }
 
@@ -179,7 +181,7 @@ export default function PaymentRequestsPage() {
       await approvePaymentRequest(record.backendId).unwrap();
       message.success(t('paymentRequests.approveSuccess'));
     } catch (err) {
-      message.error(err?.data?.message || t('paymentRequests.approveError'));
+      message.error(getApiError(err, t, 'paymentRequests.approveError'));
     }
   }
 
@@ -188,7 +190,7 @@ export default function PaymentRequestsPage() {
       await finalApprovePaymentRequest(record.backendId).unwrap();
       message.success(t('paymentRequests.finalApproveSuccess'));
     } catch (err) {
-      message.error(err?.data?.message || t('paymentRequests.finalApproveError'));
+      message.error(getApiError(err, t, 'paymentRequests.finalApproveError'));
     }
   }
 
@@ -206,7 +208,7 @@ export default function PaymentRequestsPage() {
       setRejectModalOpen(false);
       setSelectedRecord(null);
     } catch (err) {
-      message.error(err?.data?.message || t('paymentRequests.rejectError'));
+      message.error(getApiError(err, t, 'paymentRequests.rejectError'));
     } finally {
       setSaving(false);
     }
@@ -285,44 +287,44 @@ export default function PaymentRequestsPage() {
         const isPending = record.status === 'PENDING_DEPARTMENT_APPROVAL';
         const isDeptApproved = record.status === 'DEPARTMENT_APPROVED';
 
-          return (
-            <Space size={4}>
-              <Button
-                type="text"
-                size="small"
-                icon={<EyeOutlined />}
-                title={t('paymentRequests.viewDetail')}
-                onClick={() => setViewRecord(record)}
-              />
-              {isPending && (
-                <>
-                  <Button type="text" size="small" icon={<EditOutlined />} title={t('paymentRequests.edit')} onClick={() => openEditModal(record)} />
-                  <Popconfirm title={t('paymentRequests.deleteConfirm')} onConfirm={() => handleDelete(record)}>
-                    <Button type="text" size="small" danger icon={<DeleteOutlined />} title={t('paymentRequests.delete')} />
-                  </Popconfirm>
-                </>
-              )}
-              {isPending && (
-                <Popconfirm title={t('paymentRequests.approveConfirm')} onConfirm={() => handleApprove(record)}>
-                  <Button type="primary" size="small" icon={<CheckCircleOutlined />} title={t('paymentRequests.departmentApprove')} />
+        return (
+          <Space size={4}>
+            <Button
+              type="text"
+              size="small"
+              icon={<EyeOutlined />}
+              title={t('paymentRequests.viewDetail')}
+              onClick={() => setViewRecord(record)}
+            />
+            {isPending && (
+              <>
+                <Button type="text" size="small" icon={<EditOutlined />} title={t('paymentRequests.edit')} onClick={() => openEditModal(record)} />
+                <Popconfirm title={t('paymentRequests.deleteConfirm')} onConfirm={() => handleDelete(record)}>
+                  <Button type="text" size="small" danger icon={<DeleteOutlined />} title={t('paymentRequests.delete')} />
                 </Popconfirm>
-              )}
-              {isDeptApproved && (
-                <Popconfirm title={t('paymentRequests.finalApproveConfirm')} onConfirm={() => handleFinalApprove(record)}>
-                  <Button
-                    type="primary"
-                    size="small"
-                    icon={<SafetyCertificateOutlined />}
-                    title={t('paymentRequests.finalApprove')}
-                    style={{ backgroundColor: '#52c41a' }}
-                  />
-                </Popconfirm>
-              )}
-              {(isPending || isDeptApproved) && (
-                <Button type="text" danger size="small" icon={<CloseCircleOutlined />} title={t('paymentRequests.reject')} onClick={() => openRejectModal(record)} />
-              )}
-            </Space>
-          );
+              </>
+            )}
+            {isPending && (
+              <Popconfirm title={t('paymentRequests.approveConfirm')} onConfirm={() => handleApprove(record)}>
+                <Button type="primary" size="small" icon={<CheckCircleOutlined />} title={t('paymentRequests.departmentApprove')} />
+              </Popconfirm>
+            )}
+            {isDeptApproved && (
+              <Popconfirm title={t('paymentRequests.finalApproveConfirm')} onConfirm={() => handleFinalApprove(record)}>
+                <Button
+                  type="primary"
+                  size="small"
+                  icon={<SafetyCertificateOutlined />}
+                  title={t('paymentRequests.finalApprove')}
+                  style={{ backgroundColor: '#52c41a' }}
+                />
+              </Popconfirm>
+            )}
+            {(isPending || isDeptApproved) && (
+              <Button type="text" danger size="small" icon={<CloseCircleOutlined />} title={t('paymentRequests.reject')} onClick={() => openRejectModal(record)} />
+            )}
+          </Space>
+        );
       }
     }
   ];

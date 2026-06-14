@@ -5,9 +5,9 @@ import {
   Button,
   Card,
   Empty,
-  message,
   Table,
-  Typography
+  Typography,
+  App
 } from 'antd';
 import {
   DownloadOutlined,
@@ -133,6 +133,7 @@ function ExpandedRow({ record, t }) {
 export default function JobsPage() {
   const router = useRouter();
   const { t } = useLanguage();
+  const { message } = App.useApp();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateRange, setDateRange] = useState(null);

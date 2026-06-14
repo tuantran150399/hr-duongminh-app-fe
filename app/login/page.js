@@ -1,7 +1,7 @@
 'use client';
 
 import { GlobalOutlined, LockOutlined, MailOutlined, CloseCircleOutlined } from '@ant-design/icons';
-import { Alert, Button, Form, Input, Modal, Typography, message } from 'antd';
+import { Alert, Button, Form, Input, Modal, Typography, App } from 'antd';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/components/AppProviders';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -21,6 +21,7 @@ export default function LoginPage() {
   const [form] = Form.useForm();
   const dispatch = useAppDispatch();
   const { language, t } = useLanguage();
+  const { message } = App.useApp();
 
   const loginLoading = useAppSelector(selectLoginLoading);
   const loginError = useAppSelector(selectLoginError);

@@ -2,7 +2,7 @@
 
 import {
   Alert, Badge, Button, Card, Col, Empty, List,
-  Popconfirm, Row, Segmented, Statistic, Tag, Tooltip, Typography, message
+  Popconfirm, Row, Segmented, Statistic, Tag, Tooltip, Typography, App
 } from 'antd';
 import {
   BellOutlined,
@@ -22,12 +22,13 @@ import {
   useMarkAllAsReadMutation,
   useDeleteNotificationMutation
 } from '@/store/services/notificationsApi';
+import { getApiError } from '@/utils/getApiError';
 
 const TYPE_ICON = {
-  WARNING:  <WarningOutlined style={{ color: '#fa8c16' }} />,
-  ERROR:    <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />,
-  SUCCESS:  <CheckCircleOutlined style={{ color: '#52c41a' }} />,
-  INFO:     <InfoCircleOutlined style={{ color: '#1677ff' }} />,
+  WARNING: <WarningOutlined style={{ color: '#fa8c16' }} />,
+  ERROR: <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />,
+  SUCCESS: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+  INFO: <InfoCircleOutlined style={{ color: '#1677ff' }} />,
 };
 const TYPE_COLOR = {
   WARNING: 'orange', ERROR: 'red', SUCCESS: 'green', INFO: 'blue'
@@ -46,18 +47,19 @@ function timeAgo(dateStr) {
 
 export default function NotificationsPage() {
   const { t } = useLanguage();
+  const { message } = App.useApp();
   const [filter, setFilter] = useState('all');
 
   const { data, isLoading, error } = useGetNotificationsQuery({ limit: 100 });
-  const [markAsRead]     = useMarkAsReadMutation();
-  const [markAllAsRead]  = useMarkAllAsReadMutation();
-  const [deleteNotif]    = useDeleteNotificationMutation();
+  const [markAsRead] = useMarkAsReadMutation();
+  const [markAllAsRead] = useMarkAllAsReadMutation();
+  const [deleteNotif] = useDeleteNotificationMutation();
 
   const notifications = data?.items ?? [];
 
   const filtered = useMemo(() => {
     if (filter === 'unread') return notifications.filter((n) => !n.isRead);
-    if (filter === 'read')   return notifications.filter((n) =>  n.isRead);
+    if (filter === 'read') return notifications.filter((n) => n.isRead);
     return notifications;
   }, [notifications, filter]);
 
@@ -72,14 +74,18 @@ export default function NotificationsPage() {
     try {
       await markAllAsRead().unwrap();
       message.success(t('notifications.allMarkedRead'));
-    } catch {
-      message.error(t('notifications.markReadError'));
+    } catch (err) {
+      message.error(getApiError(err, t, 'notifications.markReadError'));
     }
   }
 
   async function handleDelete(id) {
-    try { await deleteNotif(id).unwrap(); }
-    catch { message.error(t('notifications.deleteError')); }
+    try {
+      await deleteNotif(id).unwrap();
+    }
+    catch (err) {
+      message.error(getApiError(err, t, 'notifications.deleteError'));
+    }
   }
 
   const segmentOptions = [

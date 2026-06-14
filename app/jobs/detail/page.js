@@ -18,7 +18,7 @@ import {
   Statistic,
   Table,
   Tag,
-  message
+  App
 } from 'antd';
 import {
   BankOutlined,
@@ -41,6 +41,7 @@ import { useGetPartnersQuery } from '@/store/services/partnersApi';
 import { useGetUsersQuery, useGetBranchesQuery } from '@/store/services/adminApi';
 import { normalizePartner } from '@/utils/apiMappers';
 import { cleanPayload, convertDateFields, toDatePickerValue } from '@/utils/formUtils';
+import { getApiError } from '@/utils/getApiError';
 import { formatCurrency } from '@/utils/format';
 import {
   getJobTypeOptions,
@@ -90,6 +91,7 @@ function buildCopyPayload(rawJob) {
 
 function JobDetailContent() {
   const { t } = useLanguage();
+  const { message } = App.useApp();
   const router = useRouter();
   const searchParams = useSearchParams();
   const jobId = searchParams.get('id');
@@ -234,7 +236,7 @@ function JobDetailContent() {
       setFormLoaded(false);
       refetchJob();
     } catch (err) {
-      message.error(err?.data?.message || t('jobForm.updateError'));
+      message.error(getApiError(err, t, 'jobForm.updateError'));
     } finally {
       setSaving(false);
     }
@@ -248,7 +250,7 @@ function JobDetailContent() {
       message.success(t('jobForm.copySuccess'));
       router.push('/jobs');
     } catch (err) {
-      message.error(err?.data?.message || t('jobForm.copyError'));
+      message.error(getApiError(err, t, 'jobForm.copyError'));
     }
   }
 
@@ -259,7 +261,7 @@ function JobDetailContent() {
       setFormLoaded(false);
       refetchJob();
     } catch (err) {
-      message.error(err?.data?.message || t('jobForm.cancelError'));
+      message.error(getApiError(err, t, 'jobForm.cancelError'));
     }
   }
 

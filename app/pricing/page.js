@@ -10,7 +10,6 @@ import {
   InputNumber,
   Form,
   Alert,
-  message,
   Modal,
   Popconfirm,
   Row,
@@ -20,7 +19,8 @@ import {
   Tag,
   Typography,
   Statistic,
-  Upload
+  Upload,
+  App
 } from 'antd';
 import {
   CloudUploadOutlined,
@@ -36,11 +36,13 @@ import { useMemo, useState } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { useLanguage } from '@/components/AppProviders';
 import { formatCurrency } from '@/utils/format';
+import { getApiError } from '@/utils/getApiError';
 import { useGetServicePricesQuery, useCreateServicePriceMutation, useImportServicePricesMutation, useUpdateServicePriceMutation, useDeleteServicePriceMutation } from '@/store/services/pricingApi';
 import { useGetPartnersQuery } from '@/store/services/partnersApi';
 
 export default function PricingPage() {
   const { t } = useLanguage();
+  const { message } = App.useApp();
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -121,9 +123,9 @@ export default function PricingPage() {
       setModalOpen(false);
       setEditingRecord(null);
       form.resetFields();
-      
+
     } catch (err) {
-      message.error(err?.data?.message || t('pricing.createError'));
+      message.error(getApiError(err, t, 'pricing.createError'));
     } finally {
       setSaving(false);
     }
@@ -152,7 +154,7 @@ export default function PricingPage() {
       await deleteServicePrice(record.id).unwrap();
       message.success(t('pricing.deleteSuccess'));
     } catch (err) {
-      message.error(err?.data?.message || t('pricing.deleteError'));
+      message.error(getApiError(err, t, 'pricing.deleteError'));
     }
   }
 
@@ -163,10 +165,10 @@ export default function PricingPage() {
       const result = await importServicePrices(file).unwrap();
       const errorSuffix = result.errorCount ? ` ${result.errorCount} row(s) failed.` : '';
       message.success(t('pricing.importSuccess', { created: result.createdCount || 0, updated: result.updatedCount || 0, errorSuffix }));
-      
+
       onSuccess?.(result);
     } catch (err) {
-      const errorMessage = err?.data?.message || t('pricing.importError');
+      const errorMessage = getApiError(err, t, 'pricing.importError');
       message.error(errorMessage);
       onError?.(err);
     }
@@ -188,7 +190,7 @@ export default function PricingPage() {
       render: (_, record) => <strong>{[record.routeFrom, record.routeTo].filter(Boolean).join(' -> ') || '-'}</strong>
     },
     { title: t('pricing.unit'), dataIndex: 'unit', key: 'unit', render: value => value || '-' },
-    { 
+    {
       title: t('pricing.rate'),
       dataIndex: 'amount',
       key: 'rate',
@@ -196,7 +198,7 @@ export default function PricingPage() {
       render: (val, record) => <span style={{ fontWeight: 600, color: '#0057c2' }}>{Number(val || 0).toLocaleString()} {record.currency || 'VND'}</span>
     },
     { title: t('pricing.effectiveTo'), dataIndex: 'effectiveTo', key: 'effectiveTo', render: value => value || '-' },
-    { 
+    {
       title: t('pricing.status'),
       dataIndex: 'isActive',
       key: 'status',

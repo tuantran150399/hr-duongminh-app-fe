@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  App,
   Alert,
   Button,
   Card,
@@ -21,8 +22,7 @@ import {
   Tag,
   Tooltip,
   Typography,
-  Upload,
-  message
+  Upload
 } from 'antd';
 import {
   CheckCircleOutlined,
@@ -53,6 +53,7 @@ import { useGetJobsQuery } from '@/store/services/jobsApi';
 import { useGetPartnersQuery } from '@/store/services/partnersApi';
 import { useMarkCostAsCobMutation } from '@/store/services/cobApi';
 import { formatCurrency } from '@/utils/format';
+import { getApiError } from '@/utils/getApiError';
 import { useLanguage } from '@/components/AppProviders';
 
 function formatCompactCurrency(value) {
@@ -276,6 +277,7 @@ function cleanPayload(values) {
 
 export default function AccountingPage() {
   const { t, language } = useLanguage();
+  const { message } = App.useApp();
   const [form] = Form.useForm();
   const [paymentForm] = Form.useForm();
   const [activeTab, setActiveTab] = useState('revenue');
@@ -339,7 +341,7 @@ export default function AccountingPage() {
   const [markCostAsCob] = useMarkCostAsCobMutation();
 
   const { data: revenueChartData } = useGetRevenueChartQuery();
-  const { data: costChartData }    = useGetCostChartQuery();
+  const { data: costChartData } = useGetCostChartQuery();
 
   const revenue = revenueData?.items || [];
   const cost = costData?.items || [];
@@ -416,9 +418,9 @@ export default function AccountingPage() {
       }
       message.success(t('accounting.createSuccess'));
       setModalOpen(false);
-      
+
     } catch (err) {
-      message.error(err?.data?.message || t('accounting.createError'));
+      message.error(getApiError(err, t, 'accounting.createError'));
     } finally {
       setSaving(false);
     }
@@ -432,9 +434,9 @@ export default function AccountingPage() {
         await postCostEntry(record.backendId).unwrap();
       }
       message.success(t('accountingForm.postSuccess'));
-      
+
     } catch (err) {
-      message.error(err?.data?.message || t('accountingForm.postError'));
+      message.error(getApiError(err, t, 'accountingForm.postError'));
     }
   }
 
@@ -446,9 +448,9 @@ export default function AccountingPage() {
         await voidCostEntry({ id: record.backendId, reason: 'Voided.' }).unwrap();
       }
       message.success(t('accountingForm.voidSuccess'));
-      
+
     } catch (err) {
-      message.error(err?.data?.message || t('accountingForm.voidError'));
+      message.error(getApiError(err, t, 'accountingForm.voidError'));
     }
   }
 
@@ -460,9 +462,9 @@ export default function AccountingPage() {
         await updateCostPaymentStatus({ id: record.backendId, ...payload }).unwrap();
       }
       message.success(t('accountingForm.paymentUpdated'));
-      
+
     } catch (err) {
-      message.error(err?.data?.message || t('accountingForm.paymentError'));
+      message.error(getApiError(err, t, 'accountingForm.paymentError'));
     }
   }
 
@@ -501,7 +503,7 @@ export default function AccountingPage() {
       message.success(t('accounting.importSuccess', { count: result.createdCount || 0 }) + errorSuffix);
       onSuccess?.(result);
     } catch (err) {
-      const errorMessage = err?.data?.message || t('accounting.unableToImport');
+      const errorMessage = getApiError(err, t, 'accounting.unableToImport');
       message.error(errorMessage);
       onError?.(err);
     }
@@ -536,7 +538,7 @@ export default function AccountingPage() {
       setCobModalOpen(false);
       setCobCostRecord(null);
     } catch (err) {
-      message.error(err?.data?.message || t('accountingForm.cobError'));
+      message.error(getApiError(err, t, 'accountingForm.cobError'));
     } finally {
       setCobSaving(false);
     }

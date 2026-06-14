@@ -1,9 +1,9 @@
 'use client';
 
 import {
-  Alert, Button, Card, Col, DatePicker, Empty, Form, Input, InputNumber,
+  Alert, App, Button, Card, Col, DatePicker, Empty, Form, Input, InputNumber,
   Modal, Popconfirm, Row, Select, Space, Statistic, Table, Tag,
-  Typography, message
+  Typography
 } from 'antd';
 import {
   CheckCircleOutlined, CloseCircleOutlined, DeleteOutlined, DollarOutlined,
@@ -13,6 +13,7 @@ import { useState, useMemo, useEffect } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { useLanguage } from '@/components/AppProviders';
 import { formatCurrency } from '@/utils/format';
+import { getApiError } from '@/utils/getApiError';
 import { getEmployees } from '@/services/hrmService';
 import { toDatePickerValue } from '@/utils/formUtils';
 import {
@@ -44,6 +45,7 @@ function isOverdue(record) {
 
 export default function AdvancesPage() {
   const { t } = useLanguage();
+  const { message } = App.useApp();
   const [statusFilter, setStatusFilter] = useState('all');
   const [modalOpen, setModalOpen] = useState(false);
   const [settleModalOpen, setSettleModalOpen] = useState(false);
@@ -161,7 +163,7 @@ export default function AdvancesPage() {
       form.resetFields();
       refetch();
     } catch (requestError) {
-      message.error(requestError?.data?.message || t('advances.createError'));
+      message.error(getApiError(requestError, t, 'advances.createError'));
     }
   }
 
@@ -184,7 +186,7 @@ export default function AdvancesPage() {
       message.success(t('advances.deleteSuccess'));
       refetch();
     } catch (requestError) {
-      message.error(requestError?.data?.message || t('advances.deleteError'));
+      message.error(getApiError(requestError, t, 'advances.deleteError'));
     }
   }
 
@@ -194,7 +196,7 @@ export default function AdvancesPage() {
       message.success(t('advances.approveSuccess'));
       refetch();
     } catch (requestError) {
-      message.error(requestError?.data?.message || t('advances.approveError'));
+      message.error(getApiError(requestError, t, 'advances.approveError'));
     }
   }
 
@@ -213,7 +215,7 @@ export default function AdvancesPage() {
       rejectForm.resetFields();
       refetch();
     } catch (requestError) {
-      message.error(requestError?.data?.message || t('advances.rejectError'));
+      message.error(getApiError(requestError, t, 'advances.rejectError'));
     }
   }
 
@@ -240,7 +242,7 @@ export default function AdvancesPage() {
       settleForm.resetFields();
       refetch();
     } catch (requestError) {
-      message.error(requestError?.data?.message || t('advances.settleError'));
+      message.error(getApiError(requestError, t, 'advances.settleError'));
     }
   }
 

@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  App,
   Alert,
   Button,
   Card,
@@ -19,8 +20,7 @@ import {
   Table,
   Tag,
   Tooltip,
-  Typography,
-  message
+  Typography
 } from 'antd';
 import {
   CheckCircleOutlined,
@@ -50,6 +50,7 @@ import { useGetJobsQuery } from '@/store/services/jobsApi';
 import { useGetPartnersQuery } from '@/store/services/partnersApi';
 import { useGetServicePricesQuery } from '@/store/services/pricingApi';
 import { formatCurrency } from '@/utils/format';
+import { getApiError } from '@/utils/getApiError';
 
 function toDateString(value) {
   return value?.format ? value.format('YYYY-MM-DD') : value || undefined;
@@ -76,7 +77,7 @@ function sortByServiceAndEffectiveDate(a, b) {
 
 // ─── Auto-Pricing Line Items Component ────────────────────────────────────────
 
-function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId, selectedJobId, jobs, t }) {
+function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId, selectedJobId, jobs, t, message }) {
   // Find applicable tariffs based on selected customer + job route
   const suggestedPrices = useMemo(() => {
     if (!allPrices?.length) return [];
@@ -297,6 +298,7 @@ function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId
 
 export default function DebitNotesPage() {
   const { t } = useLanguage();
+  const { message } = App.useApp();
   const [form] = Form.useForm();
   const [voidForm] = Form.useForm();
   const [paymentForm] = Form.useForm();
@@ -442,7 +444,7 @@ export default function DebitNotesPage() {
       setModalOpen(false);
       setEditingRecord(null);
     } catch (err) {
-      message.error(err?.data?.message || t('debitNotes.createError'));
+      message.error(getApiError(err, t, 'debitNotes.createError'));
     } finally {
       setSaving(false);
     }
@@ -453,7 +455,7 @@ export default function DebitNotesPage() {
       await postDebitNote(record.backendId).unwrap();
       message.success(t('debitNotes.postSuccess'));
     } catch (err) {
-      message.error(err?.data?.message || t('debitNotes.postError'));
+      message.error(getApiError(err, t, 'debitNotes.postError'));
     }
   }
 
@@ -462,7 +464,7 @@ export default function DebitNotesPage() {
       await sendDebitNote(record.backendId).unwrap();
       message.success(t('debitNotes.sendSuccess'));
     } catch (err) {
-      message.error(err?.data?.message || t('debitNotes.sendError'));
+      message.error(getApiError(err, t, 'debitNotes.sendError'));
     }
   }
 
@@ -497,7 +499,7 @@ export default function DebitNotesPage() {
       setPaymentModalOpen(false);
       setSelectedRecord(null);
     } catch (err) {
-      message.error(err?.data?.message || t('debitNotes.paymentRecordError'));
+      message.error(getApiError(err, t, 'debitNotes.paymentRecordError'));
     } finally {
       setSaving(false);
     }
@@ -511,7 +513,7 @@ export default function DebitNotesPage() {
       setVoidModalOpen(false);
       setSelectedRecord(null);
     } catch (err) {
-      message.error(err?.data?.message || t('debitNotes.voidError'));
+      message.error(getApiError(err, t, 'debitNotes.voidError'));
     } finally {
       setSaving(false);
     }
@@ -623,30 +625,37 @@ export default function DebitNotesPage() {
                     await deleteDebitNote(record.backendId).unwrap();
                     message.success(t('debitNotes.deleteSuccess'));
                   } catch (err) {
-                    message.error(err?.data?.message || t('debitNotes.deleteError'));
+                    message.error(getApiError(err, t, 'debitNotes.deleteError'));
                   }
                 }}>
                   <Button size="small" danger icon={<DeleteOutlined />} title={t('debitNotes.delete')} />
                 </Popconfirm>
               </>
-            )}
+            )
+            }
             {isDraft && (
               <Popconfirm title={t('debitNotes.postConfirm')} onConfirm={() => handlePost(record)}>
                 <Button type="primary" size="small" icon={<CheckCircleOutlined />} title={t('debitNotes.post')} />
               </Popconfirm>
             )}
-            {isPosted && (
-              <Popconfirm title={t('debitNotes.sendConfirm')} onConfirm={() => handleSend(record)}>
-                <Button size="small" icon={<SendOutlined />} title={t('debitNotes.send')} />
-              </Popconfirm>
-            )}
-            {!isPaid && raw !== 'VOIDED' && (
-              <Button size="small" icon={<CheckCircleOutlined />} title={t('debitNotes.recordPayment')} onClick={() => openPaymentModal(record)} />
-            )}
-            {(isDraft || isPosted) && (
-              <Button danger size="small" icon={<CloseCircleOutlined />} title={t('debitNotes.void')} onClick={() => openVoidModal(record)} />
-            )}
-          </Space>
+            {
+              isPosted && (
+                <Popconfirm title={t('debitNotes.sendConfirm')} onConfirm={() => handleSend(record)}>
+                  <Button size="small" icon={<SendOutlined />} title={t('debitNotes.send')} />
+                </Popconfirm>
+              )
+            }
+            {
+              !isPaid && raw !== 'VOIDED' && (
+                <Button size="small" icon={<CheckCircleOutlined />} title={t('debitNotes.recordPayment')} onClick={() => openPaymentModal(record)} />
+              )
+            }
+            {
+              (isDraft || isPosted) && (
+                <Button danger size="small" icon={<CloseCircleOutlined />} title={t('debitNotes.void')} onClick={() => openVoidModal(record)} />
+              )
+            }
+          </Space >
         );
       }
     }
@@ -796,6 +805,7 @@ export default function DebitNotesPage() {
           selectedJobId={selectedJobId}
           jobs={jobs}
           t={t}
+          message={message}
         />
       </Modal>
 

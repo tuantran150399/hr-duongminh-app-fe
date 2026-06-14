@@ -2,7 +2,7 @@
 
 import {
   Alert, Button, Card, Form, Input, Modal,
-  Popconfirm, Select, Space, Table, Tag, message
+  Popconfirm, Select, Space, Table, Tag, App
 } from 'antd';
 import { EditOutlined, PlusOutlined, ReloadOutlined, StopOutlined } from '@ant-design/icons';
 import { useMemo, useState } from 'react';
@@ -14,6 +14,7 @@ import {
   useUpdatePartnerMutation,
   useLockPartnerMutation
 } from '@/store/services/partnersApi';
+import { getApiError } from '@/utils/getApiError';
 
 function cleanPayload(values) {
   return Object.fromEntries(
@@ -23,6 +24,7 @@ function cleanPayload(values) {
 
 export default function PartnersPage() {
   const { t } = useLanguage();
+  const { message } = App.useApp();
   const [form] = Form.useForm();
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
@@ -91,7 +93,7 @@ export default function PartnersPage() {
       }
       setModalOpen(false);
     } catch (err) {
-      message.error(err?.data?.message || t('partners.saveError'));
+      message.error(getApiError(err, t, 'partners.saveError'));
     }
   }
 
@@ -100,7 +102,7 @@ export default function PartnersPage() {
       await lockPartner(record.backendId).unwrap();
       message.success(t('partners.lockSuccess'));
     } catch (err) {
-      message.error(err?.data?.message || t('partners.lockError'));
+      message.error(getApiError(err, t, 'partners.lockError'));
     }
   }
 

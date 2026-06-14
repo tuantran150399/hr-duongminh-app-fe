@@ -3,7 +3,7 @@
 import {
   Alert, Avatar, Badge, Button, Card, Col, DatePicker, Form,
   Input, InputNumber, Modal, Popconfirm, Row, Select, Space,
-  Statistic, Table, Tabs, Tag, Typography, message
+  Statistic, Table, Tabs, Tag, Typography, App
 } from 'antd';
 import {
   CheckCircleOutlined, ClockCircleOutlined,
@@ -22,6 +22,7 @@ import {
   useFinalizePayrollMutation
 } from '@/store/services/hrmApi';
 import { formatCurrency } from '@/utils/format';
+import { getApiError } from '@/utils/getApiError';
 
 const deptColors = {
   Operations: 'blue',
@@ -49,6 +50,7 @@ function splitPayrollMonth(value) {
 
 export default function HRMPage() {
   const { t } = useLanguage();
+  const { message } = App.useApp();
   const [activeTab, setActiveTab] = useState('employees');
   const [search, setSearch] = useState('');
   const [deptFilter, setDeptFilter] = useState('All');
@@ -126,26 +128,32 @@ export default function HRMPage() {
 
   async function saveEmployee(values) {
     try {
+      let res;
       if (editingEmployee) {
-        await updateEmployee({
+        res = await updateEmployee({
           id: editingEmployee.id,
           ...values,
           hireDate: values.hireDate?.format ? values.hireDate.format('YYYY-MM-DD') : values.hireDate
         }).unwrap();
-        message.success(t('hrm.updateEmpSuccess'));
       } else {
-        await createEmployee({
+        res = await createEmployee({
           ...values,
           hireDate: values.hireDate?.format ? values.hireDate.format('YYYY-MM-DD') : values.hireDate,
           status: 'ACTIVE'
         }).unwrap();
-        message.success(t('hrm.addEmpSuccess'));
       }
+
+      if (res && (res.error || (res.statusCode && res.statusCode >= 400))) {
+        message.error(getApiError({ data: res }, t, editingEmployee ? 'hrm.updateEmpError' : 'hrm.addEmpError'));
+        return;
+      }
+
+      message.success(editingEmployee ? t('hrm.updateEmpSuccess') : t('hrm.addEmpSuccess'));
       setModalOpen(false);
       setEditingEmployee(null);
       form.resetFields();
-    } catch {
-      message.error(editingEmployee ? t('hrm.updateEmpError') : t('hrm.addEmpError'));
+    } catch (err) {
+      message.error(getApiError(err, t, editingEmployee ? 'hrm.updateEmpError' : 'hrm.addEmpError'));
     }
   }
 
@@ -163,17 +171,21 @@ export default function HRMPage() {
 
   async function handleDeactivateEmployee(record) {
     try {
-      await updateEmployee({ id: record.id, status: 'TERMINATED' }).unwrap();
-      message.success(t('hrm.deactivateSuccess'));
-    } catch {
-      message.error(t('hrm.deactivateError'));
+      const res = await updateEmployee({ id: record.id, status: 'TERMINATED' }).unwrap();
+      if (res && (res.error || (res.statusCode && res.statusCode >= 400))) {
+        message.error(getApiError({ data: res }, t, 'hrm.deactivateError'));
+      } else {
+        message.success(t('hrm.deactivateSuccess'));
+      }
+    } catch (err) {
+      message.error(getApiError(err, t, 'hrm.deactivateError'));
     }
   }
 
   async function savePayroll(values) {
     const { year, month } = splitPayrollMonth(values.month);
     try {
-      await createPayrollRecord({
+      const res = await createPayrollRecord({
         employeeId: Number(values.employeeId),
         year,
         month,
@@ -181,11 +193,17 @@ export default function HRMPage() {
         allowance: Number(values.allowance || 0),
         deduction: Number(values.deduction || 0)
       }).unwrap();
+
+      if (res && (res.error || (res.statusCode && res.statusCode >= 400))) {
+        message.error(getApiError({ data: res }, t, 'hrm.createPayrollError'));
+        return;
+      }
+
       message.success(t('hrm.createPayrollSuccess'));
       setPayrollModalOpen(false);
       payrollForm.resetFields();
-    } catch {
-      message.error(t('hrm.createPayrollError'));
+    } catch (err) {
+      message.error(getApiError(err, t, 'hrm.createPayrollError'));
     }
   }
 
@@ -272,10 +290,14 @@ export default function HRMPage() {
       render: (_, record) => record.status === 'DRAFT' && (
         <Popconfirm title={t('hrm.finalizePayrollPrompt')} onConfirm={async () => {
           try {
-            await finalizePayroll(record.id).unwrap();
-            message.success(t('hrm.finalizeSuccess'));
-          } catch {
-            message.error(t('hrm.finalizeError'));
+            const res = await finalizePayroll(record.id).unwrap();
+            if (res && (res.error || (res.statusCode && res.statusCode >= 400))) {
+              message.error(getApiError({ data: res }, t, 'hrm.finalizeError'));
+            } else {
+              message.success(t('hrm.finalizeSuccess'));
+            }
+          } catch (err) {
+            message.error(getApiError(err, t, 'hrm.finalizeError'));
           }
         }}>
           <Button size="small" type="primary" icon={<CheckCircleOutlined />}>{t('hrm.finalize')}</Button>

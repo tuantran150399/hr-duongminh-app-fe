@@ -2,7 +2,7 @@
 
 import {
   Alert, Badge, Button, Card, Col, Form, Input, Modal,
-  Popconfirm, Row, Select, Space, Statistic, Switch, Table, Tag, Tabs, Typography, message
+  Popconfirm, Row, Select, Space, Statistic, Switch, Table, Tag, Tabs, Typography, App
 } from 'antd';
 import {
   AuditOutlined,
@@ -28,9 +28,10 @@ import {
   useUpdateIpRuleMutation,
   useDeleteIpRuleMutation
 } from '@/store/services/securityApi';
+import { getApiError } from '@/utils/getApiError';
 
 const SEVERITY_COLORS = { LOW: 'blue', MEDIUM: 'orange', HIGH: 'red', CRITICAL: 'volcano' };
-const STATUS_COLORS  = { SUCCESS: 'green', FAILED: 'red', BLOCKED: 'orange' };
+const STATUS_COLORS = { SUCCESS: 'green', FAILED: 'red', BLOCKED: 'orange' };
 const ALERT_STATUS_COLORS = { OPEN: 'red', ACKNOWLEDGED: 'orange', RESOLVED: 'green' };
 
 function formatTime(value) {
@@ -53,35 +54,36 @@ function RiskBadge({ score }) {
 
 export default function SecurityPage() {
   const { t } = useLanguage();
+  const { message } = App.useApp();
   const [activeTab, setActiveTab] = useState('events');
-  const [ruleModalOpen, setRuleModalOpen]   = useState(false);
-  const [editingRule,   setEditingRule]     = useState(null);
+  const [ruleModalOpen, setRuleModalOpen] = useState(false);
+  const [editingRule, setEditingRule] = useState(null);
   const [ruleForm] = Form.useForm();
 
-  const { data: eventsData,  isLoading: loadingEvents, error: eventsError }   = useGetLoginEventsQuery({ limit: 50 });
-  const { data: alertsData,  isLoading: loadingAlerts, error: alertsError }   = useGetSecurityAlertsQuery({ limit: 50 });
-  const { data: ipRulesData, isLoading: loadingRules,  error: rulesError }    = useGetIpRulesQuery({ limit: 100 });
+  const { data: eventsData, isLoading: loadingEvents, error: eventsError } = useGetLoginEventsQuery({ limit: 50 });
+  const { data: alertsData, isLoading: loadingAlerts, error: alertsError } = useGetSecurityAlertsQuery({ limit: 50 });
+  const { data: ipRulesData, isLoading: loadingRules, error: rulesError } = useGetIpRulesQuery({ limit: 100 });
 
   const [updateAlertStatus] = useUpdateSecurityAlertStatusMutation();
-  const [createIpRule]      = useCreateIpRuleMutation();
-  const [updateIpRule]      = useUpdateIpRuleMutation();
-  const [deleteIpRule]      = useDeleteIpRuleMutation();
+  const [createIpRule] = useCreateIpRuleMutation();
+  const [updateIpRule] = useUpdateIpRuleMutation();
+  const [deleteIpRule] = useDeleteIpRuleMutation();
 
-  const events  = useMemo(() => eventsData?.items  ?? [], [eventsData]);
-  const alerts  = useMemo(() => alertsData?.items  ?? [], [alertsData]);
+  const events = useMemo(() => eventsData?.items ?? [], [eventsData]);
+  const alerts = useMemo(() => alertsData?.items ?? [], [alertsData]);
   const ipRules = useMemo(() => ipRulesData?.items ?? [], [ipRulesData]);
 
   const hasError = eventsError || alertsError || rulesError;
-  const openAlerts    = alerts.filter(a => a.status === 'OPEN').length;
+  const openAlerts = alerts.filter(a => a.status === 'OPEN').length;
   const blockedLogins = events.filter(e => e.status === 'BLOCKED').length;
-  const activeRules   = ipRules.filter(r => r.isActive).length;
+  const activeRules = ipRules.filter(r => r.isActive).length;
 
   async function handleAlertAction(id, status) {
     try {
       await updateAlertStatus({ id, status }).unwrap();
       message.success(status === 'ACKNOWLEDGED' ? t('security.acknowledgeSuccess') : t('security.resolveSuccess'));
-    } catch {
-      message.error(status === 'ACKNOWLEDGED' ? t('security.acknowledgeError') : t('security.resolveError'));
+    } catch (err) {
+      message.error(getApiError(err, t, status === 'ACKNOWLEDGED' ? 'security.acknowledgeError' : 'security.resolveError'));
     }
   }
 
@@ -113,8 +115,9 @@ export default function SecurityPage() {
       }
       message.success(t('security.saveRuleSuccess'));
       setRuleModalOpen(false);
-    } catch {
-      message.error(t('security.saveRuleError'));
+      ruleForm.resetFields();
+    } catch (err) {
+      message.error(getApiError(err, t, 'security.saveRuleError'));
     }
   }
 
@@ -123,7 +126,7 @@ export default function SecurityPage() {
       await deleteIpRule(id).unwrap();
       message.success(t('security.deleteRuleSuccess'));
     } catch {
-      message.error(t('security.deleteRuleError'));
+      message.error(getApiError(err, t, 'security.deleteRuleError'));
     }
   }
 
@@ -158,7 +161,7 @@ export default function SecurityPage() {
       render: s => <Tag color={SEVERITY_COLORS[s] ?? 'default'}>{s}</Tag>
     },
     { title: t('security.username'), dataIndex: 'username', key: 'username' },
-    { title: t('security.message'),  dataIndex: 'message',  key: 'message', ellipsis: true },
+    { title: t('security.message'), dataIndex: 'message', key: 'message', ellipsis: true },
     {
       title: t('security.status'), dataIndex: 'status', key: 'status',
       render: s => <Tag color={ALERT_STATUS_COLORS[s] ?? 'default'}>{s}</Tag>
@@ -185,13 +188,13 @@ export default function SecurityPage() {
       title: t('security.ruleType'), dataIndex: 'type', key: 'type',
       render: type => (
         <Tag color={type === 'ALLOW' ? 'green' : 'red'}
-             icon={type === 'ALLOW' ? <CheckCircleOutlined /> : <StopOutlined />}>
+          icon={type === 'ALLOW' ? <CheckCircleOutlined /> : <StopOutlined />}>
           {type}
         </Tag>
       )
     },
     { title: t('security.ipPattern'), dataIndex: 'ipPattern', key: 'ipPattern', render: v => <code>{v}</code> },
-    { title: t('security.label'),     dataIndex: 'label',     key: 'label', render: v => <strong>{v}</strong> },
+    { title: t('security.label'), dataIndex: 'label', key: 'label', render: v => <strong>{v}</strong> },
     { title: t('security.description'), dataIndex: 'description', key: 'description', ellipsis: true },
     {
       title: t('security.ruleActive'), dataIndex: 'isActive', key: 'isActive',
@@ -348,7 +351,7 @@ export default function SecurityPage() {
                 rules={[{ required: true, message: t('security.typeRequired') }]}>
                 <Select options={[
                   { value: 'ALLOW', label: <Tag color="green">ALLOW</Tag> },
-                  { value: 'BLOCK', label: <Tag color="red">BLOCK</Tag>  }
+                  { value: 'BLOCK', label: <Tag color="red">BLOCK</Tag> }
                 ]} />
               </Form.Item>
             </Col>

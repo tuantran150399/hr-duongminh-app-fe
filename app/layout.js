@@ -1,6 +1,7 @@
 import '@ant-design/v5-patch-for-react-19';
 import { AppProviders } from '@/components/AppProviders';
 import './globals.css';
+import 'antd/dist/reset.css';
 import favicon from '@/asset/image/favicon.ico';
 
 export const metadata = {

@@ -15,7 +15,7 @@ import {
   Table,
   Tag,
   Typography,
-  message
+  App
 } from 'antd';
 import {
   BankOutlined,
@@ -34,9 +34,11 @@ import {
   useCreateBranchMutation,
   useUpdateBranchMutation
 } from '@/store/services/adminExtApi';
+import { getApiError } from '@/utils/getApiError';
 
 export default function BranchesPage() {
   const { t } = useLanguage();
+  const { message } = App.useApp();
   const [modal, setModal] = useState({ open: false, record: null });
   const [form] = Form.useForm();
 
@@ -93,7 +95,7 @@ export default function BranchesPage() {
       setModal({ open: false, record: null });
       form.resetFields();
     } catch (saveError) {
-      message.error(saveError?.data?.message || t('branches.saveError'));
+      message.error(getApiError(saveError, t, 'branches.saveError'));
     }
   }
 

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import {
-  Modal, Tabs, Form, Input, Button, message, Divider, Avatar, Typography, Space
+  Modal, Tabs, Form, Input, Button, Divider, Avatar, Typography, Space, App
 } from 'antd';
 import {
   UserOutlined, LockOutlined, MailOutlined, IdcardOutlined
@@ -14,6 +14,7 @@ import { useChangePasswordMutation, useUpdateProfileMutation } from '@/store/ser
 
 export default function AccountSettingsModal({ open, onClose }) {
   const { t } = useLanguage();
+  const { message } = App.useApp();
   const dispatch = useAppDispatch();
   const user = useAppSelector(selectUser);
 

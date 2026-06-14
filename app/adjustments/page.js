@@ -1,9 +1,9 @@
 'use client';
 
 import {
-  Alert, Badge, Button, Card, Col, DatePicker, Form,
+  Alert, App, Badge, Button, Card, Col, DatePicker, Form,
   Input, InputNumber, Modal, Popconfirm, Row, Select,
-  Space, Statistic, Table, Tag, Tooltip, Typography, message
+  Space, Statistic, Table, Tag, Tooltip, Typography
 } from 'antd';
 import {
   CheckCircleOutlined,
@@ -32,17 +32,17 @@ const ADJUSTMENT_TYPES = [
 
 const TYPE_COLOR = {
   REVENUE_ADJUSTMENT: 'green',
-  COST_ADJUSTMENT:    'orange',
-  RECONCILIATION:     'blue',
-  WRITE_OFF:          'red'
+  COST_ADJUSTMENT: 'orange',
+  RECONCILIATION: 'blue',
+  WRITE_OFF: 'red'
 };
 
 function TypeLabel({ t, value }) {
   const map = {
     REVENUE_ADJUSTMENT: t('adjustments.revenueAdj'),
-    COST_ADJUSTMENT:    t('adjustments.costAdj'),
-    RECONCILIATION:     t('adjustments.reconciliation'),
-    WRITE_OFF:          t('adjustments.writeOff')
+    COST_ADJUSTMENT: t('adjustments.costAdj'),
+    RECONCILIATION: t('adjustments.reconciliation'),
+    WRITE_OFF: t('adjustments.writeOff')
   };
   return (
     <Tag color={TYPE_COLOR[value] ?? 'default'}>
@@ -53,19 +53,20 @@ function TypeLabel({ t, value }) {
 
 export default function AdjustmentsPage() {
   const { t } = useLanguage();
+  const { message } = App.useApp();
   const [form] = Form.useForm();
-  const [modalOpen, setModalOpen]   = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
   const [typeFilter, setTypeFilter] = useState('all');
-  const [saving, setSaving]         = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const { data, isLoading, error }   = useGetAdjustmentsQuery({ limit: 100 });
-  const { data: jobsData }           = useGetJobsQuery();
-  const [createAdjustment]           = useCreateAdjustmentMutation();
-  const [approveAdjustment]          = useApproveAdjustmentMutation();
-  const [deleteAdjustment]           = useDeleteAdjustmentMutation();
+  const { data, isLoading, error } = useGetAdjustmentsQuery({ limit: 100 });
+  const { data: jobsData } = useGetJobsQuery();
+  const [createAdjustment] = useCreateAdjustmentMutation();
+  const [approveAdjustment] = useApproveAdjustmentMutation();
+  const [deleteAdjustment] = useDeleteAdjustmentMutation();
 
   const adjustments = data?.items ?? [];
-  const jobs        = jobsData?.items ?? [];
+  const jobs = jobsData?.items ?? [];
 
   const jobOptions = useMemo(
     () => jobs.map((j) => ({ value: j.backendId, label: `${j.job_no ?? j.jobCode} — ${j.customer ?? ''}` })),
@@ -77,11 +78,11 @@ export default function AdjustmentsPage() {
     [adjustments, typeFilter]
   );
 
-  const pendingCount  = adjustments.filter((a) => !a.approvedAt).length;
-  const totalRevAdj   = adjustments
+  const pendingCount = adjustments.filter((a) => !a.approvedAt).length;
+  const totalRevAdj = adjustments
     .filter((a) => a.type === 'REVENUE_ADJUSTMENT')
     .reduce((s, a) => s + Number(a.amount ?? 0), 0);
-  const totalCostAdj  = adjustments
+  const totalCostAdj = adjustments
     .filter((a) => a.type === 'COST_ADJUSTMENT')
     .reduce((s, a) => s + Number(a.amount ?? 0), 0);
 
@@ -397,7 +398,7 @@ export default function AdjustmentsPage() {
                   allowClear
                   options={[
                     { value: 'REVENUE', label: t('adjustments.revenueType') },
-                    { value: 'COST',    label: t('adjustments.costType')    }
+                    { value: 'COST', label: t('adjustments.costType') }
                   ]}
                 />
               </Form.Item>

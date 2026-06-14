@@ -2,6 +2,7 @@
 
 import {
   Alert,
+  App,
   Button,
   Card,
   Col,
@@ -17,8 +18,7 @@ import {
   Table,
   Tabs,
   Tag,
-  Typography,
-  message
+  Typography
 } from 'antd';
 import {
   CheckCircleOutlined,
@@ -46,9 +46,11 @@ import {
 import { useGetJobsQuery } from '@/store/services/jobsApi';
 import { useGetPartnersQuery } from '@/store/services/partnersApi';
 import { formatCurrency } from '@/utils/format';
+import { getApiError } from '@/utils/getApiError';
 
 export default function CobPage() {
   const { t } = useLanguage();
+  const { message } = App.useApp();
   const [cobForm] = Form.useForm();
   const [collectForm] = Form.useForm();
   const [saving, setSaving] = useState(false);
@@ -116,7 +118,7 @@ export default function CobPage() {
       message.success(t('cob.createCobSuccess'));
       setCobModalOpen(false);
     } catch (err) {
-      message.error(err?.data?.message || t('cob.createCobError'));
+      message.error(getApiError(err, t, 'cob.createCobError'));
     } finally {
       setSaving(false);
     }
@@ -127,7 +129,7 @@ export default function CobPage() {
       await settleCobEntry({ id: record.backendId }).unwrap();
       message.success(t('cob.settleSuccess'));
     } catch (err) {
-      message.error(err?.data?.message || t('cob.settleError'));
+      message.error(getApiError(err, t, 'cob.settleError'));
     }
   }
 
@@ -140,7 +142,7 @@ export default function CobPage() {
       message.success(t('cob.createCollectSuccess'));
       setCollectModalOpen(false);
     } catch (err) {
-      message.error(err?.data?.message || t('cob.createCollectError'));
+      message.error(getApiError(err, t, 'cob.createCollectError'));
     } finally {
       setSaving(false);
     }
@@ -151,7 +153,7 @@ export default function CobPage() {
       await settleCollectEntry({ id: record.backendId }).unwrap();
       message.success(t('cob.settleSuccess'));
     } catch (err) {
-      message.error(err?.data?.message || t('cob.settleError'));
+      message.error(getApiError(err, t, 'cob.settleError'));
     }
   }
 
@@ -226,7 +228,7 @@ export default function CobPage() {
                 await deleteCobEntry(record.backendId).unwrap();
                 message.success(t('cob.deleteSuccess'));
               } catch (err) {
-                message.error(err?.data?.message || t('cob.deleteError'));
+                message.error(getApiError(err, t, 'cob.deleteError'));
               }
             }}>
               <Button size="small" danger icon={<DeleteOutlined />} title={t('cob.delete')} />
@@ -306,7 +308,7 @@ export default function CobPage() {
                 await deleteCollectEntry(record.backendId).unwrap();
                 message.success(t('cob.deleteSuccess'));
               } catch (err) {
-                message.error(err?.data?.message || t('cob.deleteError'));
+                message.error(getApiError(err, t, 'cob.deleteError'));
               }
             }}>
               <Button size="small" danger icon={<DeleteOutlined />} title={t('cob.delete')} />

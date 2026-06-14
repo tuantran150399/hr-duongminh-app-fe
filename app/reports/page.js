@@ -2,7 +2,7 @@
 
 import {
   Alert, Button, Card, Col, Row, Table, Tabs,
-  Typography, DatePicker, Select, message
+  Typography, DatePicker, Select, App
 } from 'antd';
 import { useMemo, useState } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
@@ -22,6 +22,7 @@ import { useGetBranchesQuery } from '@/store/services/adminExtApi';
 import { useGetPartnersQuery } from '@/store/services/partnersApi';
 import { useGetJobsQuery } from '@/store/services/jobsApi';
 import { formatCurrency } from '@/utils/format';
+import { getApiError } from '@/utils/getApiError';
 import api from '@/services/api';
 
 const { RangePicker } = DatePicker;
@@ -64,6 +65,7 @@ function normalizeItems(raw) {
 
 export default function ReportsPage() {
   const { t } = useLanguage();
+  const { message } = App.useApp();
   const [activeTab, setActiveTab] = useState('branch-summary');
   const [dateRange, setDateRange] = useState([null, null]);
   const [selectedJobId, setSelectedJobId] = useState(null);
@@ -146,7 +148,7 @@ export default function ReportsPage() {
       window.URL.revokeObjectURL(url);
       message.success(t('reports.exportStarted'));
     } catch (err) {
-      message.error(err?.response?.data?.message || t('reports.exportError'));
+      message.error(getApiError(err, t, 'reports.exportError'));
     }
   }
 

@@ -15,7 +15,7 @@ import {
   Table,
   Tag,
   Typography,
-  message
+  App
 } from 'antd';
 import {
   EditOutlined,
@@ -27,9 +27,11 @@ import { useLanguage } from '@/components/AppProviders';
 import { useGetDebtPoliciesQuery, useUpsertDebtPolicyMutation } from '@/store/services/debtPoliciesApi';
 import { useGetPartnersQuery } from '@/store/services/partnersApi';
 import { formatCurrency } from '@/utils/format';
+import { getApiError } from '@/utils/getApiError';
 
 export default function DebtPoliciesPage() {
   const { t } = useLanguage();
+  const { message } = App.useApp();
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -98,12 +100,16 @@ export default function DebtPoliciesPage() {
         ...values,
         maxDebtAmount: values.maxDebtAmount !== undefined ? Number(values.maxDebtAmount) : null
       };
-      await upsertDebtPolicy(payload).unwrap();
+      const res = await upsertDebtPolicy(payload).unwrap();
+      if (res && (res.error || (res.statusCode && res.statusCode >= 400))) {
+        message.error(getApiError({ data: res }, t, 'debtPolicies.saveError'));
+        return;
+      }
       message.success(t('debtPolicies.saveSuccess'));
       setModalOpen(false);
       setEditingPolicy(null);
     } catch (err) {
-      message.error(err?.data?.message || t('debtPolicies.saveError'));
+      message.error(getApiError(err, t, 'debtPolicies.saveError'));
     } finally {
       setSaving(false);
     }

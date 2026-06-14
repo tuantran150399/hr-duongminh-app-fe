@@ -2,7 +2,7 @@
 
 import {
   Alert, Button, Card, Form, Input, Modal, Popconfirm,
-  Select, Space, Switch, Table, Tabs, Tag, message
+  Select, Space, Switch, Table, Tabs, Tag, App
 } from 'antd';
 import { DeleteOutlined, EditOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import { useMemo, useState } from 'react';
@@ -21,6 +21,7 @@ import {
   useCreateRoleMutation,
   useUpdateRoleMutation
 } from '@/store/services/adminExtApi';
+import { getApiError } from '@/utils/getApiError';
 
 function roleIdsFromUser(user) {
   return (user?.roles || []).map((role) => role.id || role.backendId).filter(Boolean);
@@ -32,6 +33,7 @@ function permissionIdsFromRole(role) {
 
 export default function UsersPage() {
   const { t } = useLanguage();
+  const { message } = App.useApp();
   const canManageUsers = useAppSelector(selectHasPermission(PERMISSIONS.USER_MANAGE));
   const canManageRoles = useAppSelector(selectHasPermission(PERMISSIONS.ROLE_MANAGE));
   const [userModal, setUserModal] = useState({ open: false, record: null });
@@ -124,7 +126,7 @@ export default function UsersPage() {
       setUserModal({ open: false, record: null });
       userForm.resetFields();
     } catch (saveError) {
-      message.error(saveError?.data?.message || t('users.saveUserError'));
+      message.error(getApiError(saveError, t, 'users.saveUserError'));
     }
   }
 
@@ -146,7 +148,7 @@ export default function UsersPage() {
       setRoleModal({ open: false, record: null });
       roleForm.resetFields();
     } catch (saveError) {
-      message.error(saveError?.data?.message || t('users.saveRoleError'));
+      message.error(getApiError(saveError, t, 'users.saveRoleError'));
     }
   }
 
