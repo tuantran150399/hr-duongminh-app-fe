@@ -7,7 +7,8 @@ import {
   Empty,
   Table,
   Typography,
-  App
+  App,
+  Tag
 } from 'antd';
 import {
   DownloadOutlined,
@@ -26,6 +27,7 @@ import { useGetJobsQuery } from '@/store/services/jobsApi';
 import { normalizeJob } from '@/utils/apiMappers';
 import { useGetPartnersQuery } from '@/store/services/partnersApi';
 import { normalizePartner } from '@/utils/apiMappers';
+import { getJobStatusOptions } from '@/config/jobConstants';
 
 function formatDisplayDate(value) {
   if (!value) return '-';
@@ -42,6 +44,7 @@ function escapeCsv(value) {
 }
 
 function downloadJobsCsv(rows, t) {
+  const jobStatusOptions = getJobStatusOptions(t);
   const headers = [
     t('jobs.jobNo'), t('jobs.customer'), t('jobs.status'),
     t('jobs.origin'), t('jobs.destination'),
@@ -51,7 +54,7 @@ function downloadJobsCsv(rows, t) {
   ];
 
   const records = rows.map((job) => [
-    job.job_no, job.customer, job.status,
+    job.job_no, job.customer, (jobStatusOptions.find(o => o.value === job.raw?.status)?.label || job.status),
     job.origin, job.destination,
     formatDisplayDate(job.etd), formatDisplayDate(job.eta),
     job.raw?.shipperName || job.raw?.shipper || '',
@@ -171,13 +174,20 @@ export default function JobsPage() {
     return rawItems.map((job) => normalizeJob(job, partnersById)).filter(Boolean);
   }, [jobsData, partnersById]);
 
+  const jobStatusOptions = useMemo(() => getJobStatusOptions(t), [t]);
+
   const statusOptions = useMemo(
-    () => [
-      { value: 'all', label: t('jobs.allStatuses') },
-      ...Array.from(new Set(jobs.map((item) => item.status).filter(Boolean)))
-        .map((status) => ({ value: status, label: status }))
-    ],
-    [jobs, t]
+    () => {
+      const rawStatuses = Array.from(new Set(jobs.map((item) => item.raw?.status).filter(Boolean)));
+      return [
+        { value: 'all', label: t('jobs.allStatuses') },
+        ...rawStatuses.map((rawStatus) => {
+          const opt = jobStatusOptions.find(o => o.value === rawStatus);
+          return { value: rawStatus, label: opt ? opt.label : rawStatus };
+        })
+      ];
+    },
+    [jobs, jobStatusOptions, t]
   );
 
   const filteredJobs = jobs.filter((job) => {
@@ -186,7 +196,7 @@ export default function JobsPage() {
       !query ||
       job.job_no?.toLowerCase().includes(query) ||
       job.customer?.toLowerCase().includes(query);
-    const matchesStatus = statusFilter === 'all' || job.status === statusFilter;
+    const matchesStatus = statusFilter === 'all' || job.raw?.status === statusFilter;
 
     let matchesDate = true;
     if (dateRange?.length === 2) {
@@ -225,7 +235,17 @@ export default function JobsPage() {
       render: (value) => <span style={{ fontWeight: 600, color: '#0057c2' }}>{value || '-'}</span>
     },
     { title: t('jobs.customer'), dataIndex: 'customer', key: 'customer', sorter: (a, b) => String(a.customer).localeCompare(String(b.customer)) },
-    { title: t('jobs.status'), dataIndex: 'status', key: 'status', render: (value) => <StatusTag value={value} /> },
+    { 
+      title: t('jobs.status'), 
+      dataIndex: ['raw', 'status'], 
+      key: 'status', 
+      render: (rawStatus, record) => {
+        const opt = jobStatusOptions.find(o => o.value === rawStatus.toUpperCase());
+        const label = opt ? opt.label : (record.status || '-');
+        const color = { DRAFT: 'default', IN_PROGRESS: 'green', CLOSED: 'black', CANCELLED: 'red' }[rawStatus.toUpperCase()] || 'default';
+        return <Tag color={color}>{label}</Tag>;
+      } 
+    },
     { title: t('jobs.origin'), dataIndex: 'origin', key: 'origin' },
     { title: t('jobs.destination'), dataIndex: 'destination', key: 'destination' },
     { title: t('jobs.etd'), dataIndex: 'etd', key: 'etd', render: formatDisplayDate },
