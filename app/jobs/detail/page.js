@@ -1,8 +1,9 @@
 'use client';
 
-import { Suspense, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
+  App,
   Button,
   Card,
   Col,
@@ -10,6 +11,7 @@ import {
   Descriptions,
   Form,
   Input,
+  InputNumber,
   Popconfirm,
   Row,
   Select,
@@ -17,13 +19,12 @@ import {
   Spin,
   Statistic,
   Table,
-  Tag,
-  App
+  Tag
 } from 'antd';
 import {
   BankOutlined,
-  CopyOutlined,
   CompassOutlined,
+  CopyOutlined,
   FileTextOutlined,
   StopOutlined
 } from '@ant-design/icons';
@@ -33,13 +34,13 @@ import PageHeader from '@/components/PageHeader';
 import { useLanguage } from '@/components/AppProviders';
 import {
   useGetJobByIdQuery,
+  useGetJobDebtPreviewMutation,
   useUpdateJobMutation,
   useCopyJobMutation,
   useCancelJobMutation
 } from '@/store/services/jobsApi';
 import { useGetPartnersQuery } from '@/store/services/partnersApi';
 import { useGetUsersQuery, useGetBranchesQuery } from '@/store/services/adminApi';
-import { normalizePartner } from '@/utils/apiMappers';
 import { cleanPayload, convertDateFields, toDatePickerValue } from '@/utils/formUtils';
 import { getApiError } from '@/utils/getApiError';
 import { formatCurrency } from '@/utils/format';
@@ -62,6 +63,7 @@ function buildCopyPayload(rawJob) {
     branchId: rawJob.branchId,
     assignedUserId: rawJob.assignedUserId,
     agentId: rawJob.agentId,
+    debtAmount: rawJob.debtAmount,
     shipper: rawJob.shipper,
     consignee: rawJob.consignee,
     declarationNo: rawJob.declarationNo,
@@ -98,8 +100,9 @@ function JobDetailContent() {
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
   const [formLoaded, setFormLoaded] = useState(false);
+  const [debtPreview, setDebtPreview] = useState(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
-  // RTK Query hooks
   const {
     data: jobData,
     isLoading: jobLoading,
@@ -111,15 +114,12 @@ function JobDetailContent() {
   const { data: branchesData } = useGetBranchesQuery();
   const { data: usersData } = useGetUsersQuery();
 
+  const [fetchDebtPreview] = useGetJobDebtPreviewMutation();
   const [updateJob] = useUpdateJobMutation();
   const [copyJob] = useCopyJobMutation();
   const [cancelJob] = useCancelJobMutation();
 
-  // Build dropdown options
-  const partners = useMemo(() => {
-    return partnersData?.items || [];
-  }, [partnersData]);
-
+  const partners = useMemo(() => partnersData?.items || [], [partnersData]);
   const partnerOptions = useMemo(
     () => partners.map((item) => ({ value: item.backendId, label: `${item.code} - ${item.name}` })),
     [partners]
@@ -143,6 +143,8 @@ function JobDetailContent() {
   );
 
   const selectedBranchId = Form.useWatch('branchId', form);
+  const selectedPartnerId = Form.useWatch('partnerId', form);
+  const selectedDebtAmount = Form.useWatch('debtAmount', form);
 
   const userOptions = useMemo(
     () =>
@@ -159,42 +161,75 @@ function JobDetailContent() {
     [usersData, selectedBranchId]
   );
 
-  // Populate form when job data loads
   const raw = jobData || {};
-  if (jobData && !formLoaded && !jobLoading) {
-    const formValues = {
-      jobCode: raw.jobCode || raw.job_no,
-      jobType: raw.jobType,
-      shipmentMode: raw.shipmentMode,
-      status: raw.status,
-      partnerId: raw.partnerId,
-      branchId: raw.branchId,
-      assignedUserId: raw.assignedUserId,
-      agentId: raw.agentId,
-      shipper: raw.shipper,
-      consignee: raw.consignee,
-      declarationNo: raw.declarationNo,
-      businessType: raw.businessType,
-      customsLane: raw.customsLane,
-      cargoType: raw.cargoType,
-      containerNo: raw.containerNo,
-      sealNo: raw.sealNo,
-      notes: raw.notes,
-      vesselName: raw.vesselName,
-      voyageNo: raw.voyageNo,
-      pol: raw.pol,
-      pod: raw.pod,
-      origin: raw.origin,
-      destination: raw.destination,
-      etd: toDatePickerValue(raw.etd),
-      eta: toDatePickerValue(raw.eta),
-      atd: toDatePickerValue(raw.atd),
-      ata: toDatePickerValue(raw.ata),
-      actualDeliveryDate: toDatePickerValue(raw.actualDeliveryDate)
+
+  useEffect(() => {
+    if (jobData && !formLoaded && !jobLoading) {
+      form.setFieldsValue({
+        jobCode: raw.jobCode || raw.job_no,
+        jobType: raw.jobType,
+        shipmentMode: raw.shipmentMode,
+        status: raw.status,
+        partnerId: raw.partnerId,
+        branchId: raw.branchId,
+        assignedUserId: raw.assignedUserId,
+        agentId: raw.agentId,
+        debtAmount: raw.debtAmount === null || raw.debtAmount === undefined ? null : Number(raw.debtAmount),
+        shipper: raw.shipper,
+        consignee: raw.consignee,
+        declarationNo: raw.declarationNo,
+        businessType: raw.businessType,
+        customsLane: raw.customsLane,
+        cargoType: raw.cargoType,
+        containerNo: raw.containerNo,
+        sealNo: raw.sealNo,
+        notes: raw.notes,
+        vesselName: raw.vesselName,
+        voyageNo: raw.voyageNo,
+        pol: raw.pol,
+        pod: raw.pod,
+        origin: raw.origin,
+        destination: raw.destination,
+        etd: toDatePickerValue(raw.etd),
+        eta: toDatePickerValue(raw.eta),
+        atd: toDatePickerValue(raw.atd),
+        ata: toDatePickerValue(raw.ata),
+        actualDeliveryDate: toDatePickerValue(raw.actualDeliveryDate)
+      });
+      setFormLoaded(true);
+    }
+  }, [jobData, formLoaded, jobLoading, form, raw]);
+
+  useEffect(() => {
+    let active = true;
+
+    if (!selectedPartnerId || !jobId) {
+      setDebtPreview(null);
+      setPreviewLoading(false);
+      return undefined;
+    }
+
+    const timer = window.setTimeout(async () => {
+      setPreviewLoading(true);
+      try {
+        const result = await fetchDebtPreview({
+          partnerId: selectedPartnerId,
+          jobId: Number(jobId),
+          debtAmount: Number(selectedDebtAmount || 0)
+        }).unwrap();
+        if (active) setDebtPreview(result);
+      } catch {
+        if (active) setDebtPreview(null);
+      } finally {
+        if (active) setPreviewLoading(false);
+      }
+    }, 250);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
     };
-    form.setFieldsValue(formValues);
-    setFormLoaded(true);
-  }
+  }, [selectedPartnerId, selectedDebtAmount, jobId, fetchDebtPreview]);
 
   const isTerminal = TERMINAL_STATUSES.includes(raw.status);
 
@@ -230,6 +265,18 @@ function JobDetailContent() {
     try {
       const payload = cleanPayload(convertDateFields(values, JOB_DATE_FIELDS));
       delete payload.jobCode;
+
+      if (debtPreview?.hasPolicy) {
+        payload.debtAmount = Number(values.debtAmount || 0);
+        if (debtPreview.exceedsLimit) {
+          message.error('Công nợ vượt hạn mức, không thể lưu lô hàng. Vui lòng nâng hạn mức trong Chính sách công nợ.');
+          setSaving(false);
+          return;
+        }
+      } else {
+        payload.debtAmount = null;
+      }
+
       await updateJob({ id: jobId, ...payload }).unwrap();
       message.success(t('jobForm.updateSuccess'));
       setFormLoaded(false);
@@ -327,6 +374,52 @@ function JobDetailContent() {
                         <Select showSearch optionFilterProp="label" options={partnerOptions} size="large" disabled={isTerminal} />
                       </Form.Item>
                     </Col>
+                    {selectedPartnerId ? (
+                      <Col span={24}>
+                        {previewLoading ? (
+                          <Alert type="info" showIcon message="Đang kiểm tra chính sách công nợ..." />
+                        ) : debtPreview?.hasPolicy ? (
+                          <div style={{ border: '1px solid #d9e6f7', borderRadius: 12, padding: 16, background: '#f7fbff' }}>
+                            <Row gutter={[16, 16]}>
+                              <Col xs={24} md={12}>
+                                <Form.Item name="debtAmount" label="Giá trị công nợ lô hàng này">
+                                  <InputNumber min={0} precision={2} style={{ width: '100%' }} placeholder="Nhập giá trị công nợ" size="large" disabled={isTerminal} />
+                                </Form.Item>
+                              </Col>
+                              <Col xs={24} md={12}>
+                                <Alert
+                                  type="info"
+                                  showIcon
+                                  message={`Thời gian áp dụng: ${debtPreview.policy?.startDate || '-'} - ${debtPreview.policy?.endDate || 'Vô thời hạn'}`}
+                                />
+                              </Col>
+                              <Col xs={24} md={4}>
+                                <Statistic title="Hạn mức công nợ" value={debtPreview.policy?.maxDebtAmount || 0} formatter={formatCurrency} />
+                              </Col>
+                              <Col xs={24} md={4}>
+                                <Statistic title="Số ngày nợ tối đa" value={debtPreview.policy?.maxDebtAgeDays || 0} suffix="ngày" />
+                              </Col>
+                              <Col xs={24} md={8}>
+                                <Statistic title="Công nợ thực tế" value={debtPreview.actualDebt || 0} formatter={formatCurrency} />
+                              </Col>
+                              <Col xs={24} md={8}>
+                                {debtPreview.exceedsLimit ? (
+                                  <Alert
+                                    type="warning"
+                                    showIcon
+                                    message={`Công nợ thực tế ${formatCurrency(debtPreview.actualDebt)} vượt hạn mức. Không thể lưu lô hàng; vui lòng nâng hạn mức trong Chính sách công nợ.`}
+                                  />
+                                ) : (
+                                  <Alert type="success" showIcon message="Công nợ hiện tại đang trong hạn mức." />
+                                )}
+                              </Col>
+                            </Row>
+                          </div>
+                        ) : (
+                          <Alert type="info" showIcon message="Khách hàng này chưa có chính sách công nợ. Hệ thống sẽ ẩn phần nhập công nợ." />
+                        )}
+                      </Col>
+                    ) : null}
                     <Col xs={24} md={12}>
                       <Form.Item name="branchId" label={t('jobForm.branch')}>
                         <Select allowClear showSearch optionFilterProp="label" options={branchOptions} size="large" disabled={isTerminal} />

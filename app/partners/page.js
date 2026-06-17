@@ -15,6 +15,7 @@ import {
   useLockPartnerMutation
 } from '@/store/services/partnersApi';
 import { getApiError } from '@/utils/getApiError';
+import { formatCurrency } from '@/utils/format';
 
 function cleanPayload(values) {
   return Object.fromEntries(
@@ -119,6 +120,14 @@ export default function PartnersPage() {
       render: (type) => <Tag color={type === 'Customer' ? 'blue' : 'orange'}>{type}</Tag>
     },
     { title: t('partners.taxCode'), dataIndex: 'taxCode', key: 'taxCode', width: 150 },
+    {
+      title: 'Công nợ thực tế',
+      dataIndex: 'actualDebt',
+      key: 'actualDebt',
+      width: 170,
+      align: 'right',
+      render: (value) => formatCurrency(value || 0)
+    },
     { title: t('partners.contact'), dataIndex: 'contactPerson', key: 'contactPerson', width: 180 },
     { title: t('partners.phone'), dataIndex: 'phone', key: 'phone', width: 140 },
     { title: t('partners.email'), dataIndex: 'email', key: 'email', width: 210 },
@@ -194,7 +203,7 @@ export default function PartnersPage() {
           columns={columns}
           dataSource={filteredData}
           pagination={{ pageSize: 10, showSizeChanger: true }}
-          scroll={{ x: 1150 }}
+          scroll={{ x: 1320 }}
         />
       </Card>
 

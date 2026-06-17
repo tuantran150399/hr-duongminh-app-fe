@@ -5,6 +5,7 @@ import {
   Button,
   Card,
   Col,
+  DatePicker,
   Form,
   InputNumber,
   Modal,
@@ -28,6 +29,7 @@ import { useGetDebtPoliciesQuery, useUpsertDebtPolicyMutation } from '@/store/se
 import { useGetPartnersQuery } from '@/store/services/partnersApi';
 import { formatCurrency } from '@/utils/format';
 import { getApiError } from '@/utils/getApiError';
+import { toDatePickerValue } from '@/utils/formUtils';
 
 export default function DebtPoliciesPage() {
   const { t } = useLanguage();
@@ -83,6 +85,8 @@ export default function DebtPoliciesPage() {
     if (record) {
       form.setFieldsValue({
         partnerId: record.partnerId,
+        startDate: toDatePickerValue(record.startDate),
+        endDate: toDatePickerValue(record.endDate),
         maxDebtAmount: record.maxDebtAmount,
         maxDebtAgeDays: record.maxDebtAgeDays,
         isActive: record.isActive
@@ -98,6 +102,8 @@ export default function DebtPoliciesPage() {
     try {
       const payload = {
         ...values,
+        startDate: values.startDate?.format('YYYY-MM-DD'),
+        endDate: values.endDate ? values.endDate.format('YYYY-MM-DD') : null,
         maxDebtAmount: values.maxDebtAmount !== undefined ? Number(values.maxDebtAmount) : null
       };
       const res = await upsertDebtPolicy(payload).unwrap();
@@ -124,6 +130,16 @@ export default function DebtPoliciesPage() {
         const partner = partnersById[record.partnerId];
         return <strong>{partner ? `${partner.code} - ${partner.name}` : `Partner ID: ${record.partnerId ?? '-'}`}</strong>;
       }
+    },
+    {
+      title: 'Thời gian áp dụng',
+      key: 'effectiveRange',
+      width: 220,
+      render: (_, record) => (
+        <span>
+          {record.startDate || '-'} - {record.endDate || 'Vô thời hạn'}
+        </span>
+      )
     },
     {
       title: t('debtPolicies.maxDebtAmount'),
@@ -234,6 +250,18 @@ export default function DebtPoliciesPage() {
               placeholder={t('debtPolicies.selectPartner')}
               disabled={Boolean(editingPolicy)}
             />
+          </Form.Item>
+
+          <Form.Item
+            name="startDate"
+            label="Ngày bắt đầu"
+            rules={[{ required: true, message: 'Vui lòng chọn ngày bắt đầu.' }]}
+          >
+            <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+          </Form.Item>
+
+          <Form.Item name="endDate" label="Ngày kết thúc">
+            <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
           </Form.Item>
 
           <Form.Item name="maxDebtAmount" label={t('debtPolicies.maxDebtAmountOptional')}>

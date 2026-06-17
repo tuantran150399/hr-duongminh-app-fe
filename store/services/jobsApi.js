@@ -31,6 +31,10 @@ export const jobsApi = createApi({
       providesTags: (_result, _error, id) => [{ type: 'Job', id }]
     }),
 
+    getJobDebtPreview: builder.mutation({
+      query: (body) => ({ url: '/jobs/debt-preview', method: 'POST', data: body })
+    }),
+
     createJob: builder.mutation({
       query: (body) => ({ url: '/jobs', method: 'POST', data: body }),
       invalidatesTags: [{ type: 'Job', id: 'LIST' }]
@@ -84,6 +88,7 @@ export const jobsApi = createApi({
 export const {
   useGetJobsQuery,
   useGetJobByIdQuery,
+  useGetJobDebtPreviewMutation,
   useCreateJobMutation,
   useUpdateJobMutation,
   useCopyJobMutation,

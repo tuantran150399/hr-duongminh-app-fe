@@ -50,6 +50,10 @@ export function normalizePartner(partner) {
     email: partner.email || '-',
     address: partner.address || '-',
     taxCode: partner.taxCode || '-',
+    actualDebt:
+      partner.actualDebt === null || partner.actualDebt === undefined
+        ? 0
+        : Number(partner.actualDebt),
     isActive: partner.isActive !== false,
     raw: partner
   };
@@ -86,6 +90,8 @@ export function normalizeDebtPolicy(policy) {
     id: String(policy.id),
     backendId: policy.id,
     partnerId: policy.partnerId,
+    startDate: policy.startDate || null,
+    endDate: policy.endDate || null,
     maxDebtAmount:
       policy.maxDebtAmount === null || policy.maxDebtAmount === undefined
         ? null

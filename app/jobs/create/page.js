@@ -1,29 +1,32 @@
 'use client';
 
 import {
+  Alert,
+  App,
   Button,
   Card,
   Col,
   DatePicker,
   Form,
   Input,
+  InputNumber,
   Row,
   Select,
   Space,
-  App
+  Statistic
 } from 'antd';
 import { BankOutlined, CompassOutlined, FileTextOutlined } from '@ant-design/icons';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import PageHeader from '@/components/PageHeader';
 import { useLanguage } from '@/components/AppProviders';
-import { useCreateJobMutation } from '@/store/services/jobsApi';
+import { useCreateJobMutation, useGetJobDebtPreviewMutation } from '@/store/services/jobsApi';
 import { useGetPartnersQuery } from '@/store/services/partnersApi';
 import { useGetUsersQuery, useGetBranchesQuery } from '@/store/services/adminApi';
-import { normalizePartner } from '@/utils/apiMappers';
 import { cleanPayload, convertDateFields } from '@/utils/formUtils';
 import { getApiError } from '@/utils/getApiError';
+import { formatCurrency } from '@/utils/format';
 import {
   getJobTypeOptions,
   getShipmentModeOptions,
@@ -37,22 +40,18 @@ export default function CreateJobPage() {
   const router = useRouter();
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
+  const [debtPreview, setDebtPreview] = useState(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
   const { message } = App.useApp();
 
-  // RTK Query hooks
   const { data: partnersData, isLoading: partnersLoading } = useGetPartnersQuery();
   const { data: branchesData, isLoading: branchesLoading } = useGetBranchesQuery();
   const { data: usersData, isLoading: usersLoading } = useGetUsersQuery();
   const [createJob] = useCreateJobMutation();
+  const [fetchDebtPreview] = useGetJobDebtPreviewMutation();
 
   const loadingOptions = partnersLoading || branchesLoading || usersLoading;
-
-  // Build options từ RTK Query cache
-  const partners = useMemo(() => {
-    const items = partnersData?.items || [];
-    return items.filter((p) => p?.isActive);
-  }, [partnersData]);
-
+  const partners = useMemo(() => (partnersData?.items || []).filter((p) => p?.isActive), [partnersData]);
   const partnerOptions = useMemo(
     () => partners.map((item) => ({ value: item.backendId, label: `${item.code} - ${item.name}` })),
     [partners]
@@ -75,6 +74,8 @@ export default function CreateJobPage() {
   );
 
   const selectedBranchId = Form.useWatch('branchId', form);
+  const selectedPartnerId = Form.useWatch('partnerId', form);
+  const selectedDebtAmount = Form.useWatch('debtAmount', form);
 
   const userOptions = useMemo(
     () =>
@@ -88,12 +89,54 @@ export default function CreateJobPage() {
     [usersData, selectedBranchId]
   );
 
+  useEffect(() => {
+    let active = true;
+
+    if (!selectedPartnerId) {
+      setDebtPreview(null);
+      setPreviewLoading(false);
+      return undefined;
+    }
+
+    const timer = window.setTimeout(async () => {
+      setPreviewLoading(true);
+      try {
+        const result = await fetchDebtPreview({
+          partnerId: selectedPartnerId,
+          debtAmount: Number(selectedDebtAmount || 0)
+        }).unwrap();
+        if (active) setDebtPreview(result);
+      } catch {
+        if (active) setDebtPreview(null);
+      } finally {
+        if (active) setPreviewLoading(false);
+      }
+    }, 250);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [selectedPartnerId, selectedDebtAmount, fetchDebtPreview]);
+
   async function onFinish(values) {
     setSaving(true);
 
     try {
       const payload = cleanPayload(convertDateFields(values, JOB_DATE_FIELDS));
       delete payload.status;
+
+      if (debtPreview?.hasPolicy) {
+        payload.debtAmount = Number(values.debtAmount || 0);
+        if (debtPreview.exceedsLimit) {
+          message.error('Công nợ vượt hạn mức, không thể tạo lô hàng. Vui lòng nâng hạn mức trong Chính sách công nợ.');
+          setSaving(false);
+          return;
+        }
+      } else {
+        payload.debtAmount = null;
+      }
+
       await createJob(payload).unwrap();
       message.success(t('jobForm.createSuccess'));
       router.push('/jobs');
@@ -144,6 +187,52 @@ export default function CreateJobPage() {
                         <Select loading={loadingOptions} showSearch optionFilterProp="label" options={partnerOptions} size="large" />
                       </Form.Item>
                     </Col>
+                    {selectedPartnerId ? (
+                      <Col span={24}>
+                        {previewLoading ? (
+                          <Alert type="info" showIcon message="Đang kiểm tra chính sách công nợ..." />
+                        ) : debtPreview?.hasPolicy ? (
+                          <div style={{ border: '1px solid #d9e6f7', borderRadius: 12, padding: 16, background: '#f7fbff' }}>
+                            <Row gutter={[16, 16]}>
+                              <Col xs={24} md={12}>
+                                <Form.Item name="debtAmount" label="Giá trị công nợ lô hàng này">
+                                  <InputNumber min={0} precision={2} style={{ width: '100%' }} placeholder="Nhập giá trị công nợ" size="large" />
+                                </Form.Item>
+                              </Col>
+                              <Col xs={24} md={12}>
+                                <Alert
+                                  type="info"
+                                  showIcon
+                                  message={`Thời gian áp dụng: ${debtPreview.policy?.startDate || '-'} - ${debtPreview.policy?.endDate || 'Vô thời hạn'}`}
+                                />
+                              </Col>
+                              <Col xs={24} md={4}>
+                                <Statistic title="Hạn mức công nợ" value={debtPreview.policy?.maxDebtAmount || 0} formatter={formatCurrency} />
+                              </Col>
+                              <Col xs={24} md={4}>
+                                <Statistic title="Số ngày nợ tối đa" value={debtPreview.policy?.maxDebtAgeDays || 0} suffix="ngày" />
+                              </Col>
+                              <Col xs={24} md={8}>
+                                <Statistic title="Công nợ thực tế" value={debtPreview.actualDebt || 0} formatter={formatCurrency} />
+                              </Col>
+                              <Col xs={24} md={8}>
+                                {debtPreview.exceedsLimit ? (
+                                  <Alert
+                                    type="warning"
+                                    showIcon
+                                    message={`Công nợ thực tế ${formatCurrency(debtPreview.actualDebt)} vượt hạn mức. Không thể tạo lô hàng; vui lòng nâng hạn mức trong Chính sách công nợ.`}
+                                  />
+                                ) : (
+                                  <Alert type="success" showIcon message="Công nợ hiện tại đang trong hạn mức." />
+                                )}
+                              </Col>
+                            </Row>
+                          </div>
+                        ) : (
+                          <Alert type="info" showIcon message="Khách hàng này chưa có chính sách công nợ. Hệ thống sẽ ẩn phần nhập công nợ." />
+                        )}
+                      </Col>
+                    ) : null}
                     <Col xs={24} md={12}>
                       <Form.Item name="branchId" label={t('jobForm.branch')}>
                         <Select loading={loadingOptions} allowClear showSearch optionFilterProp="label" options={branchOptions} size="large" />
