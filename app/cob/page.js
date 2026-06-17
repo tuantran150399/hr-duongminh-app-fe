@@ -31,6 +31,7 @@ import {
 import { useMemo, useState } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { useLanguage } from '@/components/AppProviders';
+import FilterCard from '@/components/FilterCard';
 import {
   useGetCobEntriesQuery,
   useCreateCobEntryMutation,
@@ -56,10 +57,11 @@ export default function CobPage() {
   const [saving, setSaving] = useState(false);
   const [cobModalOpen, setCobModalOpen] = useState(false);
   const [collectModalOpen, setCollectModalOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('all');
 
   // Data queries
-  const { data: cobData, isLoading: cobLoading, error: cobError, refetch: refetchCob } = useGetCobEntriesQuery();
-  const { data: collectData, isLoading: collectLoading, error: collectError, refetch: refetchCollect } = useGetCollectOnBehalfEntriesQuery();
+  const { data: cobData, isLoading: cobLoading, error: cobError, refetch: refetchCob } = useGetCobEntriesQuery({ status: statusFilter !== 'all' ? statusFilter : undefined });
+  const { data: collectData, isLoading: collectLoading, error: collectError, refetch: refetchCollect } = useGetCollectOnBehalfEntriesQuery({ status: statusFilter !== 'all' ? statusFilter : undefined });
   const { data: jobsData } = useGetJobsQuery();
   const { data: partnersData } = useGetPartnersQuery();
 
@@ -333,10 +335,24 @@ export default function CobPage() {
           <Typography.Title level={1} className="page-title">{t('cob.title')}</Typography.Title>
           <Typography.Paragraph className="page-subtitle">{t('cob.subtitle')}</Typography.Paragraph>
         </div>
-        <Button icon={<ReloadOutlined />} onClick={() => { refetchCob(); refetchCollect(); }}>
+        <Button icon={<ReloadOutlined />} onClick={() => { setStatusFilter('all'); refetchCob(); refetchCollect(); }}>
           {t('common.resetFilters')}
         </Button>
       </div>
+
+      <FilterCard
+        statusValue={statusFilter}
+        onStatusChange={setStatusFilter}
+        statusOptions={[
+          { value: 'all', label: t('common.allStatuses') },
+          { value: 'OPEN', label: 'OPEN' },
+          { value: 'SETTLED', label: 'SETTLED' }
+        ]}
+        showDateRange={false}
+        searchValue=""
+        onSearchChange={() => {}}
+        searchPlaceholder=" "
+      />
 
       {(cobError || collectError) && (
         <Alert type="error" showIcon message={t('cob.loadError')} style={{ marginBottom: 16 }} />

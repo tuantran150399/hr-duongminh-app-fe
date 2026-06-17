@@ -36,6 +36,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { useLanguage } from '@/components/AppProviders';
+import FilterCard from '@/components/FilterCard';
 import {
   useGetDebitNotesQuery,
   useCreateDebitNoteMutation,
@@ -311,6 +312,8 @@ export default function DebitNotesPage() {
   const [selectedPartnerId, setSelectedPartnerId] = useState(null);
   const [selectedJobId, setSelectedJobId] = useState(null);
   const [editingRecord, setEditingRecord] = useState(null);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   const statusColor = {
     DRAFT: 'default',
@@ -319,7 +322,9 @@ export default function DebitNotesPage() {
     VOIDED: 'red'
   };
 
-  const { data: notesData, isLoading: loading, error: loadErrorObj, refetch } = useGetDebitNotesQuery();
+  const { data: notesData, isLoading: loading, error: loadErrorObj, refetch } = useGetDebitNotesQuery({
+    status: statusFilter !== 'all' ? statusFilter : undefined
+  });
   const { data: jobsData } = useGetJobsQuery();
   const { data: partnersData } = useGetPartnersQuery();
   const { data: pricingData } = useGetServicePricesQuery();
@@ -339,6 +344,26 @@ export default function DebitNotesPage() {
   );
   const allPrices = useMemo(() => pricingData?.items || [], [pricingData]);
   const loadError = loadErrorObj ? t('debitNotes.loadError') : '';
+
+  const filteredNotes = useMemo(() => {
+    const keyword = search.trim().toLowerCase();
+    if (!keyword) return notes;
+
+    return notes.filter((n) => {
+      const customer = partners.find((p) => p.backendId === n.raw?.partnerId);
+      const job = jobs.find((j) => j.backendId === n.jobId);
+      
+      const searchable = [
+        customer?.name,
+        customer?.code,
+        job?.job_no,
+        n.description,
+        `DN-${n.backendId}`
+      ].filter(Boolean).join(' ').toLowerCase();
+
+      return searchable.includes(keyword);
+    });
+  }, [notes, search, partners, jobs]);
 
   const jobOptions = useMemo(
     () => jobs.map((job) => ({ value: job.backendId, label: `${job.job_no || job.id} - ${job.customer || ''}` })),
@@ -700,12 +725,28 @@ export default function DebitNotesPage() {
         </Col>
       </Row>
 
+      <FilterCard
+        searchValue={search}
+        onSearchChange={(e) => setSearch(e.target.value)}
+        searchPlaceholder={t('debitNotes.searchPlaceholder') || 'Search...'}
+        statusValue={statusFilter}
+        onStatusChange={setStatusFilter}
+        statusOptions={[
+          { value: 'all', label: t('debitNotes.allStatuses') || 'All Statuses' },
+          { value: 'DRAFT', label: t('debitNotes.statusDraft') || 'Draft' },
+          { value: 'POSTED', label: t('debitNotes.statusPosted') || 'Posted' },
+          { value: 'SENT', label: t('debitNotes.statusSent') || 'Sent' },
+          { value: 'VOIDED', label: t('debitNotes.statusVoided') || 'Voided' }
+        ]}
+        showDateRange={false}
+      />
+
       <Card className="table-card">
         <Table
           rowKey="backendId"
           loading={loading}
           columns={columns}
-          dataSource={notes}
+          dataSource={filteredNotes}
           scroll={{ x: 1100 }}
           pagination={{ pageSize: 10, showSizeChanger: true }}
         />

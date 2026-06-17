@@ -35,6 +35,7 @@ import {
 import { useMemo, useState } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { useLanguage } from '@/components/AppProviders';
+import FilterCard from '@/components/FilterCard';
 import { formatCurrency } from '@/utils/format';
 import { getApiError } from '@/utils/getApiError';
 import { useGetServicePricesQuery, useCreateServicePriceMutation, useImportServicePricesMutation, useUpdateServicePriceMutation, useDeleteServicePriceMutation } from '@/store/services/pricingApi';
@@ -47,8 +48,11 @@ export default function PricingPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form] = Form.useForm();
+  const [typeFilter, setTypeFilter] = useState('all');
 
-  const { data: pricingData, isLoading: loading, error: loadErrorObj } = useGetServicePricesQuery();
+  const { data: pricingData, isLoading: loading, error: loadErrorObj } = useGetServicePricesQuery({
+    serviceType: typeFilter !== 'all' ? typeFilter : undefined
+  });
   const { data: partnersData } = useGetPartnersQuery();
   const [createServicePrice] = useCreateServicePriceMutation();
   const [importServicePrices] = useImportServicePricesMutation();
@@ -182,7 +186,10 @@ export default function PricingPage() {
 
   const columns = [
     { title: t('pricing.partner'), dataIndex: 'partnerId', key: 'partnerId', render: value => partnerMap[value]?.name || t('pricing.generalTariff') },
-    { title: t('pricing.serviceType'), dataIndex: 'serviceType', key: 'serviceType', render: value => <Tag color="blue">{value}</Tag> },
+    { title: t('pricing.serviceType'), dataIndex: 'serviceType', key: 'serviceType', render: value => {
+      const option = serviceTypeOptions.find(opt => opt.value === value);
+      return <Tag color="blue">{option ? option.label : value}</Tag>;
+    } },
     { title: t('pricing.shipment'), dataIndex: 'shipmentMode', key: 'shipmentMode', render: value => value || '-' },
     {
       title: t('pricing.route'),
@@ -258,16 +265,20 @@ export default function PricingPage() {
         </Col>
       </Row>
 
+      <FilterCard
+        searchValue={search}
+        onSearchChange={(e) => setSearch(e.target.value)}
+        searchPlaceholder={t('pricing.searchPlaceholder')}
+        statusValue={typeFilter}
+        onStatusChange={setTypeFilter}
+        statusOptions={[
+          { value: 'all', label: t('pricing.allTypes') || 'All Types' },
+          ...serviceTypeOptions
+        ]}
+        showDateRange={false}
+      />
+
       <Card className="table-card">
-        <div style={{ marginBottom: 16 }}>
-          <Input
-            placeholder={t('pricing.searchPlaceholder')}
-            prefix={<SearchOutlined />}
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            style={{ width: 300 }}
-          />
-        </div>
         <Table
           columns={columns}
           dataSource={filteredData}

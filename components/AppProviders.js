@@ -105,42 +105,6 @@ const dictionary = {
       shipmentModeRequired: 'Shipment mode is required.',
       columnSettings: 'Columns'
     },
-    partners: {
-      title: 'Partners',
-      subtitle: 'Customers, vendors, agents, and carriers used across jobs and accounting.',
-      addPartner: 'Add Partner',
-      editPartner: 'Edit Partner',
-      createPartner: 'Create Partner',
-      partnerCode: 'Partner Code',
-      partnerType: 'Partner Type',
-      name: 'Name',
-      taxCode: 'Tax Code / MST',
-      contactPerson: 'Contact Person',
-      address: 'Address',
-      status: 'Status',
-      lockPartner: 'Lock partner?',
-      lockDescription: 'The partner will remain in history but cannot be used as active data.',
-      lock: 'Lock',
-      partnerCreated: 'Partner created.',
-      partnerUpdated: 'Partner updated.',
-      partnerLocked: 'Partner locked.',
-      unableToSave: 'Unable to save partner.',
-      unableToLoad: 'Unable to load partners.',
-      codeRequired: 'Partner code is required.',
-      typeRequired: 'Partner type is required.',
-      nameRequired: 'Partner name is required.',
-      invalidPhone: 'Enter a valid phone number.',
-      invalidEmail: 'Enter a valid email.'
-    },
-    accounting: {
-      chart: {
-        revenueTitle: 'Revenue Trend (Monthly)',
-        costTitle: 'Cost Trend (Monthly)',
-        noData: 'No chart data available',
-        amount: 'Amount',
-        entries: 'entries'
-      }
-    },
     header: {
       language: 'Language',
       english: 'English',
@@ -186,6 +150,13 @@ const dictionary = {
       subtitle: 'Please contact an administrator to assign at least one application permission.'
     },
     accounting: {
+      chart: {
+        revenueTitle: 'Revenue Trend (Monthly)',
+        costTitle: 'Cost Trend (Monthly)',
+        noData: 'No chart data available',
+        amount: 'Amount',
+        entries: 'entries'
+      },
       breadcrumb1: 'Operations',
       breadcrumb2: 'Finance',
       breadcrumb3: 'Accounting dashboard',
@@ -327,6 +298,7 @@ const dictionary = {
     advances: {
       title: 'Advances & Reimbursements',
       subtitle: 'Manage employee advance requests and reimbursement workflows.',
+      searchPlaceholder: 'Search by name or purpose...',
       createAdvance: 'Create Advance',
       totalAdvancing: 'Total Advancing',
       pendingApproval: 'Pending Approval',
@@ -461,6 +433,8 @@ const dictionary = {
     paymentRequests: {
       title: 'Payment Requests',
       subtitle: 'Manage and approve vendor payment requests with a three-step workflow.',
+      searchPlaceholder: 'Search by vendor, job, or reason...',
+      allStatuses: 'All statuses',
       addRequest: 'Create Request',
       totalValue: 'Total Value',
       pendingApproval: 'Pending Approval',
@@ -533,6 +507,8 @@ const dictionary = {
     debitNotes: {
       title: 'Debit Notes',
       subtitle: 'Create, post, and send debit notes to customers for services rendered on each job.',
+      searchPlaceholder: 'Search customer, job, description...',
+      allStatuses: 'All statuses',
       loadError: 'Unable to load debit notes from backend.',
       create: 'Create Debit Note',
       createTitle: 'Create Debit Note',
@@ -834,12 +810,7 @@ const dictionary = {
       deleteRuleError: 'Unable to delete IP rule.',
       typeRequired: 'Rule type is required.',
       ipPatternRequired: 'IP pattern is required.',
-      labelRequired: 'Label is required.',
-      chart: {
-        revenueTitle: 'Revenue by Status',
-        costTitle: 'Cost by Status',
-        noData: 'No chart data available'
-      }
+      labelRequired: 'Label is required.'
     },
     partners: {
       title: 'Partners',
@@ -885,11 +856,23 @@ const dictionary = {
       agent: 'Agent',
       carrier: 'Carrier',
       customerVendor: 'Customer/Vendor',
-      allTypes: 'All Types'
+      allTypes: 'All Types',
+      partnerCreated: 'Partner created.',
+      partnerUpdated: 'Partner updated.',
+      partnerLocked: 'Partner locked.',
+      unableToSave: 'Unable to save partner.',
+      unableToLoad: 'Unable to load partners.',
+      codeRequired: 'Partner code is required.',
+      typeRequired: 'Partner type is required.',
+      nameRequired: 'Partner name is required.',
+      invalidPhone: 'Enter a valid phone number.',
+      invalidEmail: 'Enter a valid email.',
+      actualDebt: 'Actual Debt'
     },
     pricing: {
       title: 'Pricing & Tariffs',
       subtitle: 'Manage standard rates, carrier tariffs, and bulk Excel imports.',
+      allTypes: 'All Types',
       importExcel: 'Import Excel',
       addTariff: 'Add Tariff',
       addTariffTitle: 'Add New Tariff',
@@ -934,8 +917,15 @@ const dictionary = {
       seaFreight: 'Sea Freight',
       airFreight: 'Air Freight',
       localCharge: 'Local Charge',
-      lcl: 'LCL',
-      other: 'Other'
+      other: 'Other',
+      edit: 'Edit',
+      delete: 'Delete',
+      deleteConfirm: 'Delete this tariff?',
+      actions: 'Actions',
+      updateSuccess: 'Tariff updated successfully.',
+      deleteSuccess: 'Tariff deleted successfully.',
+      deleteError: 'Unable to delete tariff.',
+      editTariffTitle: 'Edit Tariff'
     },
     users: {
       title: 'Users & Roles',
@@ -1448,42 +1438,6 @@ const dictionary = {
       shipmentModeRequired: 'Phương thức vận chuyển là bắt buộc.',
       columnSettings: 'Hiển thị cột'
     },
-    partners: {
-      title: 'Đối tác',
-      subtitle: 'Quản lý khách hàng, nhà cung cấp, đại lý và hãng vận chuyển được sử dụng trong nghiệp vụ.',
-      addPartner: 'Thêm đối tác',
-      editPartner: 'Sửa đối tác',
-      createPartner: 'Tạo đối tác',
-      partnerCode: 'Mã đối tác',
-      partnerType: 'Loại đối tác',
-      name: 'Tên đối tác',
-      taxCode: 'Mã số thuế / MST',
-      contactPerson: 'Người liên hệ',
-      address: 'Địa chỉ',
-      status: 'Trạng thái',
-      lockPartner: 'Khóa đối tác?',
-      lockDescription: 'Đối tác sẽ vẫn tồn tại trong lịch sử nhưng không thể sử dụng cho các nghiệp vụ mới.',
-      lock: 'Khóa',
-      partnerCreated: 'Đã tạo đối tác.',
-      partnerUpdated: 'Đã cập nhật đối tác.',
-      partnerLocked: 'Đã khóa đối tác.',
-      unableToSave: 'Không thể lưu đối tác.',
-      unableToLoad: 'Không thể tải danh sách đối tác.',
-      codeRequired: 'Mã đối tác là bắt buộc.',
-      typeRequired: 'Loại đối tác là bắt buộc.',
-      nameRequired: 'Tên đối tác là bắt buộc.',
-      invalidPhone: 'Số điện thoại không hợp lệ.',
-      invalidEmail: 'Email không hợp lệ.'
-    },
-    accounting: {
-      chart: {
-        revenueTitle: 'Biến động doanh thu (Tháng)',
-        costTitle: 'Biến động chi phí (Tháng)',
-        noData: 'Chưa có dữ liệu biểu đồ',
-        amount: 'Số tiền',
-        entries: 'bút toán'
-      }
-    },
     header: {
       language: 'Ngôn ngữ',
       english: 'Tiếng Anh',
@@ -1529,6 +1483,13 @@ const dictionary = {
       subtitle: 'Vui lòng liên hệ quản trị viên để được gán ít nhất một quyền truy cập ứng dụng.'
     },
     accounting: {
+      chart: {
+        revenueTitle: 'Biến động doanh thu (Tháng)',
+        costTitle: 'Biến động chi phí (Tháng)',
+        noData: 'Chưa có dữ liệu biểu đồ',
+        amount: 'Số tiền',
+        entries: 'bút toán'
+      },
       breadcrumb1: 'Vận hành',
       breadcrumb2: 'Tài chính',
       breadcrumb3: 'Bảng điều khiển kế toán',
@@ -1675,7 +1636,8 @@ const dictionary = {
     },
     advances: {
       title: 'Tạm ứng & Hoàn ứng',
-      subtitle: 'Quản lý quy trình nhân viên tạm ứng và hoàn ứng.',
+      subtitle: 'Quản lý quy trình tạm ứng và hoàn ứng cho nhân viên.',
+      searchPlaceholder: 'Tìm theo tên, lý do...',
       createAdvance: 'Tạo tạm ứng',
       totalAdvancing: 'Tổng đang tạm ứng',
       pendingApproval: 'Chờ duyệt',
@@ -1810,6 +1772,8 @@ const dictionary = {
     paymentRequests: {
       title: 'Yêu cầu thanh toán',
       subtitle: 'Quản lý và duyệt yêu cầu thanh toán nhà cung cấp theo luồng 3 bước.',
+      searchPlaceholder: 'Tìm kiếm theo yêu cầu, job...',
+      allStatuses: 'Tất cả trạng thái',
       addRequest: 'Tạo yêu cầu',
       totalValue: 'Tổng giá trị',
       pendingApproval: 'Chờ duyệt',
@@ -1882,6 +1846,8 @@ const dictionary = {
     debitNotes: {
       title: 'Bảng kê / Debit Note',
       subtitle: 'Tạo, chốt và gửi bảng kê cho khách hàng theo từng lô hàng.',
+      searchPlaceholder: 'Tìm kiếm bảng kê, job...',
+      allStatuses: 'Tất cả trạng thái',
       loadError: 'Không thể tải danh sách bảng kê từ backend.',
       create: 'Tạo bảng kê',
       createTitle: 'Tạo bảng kê mới',
@@ -2183,12 +2149,7 @@ const dictionary = {
       deleteRuleError: 'Không thể xóa quy tắc IP.',
       typeRequired: 'Loại quy tắc là bắt buộc.',
       ipPatternRequired: 'IP pattern là bắt buộc.',
-      labelRequired: 'Nhãn là bắt buộc.',
-      chart: {
-        revenueTitle: 'Doanh thu theo trạng thái',
-        costTitle: 'Chi phí theo trạng thái',
-        noData: 'Chưa có dữ liệu biểu đồ'
-      }
+      labelRequired: 'Nhãn là bắt buộc.'
     },
     partners: {
       title: 'Đối tác',
@@ -2234,11 +2195,23 @@ const dictionary = {
       agent: 'Đại lý',
       carrier: 'Hãng vận tải',
       customerVendor: 'Khách hàng/NCC',
-      allTypes: 'Tất cả loại'
+      allTypes: 'Tất cả loại',
+      partnerCreated: 'Đã tạo đối tác.',
+      partnerUpdated: 'Đã cập nhật đối tác.',
+      partnerLocked: 'Đã khóa đối tác.',
+      unableToSave: 'Không thể lưu đối tác.',
+      unableToLoad: 'Không thể tải danh sách đối tác.',
+      codeRequired: 'Mã đối tác là bắt buộc.',
+      typeRequired: 'Loại đối tác là bắt buộc.',
+      nameRequired: 'Tên đối tác là bắt buộc.',
+      invalidPhone: 'Số điện thoại không hợp lệ.',
+      invalidEmail: 'Email không hợp lệ.',
+      actualDebt: 'Công nợ thực tế'
     },
     pricing: {
       title: 'Bảng giá & Biểu phí',
       subtitle: 'Quản lý biểu giá tiêu chuẩn, giá hãng tàu và nhập Excel hàng loạt.',
+      allTypes: 'Tất cả loại',
       importExcel: 'Nhập Excel',
       addTariff: 'Thêm biểu giá',
       addTariffTitle: 'Thêm biểu giá mới',
@@ -2283,8 +2256,15 @@ const dictionary = {
       seaFreight: 'Cước biển',
       airFreight: 'Cước hàng không',
       localCharge: 'Phí nội địa',
-      lcl: 'LCL',
-      other: 'Khác'
+      other: 'Khác',
+      edit: 'Sửa',
+      delete: 'Xóa',
+      deleteConfirm: 'Xóa biểu giá này?',
+      actions: 'Thao tác',
+      updateSuccess: 'Đã cập nhật biểu giá.',
+      deleteSuccess: 'Đã xóa biểu giá.',
+      deleteError: 'Không thể xóa biểu giá.',
+      editTariffTitle: 'Chỉnh sửa biểu giá'
     },
     users: {
       title: 'Người dùng & Quyền',

@@ -12,6 +12,7 @@ import {
 import { useState, useMemo, useEffect } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { useLanguage } from '@/components/AppProviders';
+import FilterCard from '@/components/FilterCard';
 import { formatCurrency } from '@/utils/format';
 import { getApiError } from '@/utils/getApiError';
 import { getEmployees } from '@/services/hrmService';
@@ -46,6 +47,7 @@ function isOverdue(record) {
 export default function AdvancesPage() {
   const { t } = useLanguage();
   const { message } = App.useApp();
+  const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [modalOpen, setModalOpen] = useState(false);
   const [settleModalOpen, setSettleModalOpen] = useState(false);
@@ -117,10 +119,16 @@ export default function AdvancesPage() {
     [advancesData?.items, employeeMap]
   );
 
-  const filtered = useMemo(
-    () => (statusFilter === 'all' ? advances : advances.filter((advance) => advance.status === statusFilter)),
-    [advances, statusFilter]
-  );
+  const filtered = useMemo(() => {
+    const keyword = search.trim().toLowerCase();
+    return advances.filter((advance) => {
+      const matchSearch = !keyword || [advance.employeeName, advance.employeeCode, advance.purpose]
+        .filter(Boolean)
+        .some(val => String(val).toLowerCase().includes(keyword));
+      const matchStatus = statusFilter === 'all' || advance.status === statusFilter;
+      return matchSearch && matchStatus;
+    });
+  }, [advances, search, statusFilter]);
 
   const totalAdvanced = advances
     .filter((advance) => ['APPROVED', 'OVERDUE'].includes(advance.status))
@@ -363,18 +371,21 @@ export default function AdvancesPage() {
 
       <Card className="table-card">
         <div style={{ marginBottom: 16 }}>
-          <Select
-            value={statusFilter}
-            onChange={setStatusFilter}
-            style={{ width: 220 }}
-            options={[
+          <FilterCard
+            searchValue={search}
+            onSearchChange={(e) => setSearch(e.target.value)}
+            searchPlaceholder={t('advances.searchPlaceholder') || 'Search...'}
+            statusValue={statusFilter}
+            onStatusChange={setStatusFilter}
+            statusOptions={[
               { value: 'all', label: t('advances.allStatuses') },
               { value: 'PENDING', label: t('advances.pending') },
               { value: 'APPROVED', label: t('advances.approved') },
               { value: 'SETTLED', label: t('advances.settled') },
               { value: 'OVERDUE', label: t('advances.overdue') },
-              { value: 'REJECTED', label: t('advances.rejected') },
+              { value: 'REJECTED', label: t('advances.rejected') }
             ]}
+            showDateRange={false}
           />
         </div>
         <Table

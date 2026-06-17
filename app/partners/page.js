@@ -8,6 +8,7 @@ import { EditOutlined, PlusOutlined, ReloadOutlined, StopOutlined } from '@ant-d
 import { useMemo, useState } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { useLanguage } from '@/components/AppProviders';
+import FilterCard from '@/components/FilterCard';
 import {
   useGetPartnersQuery,
   useCreatePartnerMutation,
@@ -33,7 +34,10 @@ export default function PartnersPage() {
   const [editingPartner, setEditingPartner] = useState(null);
 
   // RTK Query hooks
-  const { data, isLoading, error, refetch } = useGetPartnersQuery();
+  const { data, isLoading, error, refetch } = useGetPartnersQuery({
+    keyword: search || undefined,
+    type: typeFilter !== 'all' ? typeFilter : undefined
+  });
   const [createPartner, { isLoading: isCreating }] = useCreatePartnerMutation();
   const [updatePartner, { isLoading: isUpdating }] = useUpdatePartnerMutation();
   const [lockPartner] = useLockPartnerMutation();
@@ -48,17 +52,6 @@ export default function PartnersPage() {
     { value: 'CARRIER', label: t('partners.carrier') },
     { value: 'BOTH', label: t('partners.customerVendor') }
   ];
-
-  const filteredData = useMemo(() => {
-    const keyword = search.trim().toLowerCase();
-    return partners.filter((item) => {
-      const matchesSearch = !keyword || [
-        item.code, item.name, item.taxCode, item.phone, item.email, item.type
-      ].filter(Boolean).some((value) => String(value).toLowerCase().includes(keyword));
-      const matchesType = typeFilter === 'all' || item.partnerType === typeFilter;
-      return matchesSearch && matchesType;
-    });
-  }, [partners, search, typeFilter]);
 
   function openCreateModal() {
     setEditingPartner(null);
@@ -117,11 +110,24 @@ export default function PartnersPage() {
       dataIndex: 'type',
       key: 'type',
       width: 150,
-      render: (type) => <Tag color={type === 'Customer' ? 'blue' : 'orange'}>{type}</Tag>
+      render: (type) => {
+        if (!type) return null;
+        const typeKey = type == "Customer/Vendor" ? "both" : String(type).toLowerCase();
+        let color = 'default';
+        if (typeKey === 'customer') color = 'blue';
+        else if (typeKey === 'vendor') color = 'orange';
+        else if (typeKey === 'agent') color = 'cyan';
+        else if (typeKey === 'carrier') color = 'purple';
+        else if (typeKey === 'both') color = 'magenta';
+        
+        const translatedLabel = t(`partners.${typeKey === 'both' ? 'customerVendor' : typeKey}`);
+        const label = translatedLabel.startsWith('partners.') ? type : translatedLabel;
+        return <Tag color={color}>{label}</Tag>;
+      }
     },
     { title: t('partners.taxCode'), dataIndex: 'taxCode', key: 'taxCode', width: 150 },
     {
-      title: 'Công nợ thực tế',
+      title: t('partners.actualDebt'),
       dataIndex: 'actualDebt',
       key: 'actualDebt',
       width: 170,
@@ -167,7 +173,9 @@ export default function PartnersPage() {
           <p className="page-subtitle">{t('partners.subtitle')}</p>
         </div>
         <Space>
-          <Button icon={<ReloadOutlined />} onClick={refetch}>{t('partners.refresh')}</Button>
+          <Button icon={<ReloadOutlined />} onClick={() => { setSearch(''); setTypeFilter('all'); refetch(); }}>
+            {t('partners.refresh')}
+          </Button>
           <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>
             {t('partners.addPartner')}
           </Button>
@@ -176,32 +184,25 @@ export default function PartnersPage() {
 
       {error ? <Alert type="error" showIcon message={t('partners.loadError')} style={{ marginBottom: 16 }} /> : null}
 
+      <FilterCard
+        searchValue={search}
+        onSearchChange={(e) => setSearch(e.target.value)}
+        searchPlaceholder={t('partners.searchPlaceholder')}
+        statusValue={typeFilter}
+        onStatusChange={setTypeFilter}
+        statusOptions={[
+          { value: 'all', label: t('partners.allTypes') },
+          ...partnerTypeOptions
+        ]}
+        showDateRange={false}
+      />
+
       <Card className="table-card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, gap: 12, flexWrap: 'wrap' }}>
-          <Space wrap>
-            <Input.Search
-              allowClear
-              placeholder={t('partners.searchPlaceholder')}
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              style={{ width: 300 }}
-            />
-            <Select
-              value={typeFilter}
-              onChange={setTypeFilter}
-              style={{ width: 200 }}
-              options={[
-                { value: 'all', label: t('partners.allTypes') },
-                ...partnerTypeOptions
-              ]}
-            />
-          </Space>
-        </div>
         <Table
           rowKey="id"
           loading={isLoading}
           columns={columns}
-          dataSource={filteredData}
+          dataSource={partners}
           pagination={{ pageSize: 10, showSizeChanger: true }}
           scroll={{ x: 1320 }}
         />

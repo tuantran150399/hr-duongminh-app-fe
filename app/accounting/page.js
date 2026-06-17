@@ -34,6 +34,7 @@ import {
 } from '@ant-design/icons';
 import { useMemo, useState } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
+import FilterCard from '@/components/FilterCard';
 import {
   useGetAccountingRevenueQuery,
   useGetAccountingCostQuery,
@@ -81,23 +82,12 @@ function formatPeriodLabel(period, locale = 'vi-VN') {
 }
 
 function ChartRow({ revenueChart, costChart, t, language }) {
-  const isVietnamese = language === 'vi';
   const chartText = {
-    revenueTitle: t('accounting.chart.revenueTitle') === 'accounting.chart.revenueTitle'
-      ? (isVietnamese ? 'Xu hướng doanh thu' : 'Revenue Trend')
-      : t('accounting.chart.revenueTitle'),
-    costTitle: t('accounting.chart.costTitle') === 'accounting.chart.costTitle'
-      ? (isVietnamese ? 'Xu hướng chi phí' : 'Cost Trend')
-      : t('accounting.chart.costTitle'),
-    noData: t('accounting.chart.noData') === 'accounting.chart.noData'
-      ? (isVietnamese ? 'Chưa có dữ liệu biểu đồ' : 'No chart data available')
-      : t('accounting.chart.noData'),
-    amount: t('accounting.chart.amount') === 'accounting.chart.amount'
-      ? (isVietnamese ? 'Số tiền' : 'Amount')
-      : t('accounting.chart.amount'),
-    entries: t('accounting.chart.entries') === 'accounting.chart.entries'
-      ? (isVietnamese ? 'bút toán' : 'entries')
-      : t('accounting.chart.entries')
+    revenueTitle: t('accounting.chart.revenueTitle'),
+    costTitle: t('accounting.chart.costTitle'),
+    noData: t('accounting.chart.noData'),
+    amount: t('accounting.chart.amount'),
+    entries: t('accounting.chart.entries')
   };
 
   function extractEntries(data) {
@@ -324,8 +314,12 @@ export default function AccountingPage() {
   const [cobSaving, setCobSaving] = useState(false);
 
   // RTK Query hooks
-  const { data: revenueData, isLoading: loadingRevenue, error: revenueError } = useGetAccountingRevenueQuery();
-  const { data: costData, isLoading: loadingCost, error: costError } = useGetAccountingCostQuery();
+  const { data: revenueData, isLoading: loadingRevenue, error: revenueError } = useGetAccountingRevenueQuery({
+    status: statusFilter !== 'all' ? statusFilter : undefined
+  });
+  const { data: costData, isLoading: loadingCost, error: costError } = useGetAccountingCostQuery({
+    status: statusFilter !== 'all' ? statusFilter : undefined
+  });
   const { data: jobsData } = useGetJobsQuery();
   const { data: partnersData } = useGetPartnersQuery();
 
@@ -354,22 +348,16 @@ export default function AccountingPage() {
   const allStatusesLabel = t('accounting.allStatuses') === 'accounting.allStatuses'
     ? t('common.allStatuses')
     : t('accounting.allStatuses');
-  const statusOptions = useMemo(
-    () => ['all', ...Array.from(new Set(activeRows.map((row) => row.status).filter(Boolean)))],
-    [activeRows]
-  );
-
   const filteredRows = useMemo(() => {
     const keyword = search.trim().toLowerCase();
+    if (!keyword) return activeRows;
 
     return activeRows.filter((row) => {
-      const matchesSearch = !keyword || [row.job_no, row.description, row.currency, row.status, row.paymentStatus]
+      return [row.job_no, row.description, row.currency, row.status, row.paymentStatus]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(keyword));
-      const matchesStatus = statusFilter === 'all' || row.status === statusFilter;
-      return matchesSearch && matchesStatus;
     });
-  }, [activeRows, search, statusFilter]);
+  }, [activeRows, search]);
 
   const jobOptions = useMemo(
     () => jobs.map((job) => ({
@@ -730,25 +718,24 @@ export default function AccountingPage() {
                 setSearch('');
               }}
             />
-            <div className="accounting-table-filters">
-              <Input.Search
-                allowClear
-                value={search}
-                placeholder={t('accountingForm.searchPlaceholder')}
-                onChange={(event) => setSearch(event.target.value)}
-                className="accounting-table-search"
-              />
-              <Select
-                value={statusFilter}
-                onChange={setStatusFilter}
-                className="accounting-table-status"
-                options={statusOptions.map((status) => ({
-                  value: status,
-                  label: status === 'all' ? allStatusesLabel : (statusLabelMap[status] || status)
-                }))}
-              />
-            </div>
           </div>
+
+          <FilterCard
+            searchValue={search}
+            onSearchChange={(e) => setSearch(e.target.value)}
+            searchPlaceholder={t('accountingForm.searchPlaceholder')}
+            statusValue={statusFilter}
+            onStatusChange={setStatusFilter}
+            statusOptions={[
+              { value: 'all', label: allStatusesLabel },
+              { value: 'Draft', label: statusLabelMap.Draft },
+              { value: 'Posted', label: statusLabelMap.Posted },
+              { value: 'Voided', label: statusLabelMap.Voided },
+              { value: 'Reversed', label: statusLabelMap.Reversed },
+              { value: 'Closed', label: statusLabelMap.Closed }
+            ]}
+            showDateRange={false}
+          />
 
           <Table
             rowKey="id"

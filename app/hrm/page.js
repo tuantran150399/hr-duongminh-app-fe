@@ -13,6 +13,7 @@ import {
 import { useState, useMemo } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { useLanguage } from '@/components/AppProviders';
+import FilterCard from '@/components/FilterCard';
 import {
   useGetEmployeesQuery,
   useCreateEmployeeMutation,
@@ -312,22 +313,18 @@ export default function HRMPage() {
       label: <span><TeamOutlined /> {t('hrm.employeesTab', { count: employees.length })}</span>,
       children: (
         <div>
-          <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
-            <Input
-              prefix={<SearchOutlined />}
-              placeholder={t('hrm.searchPlaceholder')}
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              style={{ width: 280 }}
-            />
-            <Select
-              value={deptFilter}
-              onChange={setDeptFilter}
-              style={{ width: 180 }}
-              options={departments.map((department) => ({
+          <div style={{ marginBottom: 16 }}>
+            <FilterCard
+              searchValue={search}
+              onSearchChange={(e) => setSearch(e.target.value)}
+              searchPlaceholder={t('hrm.searchPlaceholder')}
+              statusValue={deptFilter}
+              onStatusChange={setDeptFilter}
+              statusOptions={departments.map((department) => ({
                 value: department,
                 label: department === 'All' ? t('hrm.allDepartments') : department
               }))}
+              showDateRange={false}
             />
           </div>
           <Table

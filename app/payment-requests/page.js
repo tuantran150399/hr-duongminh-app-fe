@@ -34,6 +34,7 @@ import {
 import { useMemo, useState } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { useLanguage } from '@/components/AppProviders';
+import FilterCard from '@/components/FilterCard';
 import {
   useGetPaymentRequestsQuery,
   useCreatePaymentRequestMutation,
@@ -60,6 +61,8 @@ export default function PaymentRequestsPage() {
   const [saving, setSaving] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [editingRecord, setEditingRecord] = useState(null);
   const [viewRecord, setViewRecord] = useState(null);
@@ -79,7 +82,9 @@ export default function PaymentRequestsPage() {
     FINAL_APPROVED: t('paymentRequests.finalApprovedStatus')
   };
 
-  const { data: requestsData, isLoading: loading, error: loadErrorObj } = useGetPaymentRequestsQuery();
+  const { data: requestsData, isLoading: loading, error: loadErrorObj } = useGetPaymentRequestsQuery({
+    status: statusFilter !== 'all' ? statusFilter : undefined
+  });
   const { data: jobsData } = useGetJobsQuery();
   const { data: partnersData } = useGetPartnersQuery();
   const [createPaymentRequest] = useCreatePaymentRequestMutation();
@@ -93,6 +98,21 @@ export default function PaymentRequestsPage() {
   const jobs = jobsData?.items || [];
   const partners = (partnersData?.items || []).filter((partner) => partner.isActive);
   const loadError = loadErrorObj ? t('paymentRequests.loadError') : '';
+
+  const filteredRequests = useMemo(() => {
+    const keyword = search.trim().toLowerCase();
+    if (!keyword) return requests;
+
+    return requests.filter((req) => {
+      const vendor = partners.find((item) => item.backendId === req.vendorId);
+      const job = jobs.find((item) => item.backendId === req.jobId);
+      const vendorName = vendor?.name || '';
+      const jobNo = job?.job_no || '';
+      
+      const searchable = [vendorName, jobNo, req.reason, req.backendId].filter(Boolean).join(' ').toLowerCase();
+      return searchable.includes(keyword);
+    });
+  }, [requests, search, partners, jobs]);
 
   const jobOptions = useMemo(
     () => jobs.map((job) => ({ value: job.backendId, label: `${job.job_no || job.id} - ${job.customer || ''}` })),
@@ -365,12 +385,28 @@ export default function PaymentRequestsPage() {
         </Col>
       </Row>
 
+      <FilterCard
+        searchValue={search}
+        onSearchChange={(e) => setSearch(e.target.value)}
+        searchPlaceholder={t('paymentRequests.searchPlaceholder') || 'Search...'}
+        statusValue={statusFilter}
+        onStatusChange={setStatusFilter}
+        statusOptions={[
+          { value: 'all', label: t('paymentRequests.allStatuses') || 'All Statuses' },
+          { value: 'PENDING_DEPARTMENT_APPROVAL', label: statusLabel.PENDING_DEPARTMENT_APPROVAL },
+          { value: 'DEPARTMENT_APPROVED', label: statusLabel.DEPARTMENT_APPROVED },
+          { value: 'FINAL_APPROVED', label: statusLabel.FINAL_APPROVED },
+          { value: 'REJECTED', label: statusLabel.REJECTED }
+        ]}
+        showDateRange={false}
+      />
+
       <Card className="table-card">
         <Table
           rowKey="backendId"
           loading={loading}
           columns={columns}
-          dataSource={requests}
+          dataSource={filteredRequests}
           scroll={{ x: 1000 }}
           pagination={{ pageSize: 10, showSizeChanger: true }}
         />
