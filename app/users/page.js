@@ -16,7 +16,7 @@ import { useMemo, useState } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { useLanguage } from '@/components/AppProviders';
 import { useAppSelector } from '@/store/hooks';
-import { selectHasPermission, PERMISSIONS } from '@/store/slices/authSlice';
+import { selectHasPermission, selectHasRole, PERMISSIONS, ROLES } from '@/store/slices/authSlice';
 import {
   useGetUsersQuery,
   useCreateUserMutation,
@@ -48,8 +48,9 @@ function isMasterAccount(record) {
 export default function UsersPage() {
   const { t } = useLanguage();
   const { message } = App.useApp();
-  const canManageUsers = useAppSelector(selectHasPermission(PERMISSIONS.USER_MANAGE));
-  const canManageRoles = useAppSelector(selectHasPermission(PERMISSIONS.ROLE_MANAGE));
+  const isHighestRole = useAppSelector(selectHasRole(ROLES.SUPER_ADMIN));
+  const canManageUsers = useAppSelector(selectHasPermission(PERMISSIONS.USER_MANAGE)) && isHighestRole;
+  const canManageRoles = useAppSelector(selectHasPermission(PERMISSIONS.ROLE_MANAGE)) && isHighestRole;
   const [userModal, setUserModal] = useState({ open: false, record: null });
   const [roleModal, setRoleModal] = useState({ open: false, record: null });
   const [blockModal, setBlockModal] = useState({ open: false, record: null });

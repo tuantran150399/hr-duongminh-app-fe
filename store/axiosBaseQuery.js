@@ -23,7 +23,7 @@ export function axiosBaseQuery() {
         ? { url: args, method: 'GET' }
         : args;
 
-    const { url, method = 'GET', data, params, headers } = request;
+    const { url, method = 'GET', data, params, headers, responseType } = request;
 
     try {
       const response = await api({
@@ -31,7 +31,8 @@ export function axiosBaseQuery() {
         method,
         data,
         params,
-        headers
+        headers,
+        responseType
       });
 
       return { data: response.data };

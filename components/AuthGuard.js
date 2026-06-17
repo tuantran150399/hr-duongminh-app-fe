@@ -9,7 +9,8 @@ import {
   restoreSessionThunk,
   selectSessionStatus,
   selectUser,
-  selectUserPermissions
+  selectUserPermissions,
+  selectUserRoles
 } from '@/store/slices/authSlice';
 import { canAccessPath, getFirstAuthorizedPath, PUBLIC_ROUTES } from '@/config/routes';
 
@@ -29,6 +30,7 @@ export default function AuthGuard({ children }) {
   const sessionStatus = useAppSelector(selectSessionStatus);
   const user = useAppSelector(selectUser);
   const userPermissions = useAppSelector(selectUserPermissions);
+  const userRoles = useAppSelector(selectUserRoles).map((role) => role.name || role);
 
   const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
 
@@ -65,8 +67,8 @@ export default function AuthGuard({ children }) {
     }
 
     // Có session nhưng không đủ quyền truy cập path hiện tại
-    if (!canAccessPath(pathname, userPermissions)) {
-      const fallbackPath = getFirstAuthorizedPath(userPermissions);
+    if (!canAccessPath(pathname, userPermissions, userRoles)) {
+      const fallbackPath = getFirstAuthorizedPath(userPermissions, userRoles);
       if (pathname !== fallbackPath && fallbackPath !== '/no-access') {
         router.replace(fallbackPath);
         return (

@@ -89,6 +89,14 @@ export const debitNotesApi = createApi({
       ]
     }),
 
+    exportDebitNote: builder.mutation({
+      query: ({ id, format }) => ({
+        url: `/debit-notes/${id}/export/${format}`,
+        method: 'GET',
+        responseType: 'blob'
+      })
+    }),
+
     deleteDebitNote: builder.mutation({
       query: (id) => ({ url: `/debit-notes/${id}`, method: 'DELETE' }),
       invalidatesTags: [{ type: 'DebitNote', id: 'LIST' }]
@@ -105,5 +113,6 @@ export const {
   useVoidDebitNoteMutation,
   useSendDebitNoteMutation,
   useRecordDebitNotePaymentMutation,
+  useExportDebitNoteMutation,
   useDeleteDebitNoteMutation
 } = debitNotesApi;

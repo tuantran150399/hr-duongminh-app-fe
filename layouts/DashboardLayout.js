@@ -19,7 +19,7 @@ import NotificationBell from '@/components/NotificationBell';
 import AccountSettingsModal from '@/components/AccountSettingsModal';
 import { clearAllTokens } from '@/utils/auth';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { logout, selectUser, selectUserPermissions } from '@/store/slices/authSlice';
+import { logout, selectUser, selectUserPermissions, selectUserRoles } from '@/store/slices/authSlice';
 import { getAuthorizedMenuItems, APP_ROUTES } from '@/config/routes';
 import duongminhLogo from '@/asset/image/duongminh.svg';
 
@@ -41,9 +41,10 @@ export default function DashboardLayout({ children }) {
   // Lấy user và permissions từ Redux store
   const user = useAppSelector(selectUser);
   const userPermissions = useAppSelector(selectUserPermissions);
+  const userRoles = useAppSelector(selectUserRoles).map((role) => role.name || role);
 
   // Menu items được lọc theo permissions của user
-  const menuItems = getAuthorizedMenuItems(userPermissions, t);
+  const menuItems = getAuthorizedMenuItems(userPermissions, t, userRoles);
 
   // Xác định menu item đang active
   const selectedKey = APP_ROUTES.find(

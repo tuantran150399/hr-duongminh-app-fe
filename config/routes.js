@@ -18,7 +18,7 @@ import {
   BellOutlined,
   ReconciliationOutlined
 } from '@ant-design/icons';
-import { PERMISSIONS } from '@/store/slices/authSlice';
+import { PERMISSIONS, ROLES } from '@/store/slices/authSlice';
 
 export const APP_ROUTES = [
   {
@@ -113,6 +113,7 @@ export const APP_ROUTES = [
   {
     path: '/users',
     permission: PERMISSIONS.USERS_VIEW,
+    roles: [ROLES.SUPER_ADMIN],
     showInMenu: true,
     icon: SettingOutlined,
     labelKey: 'menu.settings'
@@ -157,13 +158,18 @@ export const APP_ROUTES = [
 export const PUBLIC_ROUTES = ['/login'];
 export const AUTHENTICATED_FALLBACK_ROUTES = ['/no-access', '/account'];
 
-export function getAuthorizedMenuItems(userPermissions, t) {
+function hasRequiredRouteAccess(route, userPermissions, userRoles = []) {
   const hasWildcard = userPermissions.includes('*');
+  const hasRequiredRole = !route.roles?.length || route.roles.some((role) => userRoles.includes(role));
+  if (!hasRequiredRole) return false;
+  if (!route.permission) return true;
+  return hasWildcard || userPermissions.includes(route.permission);
+}
 
+export function getAuthorizedMenuItems(userPermissions, t, userRoles = []) {
   return APP_ROUTES.filter((route) => {
     if (!route.showInMenu) return false;
-    if (!route.permission) return true;
-    return hasWildcard || userPermissions.includes(route.permission);
+    return hasRequiredRouteAccess(route, userPermissions, userRoles);
   }).map((route) => ({
     key: route.path,
     icon: route.icon ? <route.icon /> : null,
@@ -171,21 +177,18 @@ export function getAuthorizedMenuItems(userPermissions, t) {
   }));
 }
 
-export function getFirstAuthorizedPath(userPermissions) {
-  const hasWildcard = userPermissions.includes('*');
+export function getFirstAuthorizedPath(userPermissions, userRoles = []) {
   const firstRoute = APP_ROUTES.find((route) => {
-    if (!route.permission) return true;
-    return hasWildcard || userPermissions.includes(route.permission);
+    return hasRequiredRouteAccess(route, userPermissions, userRoles);
   });
   return firstRoute?.path || '/no-access';
 }
 
-export function canAccessPath(pathname, userPermissions) {
+export function canAccessPath(pathname, userPermissions, userRoles = []) {
   if (PUBLIC_ROUTES.includes(pathname)) return true;
   if (AUTHENTICATED_FALLBACK_ROUTES.includes(pathname)) return true;
 
   const hasWildcard = userPermissions.includes('*');
-  if (hasWildcard) return true;
 
   for (const route of APP_ROUTES) {
     if (pathname === route.path || pathname.startsWith(`${route.path}/`)) {
@@ -193,8 +196,9 @@ export function canAccessPath(pathname, userPermissions) {
         (child) => pathname === child.path || pathname.startsWith(`${child.path}/`)
       );
       const requiredPermission = matchedChild ? matchedChild.permission : route.permission;
+      if (route.roles?.length && !route.roles.some((role) => userRoles.includes(role))) return false;
       if (!requiredPermission) return true;
-      return userPermissions.includes(requiredPermission);
+      return hasWildcard || userPermissions.includes(requiredPermission);
     }
   }
 

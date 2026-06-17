@@ -28,6 +28,8 @@ import {
   DeleteOutlined,
   EditOutlined,
   FileAddOutlined,
+  FileExcelOutlined,
+  FilePdfOutlined,
   PlusOutlined,
   ReloadOutlined,
   SendOutlined,
@@ -45,7 +47,8 @@ import {
   usePostDebitNoteMutation,
   useVoidDebitNoteMutation,
   useSendDebitNoteMutation,
-  useRecordDebitNotePaymentMutation
+  useRecordDebitNotePaymentMutation,
+  useExportDebitNoteMutation
 } from '@/store/services/debitNotesApi';
 import { useGetJobsQuery } from '@/store/services/jobsApi';
 import { useGetPartnersQuery } from '@/store/services/partnersApi';
@@ -335,6 +338,7 @@ export default function DebitNotesPage() {
   const [voidDebitNote] = useVoidDebitNoteMutation();
   const [sendDebitNote] = useSendDebitNoteMutation();
   const [recordDebitNotePayment] = useRecordDebitNotePaymentMutation();
+  const [exportDebitNote] = useExportDebitNoteMutation();
 
   const notes = useMemo(() => notesData?.items || [], [notesData]);
   const jobs = useMemo(() => jobsData?.items || [], [jobsData]);
@@ -544,6 +548,28 @@ export default function DebitNotesPage() {
     }
   }
 
+  async function handleExport(record, format) {
+    try {
+      const blob = await exportDebitNote({ id: record.backendId, format }).unwrap();
+      const isExcel = format === 'excel';
+      const type = isExcel
+        ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        : 'application/pdf';
+      const extension = isExcel ? 'xlsx' : 'pdf';
+      const fileBlob = blob instanceof Blob ? blob : new Blob([blob], { type });
+      const url = window.URL.createObjectURL(fileBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `DN-${record.backendId}.${extension}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      message.error(getApiError(err, t, 'debitNotes.loadError'));
+    }
+  }
+
   const columns = [
     {
       title: t('debitNotes.noteNo'),
@@ -633,7 +659,7 @@ export default function DebitNotesPage() {
     {
       title: t('debitNotes.actions'),
       key: 'actions',
-      width: 200,
+      width: 280,
       render: (_, record) => {
         const raw = record.status?.toUpperCase().replace(/\s/g, '_');
         const isDraft = raw === 'DRAFT';
@@ -642,6 +668,8 @@ export default function DebitNotesPage() {
 
         return (
           <Space>
+            <Button size="small" icon={<FileExcelOutlined />} title="Export Excel" onClick={() => handleExport(record, 'excel')} />
+            <Button size="small" icon={<FilePdfOutlined />} title="Export PDF" onClick={() => handleExport(record, 'pdf')} />
             {isDraft && (
               <>
                 <Button size="small" icon={<EditOutlined />} title={t('debitNotes.edit')} onClick={() => openEditModal(record)} />
@@ -747,7 +775,7 @@ export default function DebitNotesPage() {
           loading={loading}
           columns={columns}
           dataSource={filteredNotes}
-          scroll={{ x: 1100 }}
+          scroll={{ x: 1220 }}
           pagination={{ pageSize: 10, showSizeChanger: true }}
         />
       </Card>
