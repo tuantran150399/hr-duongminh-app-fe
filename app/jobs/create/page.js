@@ -192,30 +192,38 @@ export default function CreateJobPage() {
                         {previewLoading ? (
                           <Alert type="info" showIcon message="Đang kiểm tra chính sách công nợ..." />
                         ) : debtPreview?.hasPolicy ? (
-                          <div style={{ border: '1px solid #d9e6f7', borderRadius: 12, padding: 16, background: '#f7fbff' }}>
-                            <Row gutter={[16, 16]}>
+                          <div style={{ border: '1px solid #d9e6f7', borderRadius: 12, padding: '16px 16px 4px 16px', background: '#f7fbff', marginBottom: 8 }}>
+                            {/* Hàng 1: input công nợ + thời gian áp dụng */}
+                            <Row gutter={[16, 12]} style={{ marginBottom: 4 }}>
                               <Col xs={24} md={12}>
-                                <Form.Item name="debtAmount" label="Giá trị công nợ lô hàng này">
+                                <Form.Item name="debtAmount" label="Giá trị công nợ lô hàng này" style={{ marginBottom: 0 }}>
                                   <InputNumber min={0} precision={2} style={{ width: '100%' }} placeholder="Nhập giá trị công nợ" size="large" />
                                 </Form.Item>
                               </Col>
-                              <Col xs={24} md={12}>
+                              <Col xs={24} md={12} style={{ display: 'flex', alignItems: 'flex-end' }}>
                                 <Alert
+                                  style={{ width: '100%' }}
                                   type="info"
                                   showIcon
-                                  message={`Thời gian áp dụng: ${debtPreview.policy?.startDate || '-'} - ${debtPreview.policy?.endDate || 'Vô thời hạn'}`}
+                                  message={`Thời gian áp dụng: ${debtPreview.policy?.startDate || '-'} → ${debtPreview.policy?.endDate || 'Vô thời hạn'}`}
                                 />
                               </Col>
-                              <Col xs={24} md={4}>
+                            </Row>
+                            {/* Hàng 2: 3 chỉ số công nợ */}
+                            <Row gutter={[16, 12]} style={{ marginTop: 12, marginBottom: 4 }}>
+                              <Col xs={24} md={8}>
                                 <Statistic title="Hạn mức công nợ" value={debtPreview.policy?.maxDebtAmount || 0} formatter={formatCurrency} />
                               </Col>
-                              <Col xs={24} md={4}>
-                                <Statistic title="Số ngày nợ tối đa" value={debtPreview.policy?.maxDebtAgeDays || 0} suffix="ngày" />
+                              <Col xs={24} md={8}>
+                                <Statistic title="Số ngày nợ tối đa" value={debtPreview.policy?.maxDebtAgeDays || 0} suffix=" ngày" />
                               </Col>
                               <Col xs={24} md={8}>
                                 <Statistic title="Công nợ thực tế" value={debtPreview.actualDebt || 0} formatter={formatCurrency} />
                               </Col>
-                              <Col xs={24} md={8}>
+                            </Row>
+                            {/* Hàng 3: trạng thái vượt/không vượt hạn mức */}
+                            <Row style={{ marginTop: 8, marginBottom: 8 }}>
+                              <Col span={24}>
                                 {debtPreview.exceedsLimit ? (
                                   <Alert
                                     type="warning"

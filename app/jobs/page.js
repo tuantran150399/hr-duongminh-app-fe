@@ -24,9 +24,7 @@ import StatusTag from '@/components/StatusTag';
 import FilterCard from '@/components/FilterCard';
 import { useLanguage } from '@/components/AppProviders';
 import { useGetJobsQuery } from '@/store/services/jobsApi';
-import { normalizeJob } from '@/utils/apiMappers';
 import { useGetPartnersQuery } from '@/store/services/partnersApi';
-import { normalizePartner } from '@/utils/apiMappers';
 import { getJobStatusOptions } from '@/config/jobConstants';
 
 function formatDisplayDate(value) {
@@ -170,8 +168,17 @@ export default function JobsPage() {
   }, [partnersData]);
 
   const jobs = useMemo(() => {
+    // jobsData.items đã được normalizeJob() trong transformResponse của jobsApi.
+    // Không gọi normalizeJob() lần 2 để tránh mất jobCode (job.jobCode sẽ undefined trên object đã normalize).
+    // Chỉ bổ sung tên khách hàng từ partnersById nếu cần.
     const rawItems = jobsData?.items || [];
-    return rawItems.map((job) => normalizeJob(job, partnersById)).filter(Boolean);
+    return rawItems.map((job) => {
+      if (!job) return null;
+      const partnerName = job.partnerId != null
+        ? (partnersById[job.partnerId]?.name || job.customer)
+        : job.customer;
+      return { ...job, customer: partnerName };
+    }).filter(Boolean);
   }, [jobsData, partnersById]);
 
   const jobStatusOptions = useMemo(() => getJobStatusOptions(t), [t]);
