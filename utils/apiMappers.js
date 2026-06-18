@@ -27,11 +27,15 @@ export function normalizeJob(job, partnersById = {}) {
     branchId      : job.branchId,
     agentId       : job.agentId,
     assignedUserId: job.assignedUserId,
-    origin        : job.origin || job.pol || '-',
-    destination   : job.destination || job.pod || '-',
-    etd           : job.etd || null,
-    eta           : job.eta || null,
-    raw           : job
+    cargoUnit: job.cargoUnit || null,
+    cargoQuantity: job.cargoQuantity === null || job.cargoQuantity === undefined ? null : Number(job.cargoQuantity),
+    weightKg: job.weightKg === null || job.weightKg === undefined ? null : Number(job.weightKg),
+    volumeCbm: job.volumeCbm === null || job.volumeCbm === undefined ? null : Number(job.volumeCbm),
+    origin: job.origin || job.pol || '-',
+    destination: job.destination || job.pod || '-',
+    etd: job.etd || null,
+    eta: job.eta || null,
+    raw: job
   };
 }
 

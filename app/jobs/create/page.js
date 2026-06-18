@@ -32,6 +32,7 @@ import {
   getShipmentModeOptions,
   getCustomsLaneOptions,
   getCargoTypeOptions,
+  getCargoUnitOptions,
   JOB_DATE_FIELDS
 } from '@/config/jobConstants';
 
@@ -299,6 +300,26 @@ export default function CreateJobPage() {
                     <Col xs={24} md={12}>
                       <Form.Item name="sealNo" label={t('jobForm.sealNo')}>
                         <Input placeholder={t('jobForm.sealPlaceholder')} size="large" />
+                      </Form.Item>
+                    </Col>
+                    <Col xs={24} md={12}>
+                      <Form.Item name="cargoUnit" label="Don vi tinh lo hang">
+                        <Select allowClear options={getCargoUnitOptions()} size="large" placeholder="Chon don vi tinh" />
+                      </Form.Item>
+                    </Col>
+                    <Col xs={24} md={12}>
+                      <Form.Item name="cargoQuantity" label="So luong theo don vi lo">
+                        <InputNumber min={0} precision={4} style={{ width: '100%' }} size="large" placeholder="VD: 2 cont / 1500 kg" />
+                      </Form.Item>
+                    </Col>
+                    <Col xs={24} md={12}>
+                      <Form.Item name="weightKg" label="Trong luong (kg)">
+                        <InputNumber min={0} precision={4} style={{ width: '100%' }} size="large" placeholder="VD: 12000" />
+                      </Form.Item>
+                    </Col>
+                    <Col xs={24} md={12}>
+                      <Form.Item name="volumeCbm" label="Khoi luong (CBM)">
+                        <InputNumber min={0} precision={4} style={{ width: '100%' }} size="large" placeholder="VD: 28.5" />
                       </Form.Item>
                     </Col>
                     <Col span={24}>

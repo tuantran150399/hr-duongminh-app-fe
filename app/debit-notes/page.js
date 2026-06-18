@@ -73,6 +73,39 @@ function isBlankRoute(value) {
   return normalizeMatchText(value) === '';
 }
 
+function normalizeUnit(value) {
+  return normalizeMatchText(value)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd');
+}
+
+function countContainers(containerNo) {
+  const items = String(containerNo || '')
+    .split(/[\n,;]+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+  return items.length || 0;
+}
+
+function quantityForUnit(priceUnit, job) {
+  const raw = job?.raw || job || {};
+  const unit = normalizeUnit(priceUnit);
+  const cargoUnit = normalizeUnit(raw.cargoUnit);
+  const cargoQuantity = Number(raw.cargoQuantity || 0);
+  const weightKg = Number(raw.weightKg || 0);
+  const volumeCbm = Number(raw.volumeCbm || 0);
+  const containerCount = cargoUnit === 'container' && cargoQuantity > 0
+    ? cargoQuantity
+    : countContainers(raw.containerNo || raw.container);
+
+  if (['cont', 'container', 'cntr'].includes(unit)) return containerCount || 1;
+  if (['cbm', 'm3'].includes(unit)) return volumeCbm || (cargoUnit === 'cbm' ? cargoQuantity : 0) || 1;
+  if (['kg', 'kgs'].includes(unit)) return weightKg || (cargoUnit === 'kg' ? cargoQuantity : 0) || 1;
+  if (['ton', 'tons', 'tan'].includes(unit)) return cargoUnit === 'ton' && cargoQuantity > 0 ? cargoQuantity : (weightKg > 0 ? weightKg / 1000 : 1);
+  return 1;
+}
+
 function sortByServiceAndEffectiveDate(a, b) {
   const serviceCompare = String(a.serviceType || '').localeCompare(String(b.serviceType || ''));
   if (serviceCompare !== 0) return serviceCompare;
@@ -110,7 +143,11 @@ function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId
       return;
     }
 
-    const newLines = suggestedPrices.map((price, index) => ({
+    const selectedJob = jobs.find((j) => j.backendId === selectedJobId);
+    const newLines = suggestedPrices.map((price, index) => {
+      const quantity = quantityForUnit(price.unit, selectedJob);
+      const unitPrice = Number(price.amount || 0);
+      return ({
       key: `auto-${Date.now()}-${index}`,
       serviceType: price.serviceType || '',
       description: [
@@ -120,13 +157,14 @@ function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId
         price.unit ? `(${price.unit})` : '',
         price.notes
       ].filter(Boolean).join(' — '),
-      quantity: 1,
-      unitPrice: Number(price.amount || 0),
-      amount: Number(price.amount || 0),
+      quantity,
+      unitPrice,
+      amount: quantity * unitPrice,
       currency: price.currency || 'VND',
       pricingId: price.id,
       isAutoFilled: true
-    }));
+    });
+    });
 
     setLineItems(newLines);
     message.success(t('debitNotes.pricingApplied', { count: newLines.length }));

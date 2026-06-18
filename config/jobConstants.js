@@ -50,6 +50,16 @@ export function getCargoTypeOptions(t) {
   ];
 }
 
+export function getCargoUnitOptions() {
+  return [
+    { value: 'SHIPMENT', label: 'Shipment / Lo' },
+    { value: 'CONTAINER', label: 'Container' },
+    { value: 'CBM', label: 'CBM' },
+    { value: 'KG', label: 'Kg' },
+    { value: 'TON', label: 'Tan' }
+  ];
+}
+
 /** Terminal statuses — job ở trạng thái này không cho phép edit */
 export const TERMINAL_STATUSES = ['CLOSED', 'CANCELLED'];
 

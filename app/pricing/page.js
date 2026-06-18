@@ -74,6 +74,14 @@ export default function PricingPage() {
     { label: t('pricing.other'), value: 'OTHER' }
   ];
 
+  const priceUnitOptions = [
+    { label: 'Shipment / Lo', value: 'SHIPMENT' },
+    { label: 'Container', value: 'CONTAINER' },
+    { label: 'CBM', value: 'CBM' },
+    { label: 'Kg', value: 'KG' },
+    { label: 'Tan', value: 'TON' }
+  ];
+
   const partnerMap = useMemo(
     () => partners.reduce((result, partner) => {
       result[partner.backendId] = partner;
@@ -337,7 +345,7 @@ export default function PricingPage() {
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item name="unit" label={t('pricing.unit')}>
-                <Input placeholder={t('pricing.unitPlaceholder')} />
+                <Select allowClear showSearch optionFilterProp="label" options={priceUnitOptions} placeholder={t('pricing.unitPlaceholder')} />
               </Form.Item>
             </Col>
             <Col span={12}>

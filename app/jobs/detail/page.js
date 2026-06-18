@@ -50,6 +50,7 @@ import {
   getJobStatusOptions,
   getCustomsLaneOptions,
   getCargoTypeOptions,
+  getCargoUnitOptions,
   TERMINAL_STATUSES,
   JOB_DATE_FIELDS
 } from '@/config/jobConstants';
@@ -76,6 +77,10 @@ function buildCopyPayload(rawJob) {
     hbl: rawJob.hbl,
     mbl: rawJob.mbl,
     containerNo: rawJob.containerNo,
+    cargoUnit: rawJob.cargoUnit,
+    cargoQuantity: rawJob.cargoQuantity,
+    weightKg: rawJob.weightKg,
+    volumeCbm: rawJob.volumeCbm,
     sealNo: rawJob.sealNo,
     etd: rawJob.etd,
     eta: rawJob.eta,
@@ -182,6 +187,10 @@ function JobDetailContent() {
         customsLane: raw.customsLane,
         cargoType: raw.cargoType,
         containerNo: raw.containerNo,
+        cargoUnit: raw.cargoUnit,
+        cargoQuantity: raw.cargoQuantity === null || raw.cargoQuantity === undefined ? null : Number(raw.cargoQuantity),
+        weightKg: raw.weightKg === null || raw.weightKg === undefined ? null : Number(raw.weightKg),
+        volumeCbm: raw.volumeCbm === null || raw.volumeCbm === undefined ? null : Number(raw.volumeCbm),
         sealNo: raw.sealNo,
         notes: raw.notes,
         vesselName: raw.vesselName,
@@ -486,6 +495,26 @@ function JobDetailContent() {
                     <Col xs={24} md={12}>
                       <Form.Item name="sealNo" label={t('jobForm.sealNo')}>
                         <Input placeholder={t('jobForm.sealPlaceholder')} size="large" disabled={isTerminal} />
+                      </Form.Item>
+                    </Col>
+                    <Col xs={24} md={12}>
+                      <Form.Item name="cargoUnit" label="Don vi tinh lo hang">
+                        <Select allowClear options={getCargoUnitOptions()} size="large" placeholder="Chon don vi tinh" disabled={isTerminal} />
+                      </Form.Item>
+                    </Col>
+                    <Col xs={24} md={12}>
+                      <Form.Item name="cargoQuantity" label="So luong theo don vi lo">
+                        <InputNumber min={0} precision={4} style={{ width: '100%' }} size="large" placeholder="VD: 2 cont / 1500 kg" disabled={isTerminal} />
+                      </Form.Item>
+                    </Col>
+                    <Col xs={24} md={12}>
+                      <Form.Item name="weightKg" label="Trong luong (kg)">
+                        <InputNumber min={0} precision={4} style={{ width: '100%' }} size="large" placeholder="VD: 12000" disabled={isTerminal} />
+                      </Form.Item>
+                    </Col>
+                    <Col xs={24} md={12}>
+                      <Form.Item name="volumeCbm" label="Khoi luong (CBM)">
+                        <InputNumber min={0} precision={4} style={{ width: '100%' }} size="large" placeholder="VD: 28.5" disabled={isTerminal} />
                       </Form.Item>
                     </Col>
                     <Col span={24}>
