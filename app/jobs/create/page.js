@@ -24,7 +24,7 @@ import { useLanguage } from '@/components/AppProviders';
 import { useCreateJobMutation, useGetJobDebtPreviewMutation } from '@/store/services/jobsApi';
 import { useGetPartnersQuery } from '@/store/services/partnersApi';
 import { useGetUsersQuery, useGetBranchesQuery } from '@/store/services/adminApi';
-import { cleanPayload, convertDateFields } from '@/utils/formUtils';
+import { cleanPayload, convertDateFields, decimalInputProps } from '@/utils/formUtils';
 import { getApiError } from '@/utils/getApiError';
 import { formatCurrency } from '@/utils/format';
 import {
@@ -190,15 +190,23 @@ export default function CreateJobPage() {
                     </Col>
                     {selectedPartnerId ? (
                       <Col span={24}>
-                        {previewLoading ? (
+                        {previewLoading && !debtPreview ? (
                           <Alert type="info" showIcon message="Đang kiểm tra chính sách công nợ..." />
                         ) : debtPreview?.hasPolicy ? (
                           <div style={{ border: '1px solid #d9e6f7', borderRadius: 12, padding: '16px 16px 4px 16px', background: '#f7fbff', marginBottom: 8 }}>
+                            {previewLoading ? (
+                              <Alert
+                                style={{ marginBottom: 12 }}
+                                type="info"
+                                showIcon
+                                message="Đang cập nhật công nợ thực tế..."
+                              />
+                            ) : null}
                             {/* Hàng 1: input công nợ + thời gian áp dụng */}
                             <Row gutter={[16, 12]} style={{ marginBottom: 4 }}>
                               <Col xs={24} md={12}>
                                 <Form.Item name="debtAmount" label="Giá trị công nợ lô hàng này" style={{ marginBottom: 0 }}>
-                                  <InputNumber min={0} precision={2} style={{ width: '100%' }} placeholder="Nhập giá trị công nợ" size="large" />
+                                  <InputNumber {...decimalInputProps} min={0} precision={2} style={{ width: '100%' }} placeholder="Nhập giá trị công nợ" size="large" />
                                 </Form.Item>
                               </Col>
                               <Col xs={24} md={12} style={{ display: 'flex', alignItems: 'flex-end' }}>
@@ -309,17 +317,17 @@ export default function CreateJobPage() {
                     </Col>
                     <Col xs={24} md={12}>
                       <Form.Item name="cargoQuantity" label="So luong theo don vi lo">
-                        <InputNumber min={0} precision={4} style={{ width: '100%' }} size="large" placeholder="VD: 2 cont / 1500 kg" />
+                        <InputNumber {...decimalInputProps} min={0} precision={4} style={{ width: '100%' }} size="large" placeholder="VD: 2 cont / 1500 kg" />
                       </Form.Item>
                     </Col>
                     <Col xs={24} md={12}>
                       <Form.Item name="weightKg" label="Trong luong (kg)">
-                        <InputNumber min={0} precision={4} style={{ width: '100%' }} size="large" placeholder="VD: 12000" />
+                        <InputNumber {...decimalInputProps} min={0} precision={4} style={{ width: '100%' }} size="large" placeholder="VD: 12000" />
                       </Form.Item>
                     </Col>
                     <Col xs={24} md={12}>
                       <Form.Item name="volumeCbm" label="Khoi luong (CBM)">
-                        <InputNumber min={0} precision={4} style={{ width: '100%' }} size="large" placeholder="VD: 28.5" />
+                        <InputNumber {...decimalInputProps} min={0} precision={4} style={{ width: '100%' }} size="large" placeholder="VD: 28.5" />
                       </Form.Item>
                     </Col>
                     <Col span={24}>

@@ -55,6 +55,7 @@ import { useGetPartnersQuery } from '@/store/services/partnersApi';
 import { useGetServicePricesQuery } from '@/store/services/pricingApi';
 import { formatCurrency } from '@/utils/format';
 import { getApiError } from '@/utils/getApiError';
+import { decimalInputProps } from '@/utils/formUtils';
 
 function toDateString(value) {
   return value?.format ? value.format('YYYY-MM-DD') : value || undefined;
@@ -246,6 +247,7 @@ function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId
       width: 80,
       render: (value, record) => (
         <InputNumber
+          {...decimalInputProps}
           value={value}
           size="small"
           min={1}
@@ -260,6 +262,7 @@ function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId
       width: 140,
       render: (value, record) => (
         <InputNumber
+          {...decimalInputProps}
           value={value}
           size="small"
           min={0}
@@ -926,7 +929,7 @@ export default function DebitNotesPage() {
       >
         <Form form={paymentForm} layout="vertical" onFinish={handleRecordPayment}>
           <Form.Item name="amount" label={t('debitNotes.paymentAmount')} rules={[{ required: true, message: t('debitNotes.amountRequired') }]}>
-            <InputNumber min={0.01} precision={2} style={{ width: '100%' }} />
+            <InputNumber {...decimalInputProps} min={0.01} precision={2} style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item name="paymentMethod" label={t('debitNotes.paymentMethod')} rules={[{ required: true, message: t('debitNotes.selectPaymentMethod') }]}>
             <Select

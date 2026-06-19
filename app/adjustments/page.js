@@ -22,6 +22,7 @@ import {
 } from '@/store/services/adjustmentsApi';
 import { useGetJobsQuery } from '@/store/services/jobsApi';
 import { formatCurrency } from '@/utils/format';
+import { decimalInputProps, integerInputProps } from '@/utils/formUtils';
 
 const ADJUSTMENT_TYPES = [
   'REVENUE_ADJUSTMENT',
@@ -370,7 +371,7 @@ export default function AdjustmentsPage() {
                 }
                 rules={[{ required: true, message: t('adjustments.amountRequired') }]}
               >
-                <InputNumber style={{ width: '100%' }} precision={2} />
+                <InputNumber {...decimalInputProps} style={{ width: '100%' }} precision={2} />
               </Form.Item>
             </Col>
             <Col xs={24} md={8}>
@@ -405,7 +406,7 @@ export default function AdjustmentsPage() {
             </Col>
             <Col xs={24} md={12}>
               <Form.Item name="originalEntryId" label={t('adjustments.originalEntryId')}>
-                <InputNumber style={{ width: '100%' }} min={1} />
+                <InputNumber {...integerInputProps} style={{ width: '100%' }} min={1} />
               </Form.Item>
             </Col>
           </Row>

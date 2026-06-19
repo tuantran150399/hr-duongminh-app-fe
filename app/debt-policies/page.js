@@ -29,7 +29,7 @@ import { useGetDebtPoliciesQuery, useUpsertDebtPolicyMutation } from '@/store/se
 import { useGetPartnersQuery } from '@/store/services/partnersApi';
 import { formatCurrency } from '@/utils/format';
 import { getApiError } from '@/utils/getApiError';
-import { toDatePickerValue } from '@/utils/formUtils';
+import { decimalInputProps, integerInputProps, toDatePickerValue } from '@/utils/formUtils';
 
 export default function DebtPoliciesPage() {
   const { t } = useLanguage();
@@ -266,6 +266,7 @@ export default function DebtPoliciesPage() {
 
           <Form.Item name="maxDebtAmount" label={t('debtPolicies.maxDebtAmountOptional')}>
             <InputNumber
+              {...decimalInputProps}
               min={0}
               precision={2}
               style={{ width: '100%' }}
@@ -275,6 +276,7 @@ export default function DebtPoliciesPage() {
 
           <Form.Item name="maxDebtAgeDays" label={t('debtPolicies.maxDebtAgeDaysOptional')}>
             <InputNumber
+              {...integerInputProps}
               min={1}
               style={{ width: '100%' }}
               placeholder={t('debtPolicies.daysPlaceholder')}

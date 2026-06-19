@@ -48,6 +48,7 @@ import { useGetJobsQuery } from '@/store/services/jobsApi';
 import { useGetPartnersQuery } from '@/store/services/partnersApi';
 import { formatCurrency } from '@/utils/format';
 import { getApiError } from '@/utils/getApiError';
+import { decimalInputProps } from '@/utils/formUtils';
 
 function toDateString(value) {
   return value?.format ? value.format('YYYY-MM-DD') : value || undefined;
@@ -453,7 +454,7 @@ export default function PaymentRequestsPage() {
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item name="amount" label={t('paymentRequests.amount')} rules={[{ required: true, message: t('paymentRequests.amountRequired') }]}>
-                <InputNumber min={0.01} precision={2} style={{ width: '100%' }} />
+                <InputNumber {...decimalInputProps} min={0.01} precision={2} style={{ width: '100%' }} />
               </Form.Item>
             </Col>
             <Col span={12}>

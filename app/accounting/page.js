@@ -55,6 +55,7 @@ import { useGetPartnersQuery } from '@/store/services/partnersApi';
 import { useMarkCostAsCobMutation } from '@/store/services/cobApi';
 import { formatCurrency } from '@/utils/format';
 import { getApiError } from '@/utils/getApiError';
+import { decimalInputProps } from '@/utils/formUtils';
 import { useLanguage } from '@/components/AppProviders';
 
 function formatCompactCurrency(value) {
@@ -783,17 +784,17 @@ export default function AccountingPage() {
               </Col>
               <Col xs={24} md={8}>
                 <Form.Item name="amount" label={t('accountingForm.amount')} rules={[{ required: true, message: t('accountingForm.amountRequired') }]}>
-                  <InputNumber min={0} precision={2} style={{ width: '100%' }} />
+                  <InputNumber {...decimalInputProps} min={0} precision={2} style={{ width: '100%' }} />
                 </Form.Item>
               </Col>
               <Col xs={24} md={8}>
                 <Form.Item name="exchangeRate" label={t('accountingForm.exchangeRate')} rules={[{ required: true, message: t('accountingForm.exchangeRateRequired') }]}>
-                  <InputNumber min={0} precision={2} style={{ width: '100%' }} />
+                  <InputNumber {...decimalInputProps} min={0} precision={2} style={{ width: '100%' }} />
                 </Form.Item>
               </Col>
               <Col xs={24} md={8}>
                 <Form.Item name="localAmount" label={t('accountingForm.localAmount')}>
-                  <InputNumber min={0} precision={2} style={{ width: '100%' }} />
+                  <InputNumber {...decimalInputProps} min={0} precision={2} style={{ width: '100%' }} />
                 </Form.Item>
               </Col>
               <Col xs={24} md={8}>

@@ -52,3 +52,29 @@ export function convertDateFields(values, dateFields) {
 
   return result;
 }
+
+function normalizeNumericInput(value, allowDecimal = true) {
+  const raw = String(value ?? '').replace(/,/g, '.');
+  const sanitized = raw.replace(/[^\d.]/g, '');
+
+  if (!allowDecimal) {
+    return sanitized.replace(/\./g, '');
+  }
+
+  const firstDotIndex = sanitized.indexOf('.');
+  if (firstDotIndex === -1) return sanitized;
+
+  const integerPart = sanitized.slice(0, firstDotIndex);
+  const decimalPart = sanitized.slice(firstDotIndex + 1).replace(/\./g, '');
+  return `${integerPart}.${decimalPart}`;
+}
+
+export const decimalInputProps = {
+  inputMode: 'decimal',
+  parser: (value) => normalizeNumericInput(value, true)
+};
+
+export const integerInputProps = {
+  inputMode: 'numeric',
+  parser: (value) => normalizeNumericInput(value, false)
+};

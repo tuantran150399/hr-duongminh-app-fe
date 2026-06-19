@@ -38,6 +38,7 @@ import { useLanguage } from '@/components/AppProviders';
 import FilterCard from '@/components/FilterCard';
 import { formatCurrency } from '@/utils/format';
 import { getApiError } from '@/utils/getApiError';
+import { decimalInputProps } from '@/utils/formUtils';
 import { useGetServicePricesQuery, useCreateServicePriceMutation, useImportServicePricesMutation, useUpdateServicePriceMutation, useDeleteServicePriceMutation } from '@/store/services/pricingApi';
 import { useGetPartnersQuery } from '@/store/services/partnersApi';
 
@@ -357,19 +358,19 @@ export default function PricingPage() {
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item name="amount" label={t('pricing.rate')} rules={[{ required: true, message: t('pricing.rateRequired') }]}>
-                <InputNumber style={{ width: '100%' }} min={0} />
+                <InputNumber {...decimalInputProps} style={{ width: '100%' }} min={0} />
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item name="minQuantity" label={t('pricing.minQuantity')}>
-                <InputNumber style={{ width: '100%' }} min={0} />
+                <InputNumber {...decimalInputProps} style={{ width: '100%' }} min={0} />
               </Form.Item>
             </Col>
           </Row>
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item name="maxQuantity" label={t('pricing.maxQuantity')}>
-                <InputNumber style={{ width: '100%' }} min={0} />
+                <InputNumber {...decimalInputProps} style={{ width: '100%' }} min={0} />
               </Form.Item>
             </Col>
             <Col span={12}>

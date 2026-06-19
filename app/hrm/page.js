@@ -24,6 +24,7 @@ import {
 } from '@/store/services/hrmApi';
 import { formatCurrency } from '@/utils/format';
 import { getApiError } from '@/utils/getApiError';
+import { decimalInputProps } from '@/utils/formUtils';
 
 const deptColors = {
   Operations: 'blue',
@@ -499,17 +500,17 @@ export default function HRMPage() {
           <Row gutter={16}>
             <Col xs={24} md={12}>
               <Form.Item name="baseSalary" label={t('hrm.baseSalaryVnd')} rules={[{ required: true }]}>
-                <InputNumber style={{ width: '100%' }} min={0} step={500000} />
+                <InputNumber {...decimalInputProps} style={{ width: '100%' }} min={0} step={500000} />
               </Form.Item>
             </Col>
             <Col xs={24} md={12}>
               <Form.Item name="allowance" label={t('hrm.allowance')}>
-                <InputNumber style={{ width: '100%' }} min={0} step={100000} />
+                <InputNumber {...decimalInputProps} style={{ width: '100%' }} min={0} step={100000} />
               </Form.Item>
             </Col>
           </Row>
           <Form.Item name="deduction" label={t('hrm.deductionVnd')}>
-            <InputNumber style={{ width: '100%' }} min={0} step={100000} />
+            <InputNumber {...decimalInputProps} style={{ width: '100%' }} min={0} step={100000} />
           </Form.Item>
         </Form>
       </Modal>

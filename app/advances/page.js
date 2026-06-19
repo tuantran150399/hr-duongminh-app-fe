@@ -16,7 +16,7 @@ import FilterCard from '@/components/FilterCard';
 import { formatCurrency } from '@/utils/format';
 import { getApiError } from '@/utils/getApiError';
 import { getEmployees } from '@/services/hrmService';
-import { toDatePickerValue } from '@/utils/formUtils';
+import { decimalInputProps, toDatePickerValue } from '@/utils/formUtils';
 import {
   useGetAdvancesQuery,
   useCreateAdvanceMutation,
@@ -415,7 +415,7 @@ export default function AdvancesPage() {
           <Row gutter={16}>
             <Col span={14}>
               <Form.Item name="amount" label={t('advances.advanceAmount')} rules={[{ required: true, message: t('advances.amountRequired') }]}>
-                <InputNumber min={1} step={500000} style={{ width: '100%' }} />
+                <InputNumber {...decimalInputProps} min={1} step={500000} style={{ width: '100%' }} />
               </Form.Item>
             </Col>
             <Col span={10}>
@@ -453,7 +453,7 @@ export default function AdvancesPage() {
       >
         <Form form={settleForm} layout="vertical" onFinish={handleSettle}>
           <Form.Item name="amount" label={t('advances.settleAmount')} rules={[{ required: true, message: t('advances.amountRequired') }]}>
-            <InputNumber min={0.01} step={100000} style={{ width: '100%' }} />
+            <InputNumber {...decimalInputProps} min={0.01} step={100000} style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item name="notes" label={t('advances.notes')}>
             <Input.TextArea rows={2} />
