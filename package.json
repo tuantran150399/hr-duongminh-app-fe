@@ -7,6 +7,7 @@
     "build": "next build",
     "export": "next build",
     "build:static": "next build",
+    "build:prod": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/create-static-zip.ps1",
     "postbuild": "powershell -NoProfile -Command \"if (Test-Path out) { Copy-Item web.config out\\web.config -Force }\"",
     "start": "npx serve@latest out -l 3000",
     "start:static": "npx serve@latest out -l 3000",
