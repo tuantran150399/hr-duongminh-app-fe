@@ -41,6 +41,7 @@ import { getApiError } from '@/utils/getApiError';
 import { decimalInputProps } from '@/utils/formUtils';
 import { useGetServicePricesQuery, useCreateServicePriceMutation, useImportServicePricesMutation, useUpdateServicePriceMutation, useDeleteServicePriceMutation } from '@/store/services/pricingApi';
 import { useGetPartnersQuery } from '@/store/services/partnersApi';
+import { getCargoUnitOptions } from '@/config/jobConstants';
 
 export default function PricingPage() {
   const { t } = useLanguage();
@@ -75,13 +76,7 @@ export default function PricingPage() {
     { label: t('pricing.other'), value: 'OTHER' }
   ];
 
-  const priceUnitOptions = [
-    { label: 'Shipment / Lo', value: 'SHIPMENT' },
-    { label: 'Container', value: 'CONTAINER' },
-    { label: 'CBM', value: 'CBM' },
-    { label: 'Kg', value: 'KG' },
-    { label: 'Tan', value: 'TON' }
-  ];
+  const priceUnitOptions = getCargoUnitOptions(t);
 
   const partnerMap = useMemo(
     () => partners.reduce((result, partner) => {
@@ -176,7 +171,7 @@ export default function PricingPage() {
 
     try {
       const result = await importServicePrices(file).unwrap();
-      const errorSuffix = result.errorCount ? ` ${result.errorCount} row(s) failed.` : '';
+      const errorSuffix = result.errorCount ? t('pricing.rowsFailed', { count: result.errorCount }) : '';
       message.success(t('pricing.importSuccess', { created: result.createdCount || 0, updated: result.updatedCount || 0, errorSuffix }));
 
       onSuccess?.(result);
@@ -281,7 +276,7 @@ export default function PricingPage() {
         statusValue={typeFilter}
         onStatusChange={setTypeFilter}
         statusOptions={[
-          { value: 'all', label: t('pricing.allTypes') || 'All Types' },
+          { value: 'all', label: t('pricing.allTypes') },
           ...serviceTypeOptions
         ]}
         showDateRange={false}

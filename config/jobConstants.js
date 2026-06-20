@@ -50,13 +50,13 @@ export function getCargoTypeOptions(t) {
   ];
 }
 
-export function getCargoUnitOptions() {
+export function getCargoUnitOptions(t) {
   return [
-    { value: 'SHIPMENT', label: 'Shipment / Lo' },
-    { value: 'CONTAINER', label: 'Container' },
-    { value: 'CBM', label: 'CBM' },
-    { value: 'KG', label: 'Kg' },
-    { value: 'TON', label: 'Tan' }
+    { value: 'SHIPMENT', label: t('jobForm.unitShipment') },
+    { value: 'CONTAINER', label: t('jobForm.unitContainer') },
+    { value: 'CBM', label: t('jobForm.unitCbm') },
+    { value: 'KG', label: t('jobForm.unitKg') },
+    { value: 'TON', label: t('jobForm.unitTon') }
   ];
 }
 

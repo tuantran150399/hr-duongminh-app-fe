@@ -48,7 +48,7 @@ function downloadJobsCsv(rows, t) {
     t('jobs.origin'), t('jobs.destination'),
     t('jobs.etd'), t('jobs.eta'),
     t('jobs.shipper'), t('jobs.consignee'), t('jobs.agent'),
-    t('jobs.cargoType'), t('jobs.container'), 'Cargo Unit', 'Cargo Qty', 'Weight Kg', 'CBM', t('jobs.coType')
+    t('jobs.cargoType'), t('jobs.container'), t('jobForm.cargoUnit'), t('jobForm.cargoQuantity'), t('jobForm.weightKg'), t('jobForm.volumeCbm'), t('jobs.coType')
   ];
 
   const records = rows.map((job) => [
@@ -119,15 +119,15 @@ function ExpandedRow({ record, t }) {
           <span className="detail-value detail-mono">{raw.containerNo || raw.container || '-'}</span>
         </div>
         <div>
-          <span className="detail-label">Cargo Unit</span>
+          <span className="detail-label">{t('jobForm.cargoUnit')}</span>
           <span className="detail-value">{raw.cargoUnit || '-'}</span>
         </div>
         <div>
-          <span className="detail-label">Cargo Qty</span>
+          <span className="detail-label">{t('jobForm.cargoQuantity')}</span>
           <span className="detail-value">{raw.cargoQuantity ?? '-'}</span>
         </div>
         <div>
-          <span className="detail-label">Weight / CBM</span>
+          <span className="detail-label">{t('jobForm.weightCbm')}</span>
           <span className="detail-value">{raw.weightKg ?? '-'} kg / {raw.volumeCbm ?? '-'} cbm</span>
         </div>
         <div>

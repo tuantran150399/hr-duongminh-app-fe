@@ -130,7 +130,7 @@ export default function CreateJobPage() {
       if (debtPreview?.hasPolicy) {
         payload.debtAmount = Number(values.debtAmount || 0);
         if (debtPreview.exceedsLimit) {
-          message.error('Công nợ vượt hạn mức, không thể tạo lô hàng. Vui lòng nâng hạn mức trong Chính sách công nợ.');
+          message.error(t('jobForm.debtLimitExceededCreate'));
           setSaving(false);
           return;
         }
@@ -191,7 +191,7 @@ export default function CreateJobPage() {
                     {selectedPartnerId ? (
                       <Col span={24}>
                         {previewLoading && !debtPreview ? (
-                          <Alert type="info" showIcon message="Đang kiểm tra chính sách công nợ..." />
+                          <Alert type="info" showIcon message={t('jobForm.checkingDebtPolicy')} />
                         ) : debtPreview?.hasPolicy ? (
                           <div style={{ border: '1px solid #d9e6f7', borderRadius: 12, padding: '16px 16px 4px 16px', background: '#f7fbff', marginBottom: 8 }}>
                             {previewLoading ? (
@@ -199,14 +199,14 @@ export default function CreateJobPage() {
                                 style={{ marginBottom: 12 }}
                                 type="info"
                                 showIcon
-                                message="Đang cập nhật công nợ thực tế..."
+                                message={t('jobForm.updatingActualDebt')}
                               />
                             ) : null}
                             {/* Hàng 1: input công nợ + thời gian áp dụng */}
                             <Row gutter={[16, 12]} style={{ marginBottom: 4 }}>
                               <Col xs={24} md={12}>
-                                <Form.Item name="debtAmount" label="Giá trị công nợ lô hàng này" style={{ marginBottom: 0 }}>
-                                  <InputNumber {...decimalInputProps} min={0} precision={2} style={{ width: '100%' }} placeholder="Nhập giá trị công nợ" size="large" />
+                                <Form.Item name="debtAmount" label={t('jobForm.thisJobDebtAmount')} style={{ marginBottom: 0 }}>
+                                  <InputNumber {...decimalInputProps} min={0} precision={2} style={{ width: '100%' }} placeholder={t('jobForm.thisJobDebtAmountPlaceholder')} size="large" />
                                 </Form.Item>
                               </Col>
                               <Col xs={24} md={12} style={{ display: 'flex', alignItems: 'flex-end' }}>
@@ -214,20 +214,20 @@ export default function CreateJobPage() {
                                   style={{ width: '100%' }}
                                   type="info"
                                   showIcon
-                                  message={`Thời gian áp dụng: ${debtPreview.policy?.startDate || '-'} → ${debtPreview.policy?.endDate || 'Vô thời hạn'}`}
+                                  message={t('jobForm.policyEffectiveTime', { start: debtPreview.policy?.startDate || '-', end: debtPreview.policy?.endDate || t('jobForm.indefinite') })}
                                 />
                               </Col>
                             </Row>
                             {/* Hàng 2: 3 chỉ số công nợ */}
                             <Row gutter={[16, 12]} style={{ marginTop: 12, marginBottom: 4 }}>
                               <Col xs={24} md={8}>
-                                <Statistic title="Hạn mức công nợ" value={debtPreview.policy?.maxDebtAmount || 0} formatter={formatCurrency} />
+                                <Statistic title={t('jobForm.debtLimit')} value={debtPreview.policy?.maxDebtAmount || 0} formatter={formatCurrency} />
                               </Col>
                               <Col xs={24} md={8}>
-                                <Statistic title="Số ngày nợ tối đa" value={debtPreview.policy?.maxDebtAgeDays || 0} suffix=" ngày" />
+                                <Statistic title={t('jobForm.maxDebtAge')} value={debtPreview.policy?.maxDebtAgeDays || 0} suffix={t('jobForm.daysSuffix')} />
                               </Col>
                               <Col xs={24} md={8}>
-                                <Statistic title="Công nợ thực tế" value={debtPreview.actualDebt || 0} formatter={formatCurrency} />
+                                <Statistic title={t('jobForm.actualDebtAmount')} value={debtPreview.actualDebt || 0} formatter={formatCurrency} />
                               </Col>
                             </Row>
                             {/* Hàng 3: trạng thái vượt/không vượt hạn mức */}
@@ -237,16 +237,16 @@ export default function CreateJobPage() {
                                   <Alert
                                     type="warning"
                                     showIcon
-                                    message={`Công nợ thực tế ${formatCurrency(debtPreview.actualDebt)} vượt hạn mức. Không thể tạo lô hàng; vui lòng nâng hạn mức trong Chính sách công nợ.`}
+                                    message={t('jobForm.actualDebtExceedsLimitCreate', { amount: formatCurrency(debtPreview.actualDebt) })}
                                   />
                                 ) : (
-                                  <Alert type="success" showIcon message="Công nợ hiện tại đang trong hạn mức." />
+                                  <Alert type="success" showIcon message={t('jobForm.debtWithinLimit')} />
                                 )}
                               </Col>
                             </Row>
                           </div>
                         ) : (
-                          <Alert type="info" showIcon message="Khách hàng này chưa có chính sách công nợ. Hệ thống sẽ ẩn phần nhập công nợ." />
+                          <Alert type="info" showIcon message={t('jobForm.noDebtPolicyMessage')} />
                         )}
                       </Col>
                     ) : null}
@@ -311,23 +311,23 @@ export default function CreateJobPage() {
                       </Form.Item>
                     </Col>
                     <Col xs={24} md={12}>
-                      <Form.Item name="cargoUnit" label="Don vi tinh lo hang">
-                        <Select allowClear options={getCargoUnitOptions()} size="large" placeholder="Chon don vi tinh" />
+                      <Form.Item name="cargoUnit" label={t('jobForm.cargoUnit')}>
+                        <Select allowClear options={getCargoUnitOptions(t)} size="large" placeholder={t('jobForm.cargoUnitPlaceholder')} />
                       </Form.Item>
                     </Col>
                     <Col xs={24} md={12}>
-                      <Form.Item name="cargoQuantity" label="So luong theo don vi lo">
-                        <InputNumber {...decimalInputProps} min={0} precision={4} style={{ width: '100%' }} size="large" placeholder="VD: 2 cont / 1500 kg" />
+                      <Form.Item name="cargoQuantity" label={t('jobForm.cargoQuantity')}>
+                        <InputNumber {...decimalInputProps} min={0} precision={4} style={{ width: '100%' }} size="large" placeholder={t('jobForm.cargoQuantityPlaceholder')} />
                       </Form.Item>
                     </Col>
                     <Col xs={24} md={12}>
-                      <Form.Item name="weightKg" label="Trong luong (kg)">
-                        <InputNumber {...decimalInputProps} min={0} precision={4} style={{ width: '100%' }} size="large" placeholder="VD: 12000" />
+                      <Form.Item name="weightKg" label={t('jobForm.weightKg')}>
+                        <InputNumber {...decimalInputProps} min={0} precision={4} style={{ width: '100%' }} size="large" placeholder={t('jobForm.weightKgPlaceholder')} />
                       </Form.Item>
                     </Col>
                     <Col xs={24} md={12}>
-                      <Form.Item name="volumeCbm" label="Khoi luong (CBM)">
-                        <InputNumber {...decimalInputProps} min={0} precision={4} style={{ width: '100%' }} size="large" placeholder="VD: 28.5" />
+                      <Form.Item name="volumeCbm" label={t('jobForm.volumeCbm')}>
+                        <InputNumber {...decimalInputProps} min={0} precision={4} style={{ width: '100%' }} size="large" placeholder={t('jobForm.volumeCbmPlaceholder')} />
                       </Form.Item>
                     </Col>
                     <Col span={24}>
