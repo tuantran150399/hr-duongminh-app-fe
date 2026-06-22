@@ -1076,7 +1076,22 @@ const dictionary = {
         Advance: 'Advance',
         AccountingEntry: 'Accounting Entry',
         PaymentRequest: 'Payment Request',
-        ServicePrice: 'Service Price'
+        ServicePrice: 'Service Price',
+        DebitNote: 'Statement',
+        RevenueEntry: 'Revenue Entry',
+        CostEntry: 'Cost Entry',
+        CobEntry: 'Charge/Collect on Behalf',
+        Employee: 'Employee',
+        EmployeeAdvance: 'Employee Advance',
+        AttendanceRecord: 'Attendance Record',
+        LeaveRequest: 'Leave Request',
+        PayrollRecord: 'Payroll Record',
+        JobMilestone: 'Job Milestone',
+        DebtPolicy: 'Debt Policy',
+        AdjustmentEntry: 'Adjustment Entry',
+        AccountingPeriod: 'Accounting Period',
+        CashAccount: 'Cash Account',
+        CashTransaction: 'Cash Transaction'
       }
     },
     jobForm: {
@@ -2469,7 +2484,22 @@ const dictionary = {
         Advance: 'Tạm ứng',
         AccountingEntry: 'Bút toán kế toán',
         PaymentRequest: 'Phiếu đề nghị chi',
-        ServicePrice: 'Giá dịch vụ'
+        ServicePrice: 'Giá dịch vụ',
+        DebitNote: 'Bảng kê',
+        RevenueEntry: 'Khoản doanh thu',
+        CostEntry: 'Khoản chi phí',
+        CobEntry: 'Thu/Chi hộ',
+        Employee: 'Nhân viên',
+        EmployeeAdvance: 'Tạm ứng nhân viên',
+        AttendanceRecord: 'Bản ghi chấm công',
+        LeaveRequest: 'Đơn nghỉ phép',
+        PayrollRecord: 'Bảng lương',
+        JobMilestone: 'Mốc lô hàng',
+        DebtPolicy: 'Chính sách công nợ',
+        AdjustmentEntry: 'Bút toán điều chỉnh',
+        AccountingPeriod: 'Kỳ kế toán',
+        CashAccount: 'Tài khoản tiền',
+        CashTransaction: 'Giao dịch tiền'
       }
     },
     jobForm: {

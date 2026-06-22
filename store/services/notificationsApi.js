@@ -24,6 +24,11 @@ export const notificationsApi = createApi({
             message: n.message || n.body || '',
             entityType: n.entityType || null,
             entityId: n.entityId || null,
+            eventRef: n.eventRef || null,
+            actionUrl: n.actionUrl || null,
+            actionLabel: n.actionLabel || null,
+            priority: n.priority || 'normal',
+            readAt: n.readAt || null,
             isRead: Boolean(n.isRead ?? n.read),
             createdAt: n.createdAt || n.created_at || null,
             raw: n

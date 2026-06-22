@@ -45,11 +45,12 @@ const typeConfig = {
 };
 
 function entityLink(notification) {
+  if (notification.actionUrl) return notification.actionUrl;
   const { entityType, entityId } = notification;
   if (!entityType || !entityId) return null;
 
   const map = {
-    PAYMENT_REQUEST: '/payment-requests',
+    PAYMENT_REQUEST: `/payment-requests?requestId=${entityId}`,
     ADVANCE: '/advances',
     DEBIT_NOTE: '/debit-notes',
     JOB: '/jobs',

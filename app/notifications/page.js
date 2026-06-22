@@ -13,6 +13,7 @@ import {
   CheckCircleOutlined,
   ExclamationCircleOutlined
 } from '@ant-design/icons';
+import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { useLanguage } from '@/components/AppProviders';
@@ -46,6 +47,7 @@ function timeAgo(dateStr) {
 }
 
 export default function NotificationsPage() {
+  const router = useRouter();
   const { t } = useLanguage();
   const { message } = App.useApp();
   const [filter, setFilter] = useState('all');
@@ -64,6 +66,17 @@ export default function NotificationsPage() {
   }, [notifications, filter]);
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
+
+  async function handleOpen(item) {
+    if (!item.isRead) {
+      try { await markAsRead(item.backendId).unwrap(); } catch { /* navigation still works */ }
+    }
+    const fallback = item.entityType === 'PAYMENT_REQUEST' && item.entityId
+      ? `/payment-requests?requestId=${item.entityId}`
+      : null;
+    const target = item.actionUrl || fallback;
+    if (target) router.push(target);
+  }
 
   async function handleMarkRead(id) {
     try { await markAsRead(id).unwrap(); }
@@ -177,6 +190,11 @@ export default function NotificationsPage() {
                   border: item.isRead ? '1px solid #f0f0f0' : '1px solid #adc6ff'
                 }}
                 actions={[
+                  (item.actionUrl || item.entityType === 'PAYMENT_REQUEST') && (
+                    <Button key="open" type="link" size="small" onClick={() => handleOpen(item)}>
+                      {item.actionLabel || 'Xem chi tiết'}
+                    </Button>
+                  ),
                   !item.isRead && (
                     <Tooltip key="read" title={t('notifications.markRead')}>
                       <Button

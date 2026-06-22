@@ -178,6 +178,8 @@ export function normalizeAuditLog(log) {
     entityId  : log.entityId || log.entity_id || '-',
     action    : log.action || '-',
     userId    : log.userId || log.user_id || '-',
+    actor     : log.actor || null,
+    entity    : log.entity || null,
     oldValues : log.oldValues || log.old_values || null,
     newValues : log.newValues || log.new_values || null,
     ipAddress : log.ipAddress || log.ip_address || '-',

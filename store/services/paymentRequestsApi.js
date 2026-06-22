@@ -38,16 +38,16 @@ export const paymentRequestsApi = createApi({
     }),
 
     approvePaymentRequest: builder.mutation({
-      query: (id) => ({ url: `/payment-requests/${id}/approve`, method: 'PATCH' }),
-      invalidatesTags: (_result, _error, id) => [
+      query: ({ id, comment }) => ({ url: `/payment-requests/${id}/approve`, method: 'PATCH', data: { comment } }),
+      invalidatesTags: (_result, _error, { id }) => [
         { type: 'PaymentRequest', id },
         { type: 'PaymentRequest', id: 'LIST' }
       ]
     }),
 
     finalApprovePaymentRequest: builder.mutation({
-      query: (id) => ({ url: `/payment-requests/${id}/final-approve`, method: 'PATCH' }),
-      invalidatesTags: (_result, _error, id) => [
+      query: ({ id, comment }) => ({ url: `/payment-requests/${id}/final-approve`, method: 'PATCH', data: { comment } }),
+      invalidatesTags: (_result, _error, { id }) => [
         { type: 'PaymentRequest', id },
         { type: 'PaymentRequest', id: 'LIST' }
       ]
@@ -60,6 +60,14 @@ export const paymentRequestsApi = createApi({
         data: { reason }
       }),
       invalidatesTags: (_result, _error, { id }) => [
+        { type: 'PaymentRequest', id },
+        { type: 'PaymentRequest', id: 'LIST' }
+      ]
+    }),
+
+    markPaymentRequestPaid: builder.mutation({
+      query: (id) => ({ url: `/payment-requests/${id}/mark-paid`, method: 'PATCH' }),
+      invalidatesTags: (_result, _error, id) => [
         { type: 'PaymentRequest', id },
         { type: 'PaymentRequest', id: 'LIST' }
       ]
@@ -91,6 +99,7 @@ export const {
   useApprovePaymentRequestMutation,
   useFinalApprovePaymentRequestMutation,
   useRejectPaymentRequestMutation,
+  useMarkPaymentRequestPaidMutation,
   useUpdatePaymentRequestMutation,
   useDeletePaymentRequestMutation
 } = paymentRequestsApi;

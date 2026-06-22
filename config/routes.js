@@ -56,7 +56,7 @@ export const APP_ROUTES = [
   },
   {
     path: '/payment-requests',
-    permission: PERMISSIONS.ACCOUNTING_VIEW,
+    permission: PERMISSIONS.PAYMENT_REQUEST_VIEW,
     showInMenu: true,
     icon: MoneyCollectOutlined,
     labelKey: 'menu.paymentRequests'
