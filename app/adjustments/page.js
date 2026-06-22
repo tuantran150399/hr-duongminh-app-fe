@@ -21,7 +21,7 @@ import {
   useDeleteAdjustmentMutation
 } from '@/store/services/adjustmentsApi';
 import { useGetJobsQuery } from '@/store/services/jobsApi';
-import { formatCurrency } from '@/utils/format';
+import { formatCurrency, formatDateTime, formatDate } from '@/utils/format';
 import { decimalInputProps, integerInputProps } from '@/utils/formUtils';
 
 const ADJUSTMENT_TYPES = [
@@ -53,7 +53,7 @@ function TypeLabel({ t, value }) {
 }
 
 export default function AdjustmentsPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { message } = App.useApp();
   const [form] = Form.useForm();
   const [modalOpen, setModalOpen] = useState(false);
@@ -174,14 +174,15 @@ export default function AdjustmentsPage() {
       title: t('adjustments.docDate'),
       dataIndex: 'date',
       key: 'date',
-      width: 120
+      width: 120,
+      render: (val) => formatDate(val, language)
     },
     {
       title: t('adjustments.approvedAt'),
       key: 'approvedAt',
       width: 150,
       render: (_, r) => r.approvedAt
-        ? new Date(r.approvedAt).toLocaleString()
+        ? formatDateTime(r.approvedAt, language)
         : '—'
     },
     {

@@ -21,7 +21,7 @@ import {
 import { useGetBranchesQuery } from '@/store/services/adminExtApi';
 import { useGetPartnersQuery } from '@/store/services/partnersApi';
 import { useGetJobsQuery } from '@/store/services/jobsApi';
-import { formatCurrency } from '@/utils/format';
+import { formatCurrency, formatDate } from '@/utils/format';
 import { getApiError } from '@/utils/getApiError';
 import api from '@/services/api';
 
@@ -64,7 +64,7 @@ function normalizeItems(raw) {
 }
 
 export default function ReportsPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { message } = App.useApp();
   const [activeTab, setActiveTab] = useState('branch-summary');
   const [dateRange, setDateRange] = useState([null, null]);
@@ -183,13 +183,13 @@ export default function ReportsPage() {
       { title: t('reports.entryId'), dataIndex: 'id', key: 'id' },
       { title: t('reports.jobId'), dataIndex: 'jobId', key: 'jobId', render: (id) => jobMap[id]?.job_no || id },
       { title: t('reports.amount'), dataIndex: 'localAmount', key: 'localAmount', render: v => formatCurrency(v) },
-      { title: t('reports.dueDate'), dataIndex: 'dueDate', key: 'dueDate' }
+      { title: t('reports.dueDate'), dataIndex: 'dueDate', key: 'dueDate', render: (val) => formatDate(val, language) }
     ],
     'overdue-payables': [
       { title: t('reports.entryId'), dataIndex: 'id', key: 'id' },
       { title: t('reports.jobId'), dataIndex: 'jobId', key: 'jobId', render: (id) => jobMap[id]?.job_no || id },
       { title: t('reports.amount'), dataIndex: 'localAmount', key: 'localAmount', render: v => formatCurrency(v) },
-      { title: t('reports.dueDate'), dataIndex: 'dueDate', key: 'dueDate' }
+      { title: t('reports.dueDate'), dataIndex: 'dueDate', key: 'dueDate', render: (val) => formatDate(val, language) }
     ],
     'pnl': [
       { title: t('reports.period'), dataIndex: 'period', key: 'period' },

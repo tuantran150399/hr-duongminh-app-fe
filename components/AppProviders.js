@@ -126,7 +126,7 @@ const dictionary = {
       navigation: 'Navigation',
       advances: 'Advances & Reimbursements',
       debitNotes: 'Debit Notes',
-      cob: 'COB (Chi hộ / Thu hộ)',
+      cob: 'COB (Charge on Behalf)',
       security: 'Security',
       notifications: 'Notifications',
       adjustments: 'Adjustments & Reconciliation'
@@ -210,7 +210,7 @@ const dictionary = {
       dueDate: 'Due Date',
       postConfirm: 'Post this draft entry?',
       voidConfirm: 'Void this accounting entry?',
-      cobMark: 'Chi hộ — Charge on Behalf',
+      cobMark: 'Charge on Behalf',
       cobDescription: 'When you mark this cost as COB, the system will automatically create a matching receivable from the selected customer, linked to the same Job No.',
       entryCreated: 'Entry created.',
       unableToCreate: 'Unable to create accounting entry.',
@@ -221,7 +221,7 @@ const dictionary = {
       statusPosted: 'Posted',
       statusVoided: 'Voided',
       statusReversed: 'Reversed',
-      statusClosed: 'Closed',
+      statusClosed: 'Completed',
       unpaid: 'Unpaid',
       partial: 'Partial',
       paid: 'Paid',
@@ -917,6 +917,7 @@ const dictionary = {
       seaFreight: 'Sea Freight',
       airFreight: 'Air Freight',
       localCharge: 'Local Charge',
+      lcl: 'LCL',
       other: 'Other',
       edit: 'Edit',
       delete: 'Delete',
@@ -1054,7 +1055,29 @@ const dictionary = {
       userAgent: 'User agent',
       timestamp: 'Timestamp',
       before: 'Before',
-      after: 'After'
+      after: 'After',
+      actionTypes: {
+        CREATE: 'CREATE',
+        UPDATE: 'UPDATE',
+        DELETE: 'DELETE',
+        POST: 'POST',
+        VOID: 'VOID',
+        LOGIN: 'LOGIN',
+        DEACTIVATE: 'DEACTIVATE',
+        RECORD_PAYMENT: 'RECORD PAYMENT',
+        CREATE_COLLECT_FROM_COB: 'CREATE RECEIVABLE FROM COB'
+      },
+      entityTypes: {
+        Job: 'Job',
+        Partner: 'Partner',
+        User: 'User',
+        Role: 'Role',
+        Branch: 'Branch',
+        Advance: 'Advance',
+        AccountingEntry: 'Accounting Entry',
+        PaymentRequest: 'Payment Request',
+        ServicePrice: 'Service Price'
+      }
     },
     jobForm: {
       createTitle: 'Create Job',
@@ -1195,7 +1218,7 @@ const dictionary = {
       voidConfirm: 'Void this accounting entry?',
       voidOk: 'Void',
       markCob: 'Mark as COB',
-      cobTooltip: 'Chi hộ — charge customer on behalf',
+      cobTooltip: 'Charge customer on behalf',
       posted: 'Posted',
       openPayment: 'Open Payment',
       draftItems: 'Draft Items',
@@ -2287,6 +2310,7 @@ const dictionary = {
       seaFreight: 'Cước biển',
       airFreight: 'Cước hàng không',
       localCharge: 'Phí nội địa',
+      lcl: 'Hàng lẻ (LCL)',
       other: 'Khác',
       edit: 'Sửa',
       delete: 'Xóa',
@@ -2424,7 +2448,29 @@ const dictionary = {
       userAgent: 'Trình duyệt',
       timestamp: 'Thời điểm',
       before: 'Trước',
-      after: 'Sau'
+      after: 'Sau',
+      actionTypes: {
+        CREATE: 'Tạo mới',
+        UPDATE: 'Cập nhật',
+        DELETE: 'Xóa',
+        POST: 'Chốt',
+        VOID: 'Hủy',
+        LOGIN: 'Đăng nhập',
+        DEACTIVATE: 'Ngừng hoạt động',
+        RECORD_PAYMENT: 'Ghi nhận thanh toán',
+        CREATE_COLLECT_FROM_COB: 'Tạo phải thu từ chi hộ'
+      },
+      entityTypes: {
+        Job: 'Lô hàng',
+        Partner: 'Đối tác',
+        User: 'Người dùng',
+        Role: 'Nhóm quyền',
+        Branch: 'Chi nhánh',
+        Advance: 'Tạm ứng',
+        AccountingEntry: 'Bút toán kế toán',
+        PaymentRequest: 'Phiếu đề nghị chi',
+        ServicePrice: 'Giá dịch vụ'
+      }
     },
     jobForm: {
       createTitle: 'Tạo lô hàng',
@@ -2519,7 +2565,7 @@ const dictionary = {
       shipmentRail: 'Đường sắt',
       statusDraft: 'Chờ duyệt',
       statusInProgress: 'Xử lý',
-      statusClosed: 'Đã đóng',
+      statusClosed: 'Hoàn thành',
       statusCancelled: 'Đã hủy',
       laneGreen: 'Xanh',
       laneYellow: 'Vàng',

@@ -206,7 +206,7 @@ export default function PricingPage() {
       dataIndex: 'amount',
       key: 'rate',
       align: 'right',
-      render: (val, record) => <span style={{ fontWeight: 600, color: '#0057c2' }}>{Number(val || 0).toLocaleString()} {record.currency || 'VND'}</span>
+      render: (val, record) => <span style={{ fontWeight: 600, color: '#0057c2' }}>{formatCurrency(val)} {record.currency || 'VND'}</span>
     },
     { title: t('pricing.effectiveTo'), dataIndex: 'effectiveTo', key: 'effectiveTo', render: value => value || '-' },
     {

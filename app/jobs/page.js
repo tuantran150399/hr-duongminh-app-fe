@@ -26,12 +26,8 @@ import { useLanguage } from '@/components/AppProviders';
 import { useGetJobsQuery } from '@/store/services/jobsApi';
 import { useGetPartnersQuery } from '@/store/services/partnersApi';
 import { getJobStatusOptions } from '@/config/jobConstants';
+import { formatDate, formatNumberExcel } from '@/utils/format';
 
-function formatDisplayDate(value) {
-  if (!value) return '-';
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleDateString('vi-VN');
-}
 
 function escapeCsv(value) {
   const text = value === null || value === undefined ? '' : String(value);
@@ -41,7 +37,7 @@ function escapeCsv(value) {
   return text;
 }
 
-function downloadJobsCsv(rows, t) {
+function downloadJobsCsv(rows, t, language) {
   const jobStatusOptions = getJobStatusOptions(t);
   const headers = [
     t('jobs.jobNo'), t('jobs.customer'), t('jobs.status'),
@@ -54,7 +50,7 @@ function downloadJobsCsv(rows, t) {
   const records = rows.map((job) => [
     job.job_no, job.customer, (jobStatusOptions.find(o => o.value === job.raw?.status)?.label || job.status),
     job.origin, job.destination,
-    formatDisplayDate(job.etd), formatDisplayDate(job.eta),
+    formatDate(job.etd, language), formatDate(job.eta, language),
     job.raw?.shipperName || job.raw?.shipper || '',
     job.raw?.consigneeName || job.raw?.consignee || '',
     job.raw?.agentName || job.raw?.agent || '',
@@ -124,11 +120,11 @@ function ExpandedRow({ record, t }) {
         </div>
         <div>
           <span className="detail-label">{t('jobForm.cargoQuantity')}</span>
-          <span className="detail-value">{raw.cargoQuantity ?? '-'}</span>
+          <span className="detail-value">{formatNumberExcel(raw.cargoQuantity) || '-'}</span>
         </div>
         <div>
           <span className="detail-label">{t('jobForm.weightCbm')}</span>
-          <span className="detail-value">{raw.weightKg ?? '-'} kg / {raw.volumeCbm ?? '-'} cbm</span>
+          <span className="detail-value">{formatNumberExcel(raw.weightKg) || '-'} kg / {formatNumberExcel(raw.volumeCbm) || '-'} cbm</span>
         </div>
         <div>
           <span className="detail-label">{t('jobs.coType')}</span>
@@ -149,7 +145,7 @@ function ExpandedRow({ record, t }) {
 
 export default function JobsPage() {
   const router = useRouter();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { message } = App.useApp();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -275,8 +271,8 @@ export default function JobsPage() {
     },
     { title: t('jobs.origin'), dataIndex: 'origin', key: 'origin' },
     { title: t('jobs.destination'), dataIndex: 'destination', key: 'destination' },
-    { title: t('jobs.etd'), dataIndex: 'etd', key: 'etd', render: formatDisplayDate },
-    { title: t('jobs.eta'), dataIndex: 'eta', key: 'eta', render: formatDisplayDate }
+    { title: t('jobs.etd'), dataIndex: 'etd', key: 'etd', render: (val) => formatDate(val, language) },
+    { title: t('jobs.eta'), dataIndex: 'eta', key: 'eta', render: (val) => formatDate(val, language) }
   ];
 
   const columns = allColumnsDefinition.filter((col) => visibleColumns.includes(col.key));
@@ -300,7 +296,7 @@ export default function JobsPage() {
       message.warning(t('jobs.noJobsToExport'));
       return;
     }
-    downloadJobsCsv(filteredJobs, t);
+    downloadJobsCsv(filteredJobs, t, language);
     message.success(`${t('jobs.export')}: ${filteredJobs.length}`);
   }
 

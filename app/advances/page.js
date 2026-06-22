@@ -13,7 +13,7 @@ import { useState, useMemo, useEffect } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { useLanguage } from '@/components/AppProviders';
 import FilterCard from '@/components/FilterCard';
-import { formatCurrency } from '@/utils/format';
+import { formatCurrency, formatDate } from '@/utils/format';
 import { getApiError } from '@/utils/getApiError';
 import { getEmployees } from '@/services/hrmService';
 import { decimalInputProps, toDatePickerValue } from '@/utils/formUtils';
@@ -45,7 +45,7 @@ function isOverdue(record) {
 }
 
 export default function AdvancesPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { message } = App.useApp();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -284,7 +284,7 @@ export default function AdvancesPage() {
         return <Tag color={method === 'CASH' ? 'gold' : 'cyan'}>{method === 'CASH' ? t('advances.paymentMethodCash') : t('advances.paymentMethodBank')}</Tag>;
       }
     },
-    { title: t('advances.dueDate'), dataIndex: 'dueDate', key: 'dueDate', width: 140, render: (value) => value || '-' },
+    { title: t('advances.dueDate'), dataIndex: 'dueDate', key: 'dueDate', width: 140, render: (value) => formatDate(value, language) },
     {
       title: t('advances.status'),
       dataIndex: 'status',

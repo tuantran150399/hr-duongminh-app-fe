@@ -46,7 +46,7 @@ import {
 } from '@/store/services/paymentRequestsApi';
 import { useGetJobsQuery } from '@/store/services/jobsApi';
 import { useGetPartnersQuery } from '@/store/services/partnersApi';
-import { formatCurrency } from '@/utils/format';
+import { formatCurrency, formatDate } from '@/utils/format';
 import { getApiError } from '@/utils/getApiError';
 import { decimalInputProps } from '@/utils/formUtils';
 
@@ -55,7 +55,7 @@ function toDateString(value) {
 }
 
 export default function PaymentRequestsPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { message } = App.useApp();
   const [form] = Form.useForm();
   const [rejectForm] = Form.useForm();
@@ -273,7 +273,8 @@ export default function PaymentRequestsPage() {
       title: t('paymentRequests.requestedDate'),
       dataIndex: 'requestedPaymentDate',
       key: 'requestedPaymentDate',
-      width: 140
+      width: 140,
+      render: (val) => formatDate(val, language)
     },
     {
       title: t('paymentRequests.reason'),
@@ -551,7 +552,7 @@ export default function PaymentRequestsPage() {
               <strong>{formatCurrency(viewRecord.amount)} {viewRecord.currency}</strong>
             </Descriptions.Item>
             <Descriptions.Item label={t('paymentRequests.requestedDate')}>
-              {viewRecord.requestedPaymentDate || '-'}
+              {formatDate(viewRecord.requestedPaymentDate, language)}
             </Descriptions.Item>
             <Descriptions.Item label={t('paymentRequests.status')}>
               <Tag color={statusColor[viewRecord.status]}>{statusLabel[viewRecord.status] || viewRecord.status}</Tag>

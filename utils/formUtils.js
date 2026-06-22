@@ -1,11 +1,13 @@
 /**
  * Shared form utility functions — dùng chung cho tất cả pages có form.
  *
+ * Rule: Nếu thao tác validate/format, check các utils (ví dụ utils/format.js) trước khi thêm mới 1 hàm nào đó.
+ *
  * Import:
  *   import { cleanPayload, toDateString, toDatePickerValue } from '@/utils/formUtils';
  */
 import dayjs from 'dayjs';
-
+import { formatNumberExcel } from './format';
 /**
  * Loại bỏ các field có giá trị undefined / null / '' khỏi payload
  * trước khi gửi lên backend.
@@ -54,20 +56,29 @@ export function convertDateFields(values, dateFields) {
 }
 
 function normalizeNumericInput(value, allowDecimal = true) {
-  const raw = String(value ?? '').replace(/,/g, '.');
+  const raw = String(value ?? '').replace(/,/g, '');
+  
+  const isNegative = raw.startsWith('-');
   const sanitized = raw.replace(/[^\d.]/g, '');
 
+  let result = sanitized;
   if (!allowDecimal) {
-    return sanitized.replace(/\./g, '');
+    result = sanitized.replace(/\./g, '');
+  } else {
+    const firstDotIndex = sanitized.indexOf('.');
+    if (firstDotIndex !== -1) {
+      const integerPart = sanitized.slice(0, firstDotIndex);
+      const decimalPart = sanitized.slice(firstDotIndex + 1).replace(/\./g, '');
+      result = `${integerPart}.${decimalPart}`;
+    }
   }
 
-  const firstDotIndex = sanitized.indexOf('.');
-  if (firstDotIndex === -1) return sanitized;
-
-  const integerPart = sanitized.slice(0, firstDotIndex);
-  const decimalPart = sanitized.slice(firstDotIndex + 1).replace(/\./g, '');
-  return `${integerPart}.${decimalPart}`;
+  if (isNegative) {
+    return result ? `-${result}` : '-';
+  }
+  return result;
 }
+
 
 export const decimalInputProps = {
   inputMode: 'decimal',
@@ -75,13 +86,15 @@ export const decimalInputProps = {
   formatter: (value, info) => {
     if (value === undefined || value === null || value === '') return '';
     const str = String(value);
-    if (info && info.userTyping) return str;
-    const num = Number(str);
+    if (info && info.userTyping) {
+      return formatNumberExcel(str, true);
+    }
+    const num = Number(str.replace(/,/g, ''));
     if (isNaN(num)) return str;
-    return num.toString();
+    return formatNumberExcel(num.toString());
   },
   onKeyPress: (event) => {
-    if (event.key.length === 1 && !/[\d.,]/.test(event.key)) {
+    if (event.key.length === 1 && !/[\d.-]/.test(event.key)) {
       event.preventDefault();
     }
   }
@@ -93,13 +106,15 @@ export const integerInputProps = {
   formatter: (value, info) => {
     if (value === undefined || value === null || value === '') return '';
     const str = String(value);
-    if (info && info.userTyping) return str;
-    const num = parseInt(str, 10);
+    if (info && info.userTyping) {
+      return formatNumberExcel(str, true);
+    }
+    const num = parseInt(str.replace(/,/g, ''), 10);
     if (isNaN(num)) return str;
-    return num.toString();
+    return formatNumberExcel(num.toString());
   },
   onKeyPress: (event) => {
-    if (event.key.length === 1 && !/[\d]/.test(event.key)) {
+    if (event.key.length === 1 && !/[\d-]/.test(event.key)) {
       event.preventDefault();
     }
   }

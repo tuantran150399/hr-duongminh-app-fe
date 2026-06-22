@@ -22,7 +22,7 @@ import {
   useCreatePayrollRecordMutation,
   useFinalizePayrollMutation
 } from '@/store/services/hrmApi';
-import { formatCurrency } from '@/utils/format';
+import { formatCurrency, formatDate } from '@/utils/format';
 import { getApiError } from '@/utils/getApiError';
 import { decimalInputProps } from '@/utils/formUtils';
 
@@ -36,9 +36,7 @@ const deptColors = {
 
 const departmentsSeed = ['Operations', 'Accounting', 'Sales', 'Support', 'Management'];
 
-function formatDate(value) {
-  return value ? String(value).slice(0, 10) : '-';
-}
+
 
 function getPayrollMonth(record) {
   if (!record?.year || !record?.month) return '-';
@@ -51,7 +49,7 @@ function splitPayrollMonth(value) {
 }
 
 export default function HRMPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { message } = App.useApp();
   const [activeTab, setActiveTab] = useState('employees');
   const [search, setSearch] = useState('');
@@ -83,7 +81,7 @@ export default function HRMPage() {
         ...record,
         employeeCode: employee?.employeeCode || `#${record.employeeId}`,
         employeeName: employee?.fullName || `Employee #${record.employeeId}`,
-        workDateText: formatDate(record.workDate),
+        workDateText: formatDate(record.workDate, language),
         workHours: Number(record.workHours || 0)
       };
     }),
@@ -231,7 +229,7 @@ export default function HRMPage() {
       key: 'department',
       render: (department) => <Tag color={deptColors[department] || 'default'}>{department || '-'}</Tag>
     },
-    { title: t('hrm.joinDate'), dataIndex: 'hireDate', key: 'hireDate', render: formatDate },
+    { title: t('hrm.joinDate'), dataIndex: 'hireDate', key: 'hireDate', render: (val) => formatDate(val, language) },
     { title: t('hrm.phone'), dataIndex: 'phone', key: 'phone', render: (value) => value || '-' },
     {
       title: t('hrm.status'),
@@ -535,7 +533,7 @@ export default function HRMPage() {
             </Row>
             <Row gutter={16}>
               <Col span={12}><strong>{t('hrm.phone')}:</strong> {viewEmployee.phone || '-'}</Col>
-              <Col span={12}><strong>{t('hrm.joinDate')}:</strong> {formatDate(viewEmployee.hireDate)}</Col>
+              <Col span={12}><strong>{t('hrm.joinDate')}:</strong> {formatDate(viewEmployee.hireDate, language)}</Col>
             </Row>
             <Row gutter={16}>
               <Col span={12}>

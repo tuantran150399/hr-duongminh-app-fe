@@ -53,7 +53,7 @@ import {
 import { useGetJobsQuery } from '@/store/services/jobsApi';
 import { useGetPartnersQuery } from '@/store/services/partnersApi';
 import { useMarkCostAsCobMutation } from '@/store/services/cobApi';
-import { formatCurrency } from '@/utils/format';
+import { formatCurrency, formatDate } from '@/utils/format';
 import { getApiError } from '@/utils/getApiError';
 import { decimalInputProps } from '@/utils/formUtils';
 import { useLanguage } from '@/components/AppProviders';
@@ -591,13 +591,15 @@ export default function AccountingPage() {
       title: t('accountingForm.docDate'),
       dataIndex: 'date',
       key: 'date',
-      width: 140
+      width: 140,
+      render: (val) => formatDate(val, language)
     },
     {
       title: t('accountingForm.dueDate'),
       dataIndex: 'dueDate',
       key: 'dueDate',
-      width: 140
+      width: 140,
+      render: (val) => formatDate(val, language)
     },
     {
       title: t('accounting.actions'),

@@ -29,15 +29,12 @@ import {
   useDeleteIpRuleMutation
 } from '@/store/services/securityApi';
 import { getApiError } from '@/utils/getApiError';
+import { formatDateTime } from '@/utils/format';
 
 const SEVERITY_COLORS = { LOW: 'blue', MEDIUM: 'orange', HIGH: 'red', CRITICAL: 'volcano' };
 const STATUS_COLORS = { SUCCESS: 'green', FAILED: 'red', BLOCKED: 'orange' };
 const ALERT_STATUS_COLORS = { OPEN: 'red', ACKNOWLEDGED: 'orange', RESOLVED: 'green' };
 
-function formatTime(value) {
-  if (!value) return '-';
-  return new Date(value).toLocaleString();
-}
 
 function RiskBadge({ score }) {
   const color = score >= 75 ? '#ff4d4f' : score >= 40 ? '#fa8c16' : '#52c41a';
@@ -53,7 +50,7 @@ function RiskBadge({ score }) {
 }
 
 export default function SecurityPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { message } = App.useApp();
   const [activeTab, setActiveTab] = useState('events');
   const [ruleModalOpen, setRuleModalOpen] = useState(false);
@@ -147,7 +144,7 @@ export default function SecurityPage() {
     },
     {
       title: t('security.time'), dataIndex: 'createdAt', key: 'createdAt',
-      render: formatTime
+      render: (val) => formatDateTime(val, language)
     }
   ];
 
@@ -166,7 +163,7 @@ export default function SecurityPage() {
       title: t('security.status'), dataIndex: 'status', key: 'status',
       render: s => <Tag color={ALERT_STATUS_COLORS[s] ?? 'default'}>{s}</Tag>
     },
-    { title: t('security.time'), dataIndex: 'createdAt', key: 'createdAt', render: formatTime },
+    { title: t('security.time'), dataIndex: 'createdAt', key: 'createdAt', render: (val) => formatDateTime(val, language) },
     {
       title: t('security.actions'), key: 'actions',
       render: (_, record) => record.status === 'OPEN' ? (

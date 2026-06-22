@@ -6,6 +6,7 @@ import { useState } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { useLanguage } from '@/components/AppProviders';
 import { useGetAuditLogsQuery } from '@/store/services/adminExtApi';
+import { formatDateTime } from '@/utils/format';
 
 const { RangePicker } = DatePicker;
 
@@ -15,7 +16,7 @@ function renderJson(value) {
 }
 
 export default function AuditPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [selected, setSelected] = useState(null);
   const [queryParams, setQueryParams] = useState({});
   const [form] = Form.useForm();
@@ -36,9 +37,9 @@ export default function AuditPage() {
   }
 
   const columns = [
-    { title: t('audit.time'), dataIndex: 'createdAt', key: 'createdAt', render: (value) => value || '-' },
-    { title: t('audit.action'), dataIndex: 'action', key: 'action', render: (value) => <Tag color="blue">{value}</Tag> },
-    { title: t('audit.entity'), dataIndex: 'entityName', key: 'entityName' },
+    { title: t('audit.time'), dataIndex: 'createdAt', key: 'createdAt', render: (value) => formatDateTime(value, language) },
+    { title: t('audit.action'), dataIndex: 'action', key: 'action', render: (value) => <Tag color="blue">{t(`audit.actionTypes.${value}`) !== `audit.actionTypes.${value}` ? t(`audit.actionTypes.${value}`) : value}</Tag> },
+    { title: t('audit.entity'), dataIndex: 'entityName', key: 'entityName', render: (value) => t(`audit.entityTypes.${value}`) !== `audit.entityTypes.${value}` ? t(`audit.entityTypes.${value}`) : value },
     { title: t('audit.entityId'), dataIndex: 'entityId', key: 'entityId' },
     { title: t('audit.userId'), dataIndex: 'userId', key: 'userId' },
     { title: t('audit.ip'), dataIndex: 'ipAddress', key: 'ipAddress' },
@@ -72,7 +73,7 @@ export default function AuditPage() {
             <Form.Item name="action" label={t('audit.actionLabel')}>
               <Select
                 allowClear
-                options={['CREATE', 'UPDATE', 'DELETE', 'POST', 'VOID', 'LOGIN'].map((value) => ({ value, label: value }))}
+                options={['CREATE', 'UPDATE', 'DELETE', 'POST', 'VOID', 'LOGIN', 'DEACTIVATE', 'RECORD_PAYMENT', 'CREATE_COLLECT_FROM_COB'].map((value) => ({ value, label: t(`audit.actionTypes.${value}`) !== `audit.actionTypes.${value}` ? t(`audit.actionTypes.${value}`) : value }))}
               />
             </Form.Item>
             <Form.Item name="range" label={t('audit.dateRange')}>
@@ -106,13 +107,13 @@ export default function AuditPage() {
       <Drawer title={t('audit.detailTitle')} open={Boolean(selected)} onClose={() => setSelected(null)} width={720}>
         {selected ? (
           <Descriptions bordered column={1} size="small">
-            <Descriptions.Item label={t('audit.action')}>{selected.action}</Descriptions.Item>
-            <Descriptions.Item label={t('audit.entity')}>{selected.entityName}</Descriptions.Item>
+            <Descriptions.Item label={t('audit.action')}>{t(`audit.actionTypes.${selected.action}`) !== `audit.actionTypes.${selected.action}` ? t(`audit.actionTypes.${selected.action}`) : selected.action}</Descriptions.Item>
+            <Descriptions.Item label={t('audit.entity')}>{t(`audit.entityTypes.${selected.entityName}`) !== `audit.entityTypes.${selected.entityName}` ? t(`audit.entityTypes.${selected.entityName}`) : selected.entityName}</Descriptions.Item>
             <Descriptions.Item label={t('audit.entityId')}>{selected.entityId}</Descriptions.Item>
             <Descriptions.Item label={t('audit.userId')}>{selected.userId}</Descriptions.Item>
             <Descriptions.Item label={t('audit.ipAddress')}>{selected.ipAddress}</Descriptions.Item>
             <Descriptions.Item label={t('audit.userAgent')}>{selected.userAgent}</Descriptions.Item>
-            <Descriptions.Item label={t('audit.timestamp')}>{selected.createdAt}</Descriptions.Item>
+            <Descriptions.Item label={t('audit.timestamp')}>{formatDateTime(selected.createdAt, language)}</Descriptions.Item>
             <Descriptions.Item label={t('audit.before')}>{renderJson(selected.oldValues)}</Descriptions.Item>
             <Descriptions.Item label={t('audit.after')}>{renderJson(selected.newValues)}</Descriptions.Item>
           </Descriptions>

@@ -53,7 +53,7 @@ import {
 import { useGetJobsQuery } from '@/store/services/jobsApi';
 import { useGetPartnersQuery } from '@/store/services/partnersApi';
 import { useGetServicePricesQuery } from '@/store/services/pricingApi';
-import { formatCurrency } from '@/utils/format';
+import { formatCurrency, formatDate } from '@/utils/format';
 import { getApiError } from '@/utils/getApiError';
 import { decimalInputProps } from '@/utils/formUtils';
 
@@ -342,7 +342,7 @@ function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function DebitNotesPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { message } = App.useApp();
   const [form] = Form.useForm();
   const [voidForm] = Form.useForm();
@@ -658,13 +658,15 @@ export default function DebitNotesPage() {
       title: t('debitNotes.docDate'),
       dataIndex: 'date',
       key: 'date',
-      width: 120
+      width: 120,
+      render: (val) => formatDate(val, language)
     },
     {
       title: t('debitNotes.dueDate'),
       dataIndex: 'dueDate',
       key: 'dueDate',
-      width: 120
+      width: 120,
+      render: (val) => formatDate(val, language)
     },
     {
       title: t('debitNotes.status'),
