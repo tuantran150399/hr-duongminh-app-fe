@@ -71,10 +71,36 @@ function normalizeNumericInput(value, allowDecimal = true) {
 
 export const decimalInputProps = {
   inputMode: 'decimal',
-  parser: (value) => normalizeNumericInput(value, true)
+  parser: (value) => normalizeNumericInput(value, true),
+  formatter: (value, info) => {
+    if (value === undefined || value === null || value === '') return '';
+    const str = String(value);
+    if (info && info.userTyping) return str;
+    const num = Number(str);
+    if (isNaN(num)) return str;
+    return num.toString();
+  },
+  onKeyPress: (event) => {
+    if (event.key.length === 1 && !/[\d.,]/.test(event.key)) {
+      event.preventDefault();
+    }
+  }
 };
 
 export const integerInputProps = {
   inputMode: 'numeric',
-  parser: (value) => normalizeNumericInput(value, false)
+  parser: (value) => normalizeNumericInput(value, false),
+  formatter: (value, info) => {
+    if (value === undefined || value === null || value === '') return '';
+    const str = String(value);
+    if (info && info.userTyping) return str;
+    const num = parseInt(str, 10);
+    if (isNaN(num)) return str;
+    return num.toString();
+  },
+  onKeyPress: (event) => {
+    if (event.key.length === 1 && !/[\d]/.test(event.key)) {
+      event.preventDefault();
+    }
+  }
 };

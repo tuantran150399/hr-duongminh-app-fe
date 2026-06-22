@@ -202,12 +202,16 @@ export default function JobsPage() {
   const statusOptions = useMemo(
     () => {
       const rawStatuses = Array.from(new Set(jobs.map((item) => item.raw?.status).filter(Boolean)));
+      const predefinedOptions = jobStatusOptions.map(o => ({ value: o.value, label: o.label }));
+      const predefinedValues = new Set(jobStatusOptions.map(o => o.value));
+      const extraOptions = rawStatuses
+        .filter(status => !predefinedValues.has(status))
+        .map(status => ({ value: status, label: status }));
+
       return [
         { value: 'all', label: t('jobs.allStatuses') },
-        ...rawStatuses.map((rawStatus) => {
-          const opt = jobStatusOptions.find(o => o.value === rawStatus);
-          return { value: rawStatus, label: opt ? opt.label : rawStatus };
-        })
+        ...predefinedOptions,
+        ...extraOptions
       ];
     },
     [jobs, jobStatusOptions, t]

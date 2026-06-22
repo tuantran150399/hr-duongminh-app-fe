@@ -56,7 +56,7 @@ export const pricingApi = createApi({
     updateServicePrice: builder.mutation({
       query: ({ id, ...body }) => ({
         url: `/pricing/${id}`,
-        method: 'PUT',
+        method: 'PATCH',
         data: body
       }),
       invalidatesTags: (_result, _error, { id }) => [
