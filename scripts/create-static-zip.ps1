@@ -62,8 +62,9 @@ try {
   if (Test-Path $zipLatest) { Remove-Item -LiteralPath $zipLatest -Force }
   if (Test-Path $zipVersioned) { Remove-Item -LiteralPath $zipVersioned -Force }
 
-  tar.exe -a -c -f $zipLatest -C $stageDir .
-  tar.exe -a -c -f $zipVersioned -C $stageDir .
+  Add-Type -AssemblyName System.IO.Compression.FileSystem
+  [System.IO.Compression.ZipFile]::CreateFromDirectory($stageDir, $zipLatest)
+  [System.IO.Compression.ZipFile]::CreateFromDirectory($stageDir, $zipVersioned)
 
   Write-Host ''
   Write-Host 'Created:'
