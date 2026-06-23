@@ -188,6 +188,23 @@ export default function PricingPage() {
     : 0;
   const coveredRoutes = new Set(data.map((item) => `${item.routeFrom || ''}-${item.routeTo || ''}`)).size;
 
+  const validateQuantityRange = (_, value) => {
+    const minQuantity = form.getFieldValue('minQuantity');
+    const maxQuantity = value ?? form.getFieldValue('maxQuantity');
+
+    if (
+      minQuantity !== undefined &&
+      minQuantity !== null &&
+      maxQuantity !== undefined &&
+      maxQuantity !== null &&
+      Number(minQuantity) > Number(maxQuantity)
+    ) {
+      return Promise.reject(new Error(t('pricing.quantityRangeError')));
+    }
+
+    return Promise.resolve();
+  };
+
   const columns = [
     { title: t('pricing.partner'), dataIndex: 'partnerId', key: 'partnerId', render: value => partnerMap[value]?.name || t('pricing.generalTariff') },
     { title: t('pricing.serviceType'), dataIndex: 'serviceType', key: 'serviceType', render: value => {
@@ -357,14 +374,24 @@ export default function PricingPage() {
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="minQuantity" label={t('pricing.minQuantity')}>
+              <Form.Item
+                name="minQuantity"
+                label={t('pricing.minQuantity')}
+                dependencies={['maxQuantity']}
+                rules={[{ validator: validateQuantityRange }]}
+              >
                 <InputNumber {...decimalInputProps} style={{ width: '100%' }} min={0} />
               </Form.Item>
             </Col>
           </Row>
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item name="maxQuantity" label={t('pricing.maxQuantity')}>
+              <Form.Item
+                name="maxQuantity"
+                label={t('pricing.maxQuantity')}
+                dependencies={['minQuantity']}
+                rules={[{ validator: validateQuantityRange }]}
+              >
                 <InputNumber {...decimalInputProps} style={{ width: '100%' }} min={0} />
               </Form.Item>
             </Col>

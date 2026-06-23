@@ -113,6 +113,35 @@ function sortByServiceAndEffectiveDate(a, b) {
   return new Date(b.effectiveFrom || 0).getTime() - new Date(a.effectiveFrom || 0).getTime();
 }
 
+function validateLineItemQuantityRanges(lineItems, allPrices, t) {
+  if (!lineItems?.length || !allPrices?.length) return null;
+
+  const priceMap = new Map(allPrices.map((price) => [price.id, price]));
+
+  for (let index = 0; index < lineItems.length; index += 1) {
+    const line = lineItems[index];
+    if (!line.pricingId) continue;
+
+    const price = priceMap.get(line.pricingId);
+    if (!price) continue;
+
+    const quantity = Number(line.quantity || 1);
+    const minQuantity = price.minQuantity === undefined || price.minQuantity === null ? null : Number(price.minQuantity);
+    const maxQuantity = price.maxQuantity === undefined || price.maxQuantity === null ? null : Number(price.maxQuantity);
+    const lineLabel = line.description || line.serviceType || `${t('debitNotes.lineItems')} ${index + 1}`;
+
+    if (minQuantity !== null && quantity < minQuantity) {
+      return `${lineLabel}: ${t('pricing.minQuantity')} ${minQuantity}`;
+    }
+
+    if (maxQuantity !== null && quantity > maxQuantity) {
+      return `${lineLabel}: ${t('pricing.maxQuantity')} ${maxQuantity}`;
+    }
+  }
+
+  return null;
+}
+
 // ─── Auto-Pricing Line Items Component ────────────────────────────────────────
 
 function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId, selectedJobId, jobs, t, message }) {
@@ -477,6 +506,12 @@ export default function DebitNotesPage() {
   async function submitEntry(values) {
     if (!lineItems.length) {
       message.warning(t('debitNotes.noLineItems'));
+      return;
+    }
+
+    const quantityRangeError = validateLineItemQuantityRanges(lineItems, allPrices, t);
+    if (quantityRangeError) {
+      message.warning(quantityRangeError);
       return;
     }
 

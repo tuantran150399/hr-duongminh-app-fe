@@ -82,7 +82,7 @@ export default function AuditPage() {
       align: 'right',
       render: (_, record) => <Button size="small" icon={<EyeOutlined />} title={t('audit.view')} onClick={() => setSelected(record)} />
     }
-  ];
+  ].filter((column) => !['entityDisplay', 'ipAddress'].includes(column.key));
 
   return (
     <DashboardLayout>
