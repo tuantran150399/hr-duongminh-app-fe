@@ -1330,7 +1330,13 @@ const dictionary = {
       'pricing:manage': 'Manage Pricing & Tariffs',
       'treasury:view': 'View Treasury & Advances',
       'treasury:manage': 'Manage Treasury & Advances',
-      'report:view': 'View Reports'
+      'report:view': 'View Reports',
+      'payment-request:view': 'View Payment Requests',
+      'payment-request:create': 'Create Payment Request',
+      'payment-request:department-approve': 'Department Approve Payment Request',
+      'payment-request:final-approve': 'Final Approve Payment Request',
+      'payment-request:mark-paid': 'Mark Payment Request as Paid',
+      'payment-request: mark-paid': 'Mark Payment Request as Paid'
     },
     account: {
       settingsTitle: 'Account Settings',
@@ -2738,7 +2744,13 @@ const dictionary = {
       'pricing:manage': 'Quản lý Bảng giá',
       'treasury:view': 'Xem Thu/Chi & Tạm ứng',
       'treasury:manage': 'Quản lý Thu/Chi & Tạm ứng',
-      'report:view': 'Xem Báo cáo'
+      'report:view': 'Xem Báo cáo',
+      'payment-request:view': 'Xem Yêu cầu thanh toán',
+      'payment-request:create': 'Tạo Yêu cầu thanh toán',
+      'payment-request:department-approve': 'Duyệt phòng ban Yêu cầu thanh toán',
+      'payment-request:final-approve': 'Duyệt cuối Yêu cầu thanh toán',
+      'payment-request:mark-paid': 'Đánh dấu đã chi Yêu cầu thanh toán',
+      'payment-request: mark-paid': 'Đánh dấu đã chi Yêu cầu thanh toán'
     },
     account: {
       settingsTitle: 'Cài đặt tài khoản',

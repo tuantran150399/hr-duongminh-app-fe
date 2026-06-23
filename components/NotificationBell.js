@@ -208,25 +208,25 @@ export default function NotificationBell() {
                       </div>
                     }
                     title={
-                      <Space size={4}>
-                        <Typography.Text strong={!item.isRead} style={{ fontSize: 13 }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
+                        <Typography.Text strong={!item.isRead} style={{ fontSize: 13, wordBreak: 'break-word' }}>
                           {item.title}
                         </Typography.Text>
-                        <Tag color={config.color} style={{ fontSize: 10, lineHeight: '16px', padding: '0 4px' }}>
+                        <Tag color={config.color} style={{ fontSize: 10, lineHeight: '16px', padding: '0 4px', margin: 0 }}>
                           {item.type?.replace(/_/g, ' ')}
                         </Tag>
-                      </Space>
+                      </div>
                     }
                     description={
-                      <>
-                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                      <div style={{ marginTop: 4 }}>
+                        <Typography.Text type="secondary" style={{ fontSize: 12, wordBreak: 'break-word' }}>
                           {item.message}
                         </Typography.Text>
                         <br />
                         <Typography.Text type="secondary" style={{ fontSize: 11 }}>
                           {formatTimeAgo(item.createdAt, t)}
                         </Typography.Text>
-                      </>
+                      </div>
                     }
                   />
                   {!item.isRead && (
