@@ -44,6 +44,8 @@ import { useGetUsersQuery, useGetBranchesQuery } from '@/store/services/adminApi
 import { cleanPayload, convertDateFields, decimalInputProps, toDatePickerValue } from '@/utils/formUtils';
 import { getApiError } from '@/utils/getApiError';
 import { formatCurrency } from '@/utils/format';
+import { useAppSelector } from '@/store/hooks';
+import { selectUserRoles } from '@/store/slices/authSlice';
 import {
   getJobTypeOptions,
   getShipmentModeOptions,
@@ -98,7 +100,7 @@ function buildCopyPayload(rawJob) {
 
 function JobDetailContent() {
   const { t } = useLanguage();
-  const { message } = App.useApp();
+  const { message, modal } = App.useApp();
   const router = useRouter();
   const searchParams = useSearchParams();
   const jobId = searchParams.get('id');
@@ -107,6 +109,9 @@ function JobDetailContent() {
   const [formLoaded, setFormLoaded] = useState(false);
   const [debtPreview, setDebtPreview] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [confirmedDebitNoteLock, setConfirmedDebitNoteLock] = useState(false);
+  const userRoles = useAppSelector(selectUserRoles);
+  const isAdmin = userRoles.map((role) => role.name || role).some((role) => ['SUPER_ADMIN', 'ADMIN'].includes(role));
 
   const {
     data: jobData,
@@ -150,6 +155,7 @@ function JobDetailContent() {
   const selectedBranchId = Form.useWatch('branchId', form);
   const selectedPartnerId = Form.useWatch('partnerId', form);
   const selectedDebtAmount = Form.useWatch('debtAmount', form);
+  const selectedStatus = Form.useWatch('status', form);
 
   const userOptions = useMemo(
     () =>
@@ -241,6 +247,14 @@ function JobDetailContent() {
   }, [selectedPartnerId, selectedDebtAmount, jobId, fetchDebtPreview]);
 
   const isTerminal = TERMINAL_STATUSES.includes(raw.status);
+  const isConfirmed = raw.status === 'IN_PROGRESS';
+  const hasDebitNotes = Number(raw.debitNoteSummary?.count || 0) > 0;
+  const hasFinancialDocuments =
+    Boolean(raw.revenueEntries?.length) ||
+    Boolean(raw.costEntries?.length);
+  const canEditJob = !isTerminal && !hasFinancialDocuments && (!isConfirmed || isAdmin);
+  const willBeConfirmed = isConfirmed || selectedStatus === 'IN_PROGRESS';
+  const needsDebitNoteLockConfirmation = canEditJob && willBeConfirmed && hasDebitNotes && isAdmin;
 
   const revenueEntries = raw.revenueEntries || raw.revenue || [];
   const costEntries = raw.costEntries || raw.cost || [];
@@ -275,6 +289,10 @@ function JobDetailContent() {
       const payload = cleanPayload(convertDateFields(values, JOB_DATE_FIELDS));
       delete payload.jobCode;
 
+      if (needsDebitNoteLockConfirmation) {
+        payload.confirmDebitNoteLock = true;
+      }
+
       if (debtPreview?.hasPolicy) {
         payload.debtAmount = Number(values.debtAmount || 0);
         if (debtPreview.exceedsLimit) {
@@ -289,12 +307,30 @@ function JobDetailContent() {
       await updateJob({ id: jobId, ...payload }).unwrap();
       message.success(t('jobForm.updateSuccess'));
       setFormLoaded(false);
+      setConfirmedDebitNoteLock(false);
       refetchJob();
     } catch (err) {
       message.error(getApiError(err, t, 'jobForm.updateError'));
     } finally {
       setSaving(false);
     }
+  }
+
+  function handleSubmitJob() {
+    if (needsDebitNoteLockConfirmation && !confirmedDebitNoteLock) {
+      modal.confirm({
+        title: 'Xác nhận sửa lô hàng đã có Debit Note?',
+        content: 'Debit Note cũ sẽ được khóa lại để giữ lịch sử. Admin vẫn có thể mở Debit Note đó để kế thừa và chỉnh sửa cho chứng từ mới.',
+        okText: 'Xác nhận và lưu',
+        cancelText: 'Hủy',
+        onOk: () => {
+          setConfirmedDebitNoteLock(true);
+          window.setTimeout(() => form.submit(), 0);
+        }
+      });
+      return;
+    }
+    form.submit();
   }
 
   async function handleCopyJob() {
@@ -358,7 +394,7 @@ function JobDetailContent() {
                   {t('jobForm.cancelJob')}
                 </Button>
               </Popconfirm>
-              <Button type="primary" loading={saving} disabled={isTerminal} onClick={() => form.submit()}>
+              <Button type="primary" loading={saving} disabled={!canEditJob} onClick={handleSubmitJob}>
                 {t('jobForm.save')}
               </Button>
             </Space>
@@ -366,6 +402,14 @@ function JobDetailContent() {
         />
 
         {errorMessage ? <Alert type="error" showIcon message={errorMessage} style={{ marginBottom: 16 }} /> : null}
+        {isTerminal ? (
+          <Alert
+            type="warning"
+            showIcon
+            message="Lô hàng đã CLOSED/CANCELLED nên không thể sửa trực tiếp. Nếu cần thay đổi, hãy mở lại theo quy trình hoặc tạo log điều chỉnh."
+            style={{ marginBottom: 16 }}
+          />
+        ) : null}
 
         <Form form={form} layout="vertical" onFinish={onFinish}>
           <Row gutter={[24, 24]}>
@@ -380,7 +424,7 @@ function JobDetailContent() {
                     </Col>
                     <Col xs={24} md={12}>
                       <Form.Item name="partnerId" label={t('jobForm.customer')} rules={[{ required: true, message: t('jobForm.customerRequired') }]}>
-                        <Select showSearch optionFilterProp="label" options={partnerOptions} size="large" disabled={isTerminal} />
+                        <Select showSearch optionFilterProp="label" options={partnerOptions} size="large" disabled={!canEditJob} />
                       </Form.Item>
                     </Col>
                     {selectedPartnerId ? (
@@ -401,7 +445,7 @@ function JobDetailContent() {
                             <Row gutter={[16, 12]} style={{ marginBottom: 4 }}>
                               <Col xs={24} md={12}>
                                 <Form.Item name="debtAmount" label={t('jobForm.thisJobDebtAmount')} style={{ marginBottom: 0 }}>
-                                  <InputNumber {...decimalInputProps} min={0} precision={2} style={{ width: '100%' }} placeholder={t('jobForm.thisJobDebtAmountPlaceholder')} size="large" disabled={isTerminal} />
+                                  <InputNumber {...decimalInputProps} min={0} precision={2} style={{ width: '100%' }} placeholder={t('jobForm.thisJobDebtAmountPlaceholder')} size="large" disabled={!canEditJob} />
                                 </Form.Item>
                               </Col>
                               <Col xs={24} md={12} style={{ display: 'flex', alignItems: 'flex-end' }}>
@@ -447,27 +491,27 @@ function JobDetailContent() {
                     ) : null}
                     <Col xs={24} md={12}>
                       <Form.Item name="branchId" label={t('jobForm.branch')}>
-                        <Select allowClear showSearch optionFilterProp="label" options={branchOptions} size="large" disabled={isTerminal} />
+                        <Select allowClear showSearch optionFilterProp="label" options={branchOptions} size="large" disabled={!canEditJob} />
                       </Form.Item>
                     </Col>
                     <Col xs={24} md={12}>
                       <Form.Item name="assignedUserId" label={t('jobForm.assignedUser')}>
-                        <Select allowClear showSearch optionFilterProp="label" options={userOptions} size="large" disabled={isTerminal} />
+                        <Select allowClear showSearch optionFilterProp="label" options={userOptions} size="large" disabled={!canEditJob} />
                       </Form.Item>
                     </Col>
                     <Col span={24}>
                       <Form.Item name="shipper" label={t('jobForm.shipper')}>
-                        <Input placeholder={t('jobForm.shipperPlaceholder')} size="large" disabled={isTerminal} />
+                        <Input placeholder={t('jobForm.shipperPlaceholder')} size="large" disabled={!canEditJob} />
                       </Form.Item>
                     </Col>
                     <Col span={24}>
                       <Form.Item name="consignee" label={t('jobForm.consignee')}>
-                        <Input placeholder={t('jobForm.consigneePlaceholder')} size="large" disabled={isTerminal} />
+                        <Input placeholder={t('jobForm.consigneePlaceholder')} size="large" disabled={!canEditJob} />
                       </Form.Item>
                     </Col>
                     <Col span={24}>
                       <Form.Item name="agentId" label={t('jobForm.agentCarrier')}>
-                        <Select allowClear showSearch optionFilterProp="label" options={agentOptions} size="large" disabled={isTerminal} />
+                        <Select allowClear showSearch optionFilterProp="label" options={agentOptions} size="large" disabled={!canEditJob} />
                       </Form.Item>
                     </Col>
                   </Row>
@@ -477,57 +521,57 @@ function JobDetailContent() {
                   <Row gutter={24}>
                     <Col xs={24} md={12}>
                       <Form.Item name="declarationNo" label={t('jobForm.declarationNo')}>
-                        <Input placeholder={t('jobForm.declarationPlaceholder')} size="large" disabled={isTerminal} />
+                        <Input placeholder={t('jobForm.declarationPlaceholder')} size="large" disabled={!canEditJob} />
                       </Form.Item>
                     </Col>
                     <Col xs={24} md={12}>
                       <Form.Item name="businessType" label={t('jobForm.businessType')}>
-                        <Input placeholder={t('jobForm.businessTypePlaceholder')} size="large" disabled={isTerminal} />
+                        <Input placeholder={t('jobForm.businessTypePlaceholder')} size="large" disabled={!canEditJob} />
                       </Form.Item>
                     </Col>
                     <Col xs={24} md={12}>
                       <Form.Item name="customsLane" label={t('jobForm.customsLane')}>
-                        <Select allowClear options={getCustomsLaneOptions(t)} size="large" disabled={isTerminal} />
+                        <Select allowClear options={getCustomsLaneOptions(t)} size="large" disabled={!canEditJob} />
                       </Form.Item>
                     </Col>
                     <Col xs={24} md={12}>
                       <Form.Item name="cargoType" label={t('jobForm.cargoType')} rules={[{ required: true, message: t('jobForm.cargoTypeRequired') }]}>
-                        <Select options={getCargoTypeOptions(t)} size="large" disabled={isTerminal} />
+                        <Select options={getCargoTypeOptions(t)} size="large" disabled={!canEditJob} />
                       </Form.Item>
                     </Col>
                     <Col xs={24} md={12}>
                       <Form.Item name="containerNo" label={t('jobForm.containerNo')}>
-                        <Input placeholder={t('jobForm.containerPlaceholder')} size="large" disabled={isTerminal} />
+                        <Input placeholder={t('jobForm.containerPlaceholder')} size="large" disabled={!canEditJob} />
                       </Form.Item>
                     </Col>
                     <Col xs={24} md={12}>
                       <Form.Item name="sealNo" label={t('jobForm.sealNo')}>
-                        <Input placeholder={t('jobForm.sealPlaceholder')} size="large" disabled={isTerminal} />
+                        <Input placeholder={t('jobForm.sealPlaceholder')} size="large" disabled={!canEditJob} />
                       </Form.Item>
                     </Col>
                     <Col xs={24} md={12}>
                       <Form.Item name="cargoUnit" label={t('jobForm.cargoUnit')}>
-                        <Select allowClear options={getCargoUnitOptions(t)} size="large" placeholder={t('jobForm.cargoUnitPlaceholder')} disabled={isTerminal} />
+                        <Select allowClear options={getCargoUnitOptions(t)} size="large" placeholder={t('jobForm.cargoUnitPlaceholder')} disabled={!canEditJob} />
                       </Form.Item>
                     </Col>
                     <Col xs={24} md={12}>
                       <Form.Item name="cargoQuantity" label={t('jobForm.cargoQuantity')}>
-                        <InputNumber {...decimalInputProps} min={0} precision={4} style={{ width: '100%' }} size="large" placeholder={t('jobForm.cargoQuantityPlaceholder')} disabled={isTerminal} />
+                        <InputNumber {...decimalInputProps} min={0} precision={4} style={{ width: '100%' }} size="large" placeholder={t('jobForm.cargoQuantityPlaceholder')} disabled={!canEditJob} />
                       </Form.Item>
                     </Col>
                     <Col xs={24} md={12}>
                       <Form.Item name="weightKg" label={t('jobForm.weightKg')}>
-                        <InputNumber {...decimalInputProps} min={0} precision={4} style={{ width: '100%' }} size="large" placeholder={t('jobForm.weightKgPlaceholder')} disabled={isTerminal} />
+                        <InputNumber {...decimalInputProps} min={0} precision={4} style={{ width: '100%' }} size="large" placeholder={t('jobForm.weightKgPlaceholder')} disabled={!canEditJob} />
                       </Form.Item>
                     </Col>
                     <Col xs={24} md={12}>
                       <Form.Item name="volumeCbm" label={t('jobForm.volumeCbm')}>
-                        <InputNumber {...decimalInputProps} min={0} precision={4} style={{ width: '100%' }} size="large" placeholder={t('jobForm.volumeCbmPlaceholder')} disabled={isTerminal} />
+                        <InputNumber {...decimalInputProps} min={0} precision={4} style={{ width: '100%' }} size="large" placeholder={t('jobForm.volumeCbmPlaceholder')} disabled={!canEditJob} />
                       </Form.Item>
                     </Col>
                     <Col span={24}>
                       <Form.Item name="notes" label={t('jobForm.notes')}>
-                        <Input.TextArea rows={3} placeholder={t('jobForm.notesPlaceholder')} disabled={isTerminal} />
+                        <Input.TextArea rows={3} placeholder={t('jobForm.notesPlaceholder')} disabled={!canEditJob} />
                       </Form.Item>
                     </Col>
                   </Row>
@@ -556,70 +600,70 @@ function JobDetailContent() {
             <Col xs={24} lg={8}>
               <Card title={<Space><CompassOutlined style={{ color: '#0057c2' }} />{t('jobForm.cardShipment')}</Space>}>
                 <Form.Item name="jobType" label={t('jobForm.jobType')} rules={[{ required: true, message: t('jobForm.jobTypeRequired') }]}>
-                  <Select options={getJobTypeOptions(t)} size="large" disabled={isTerminal} />
+                  <Select options={getJobTypeOptions(t)} size="large" disabled={!canEditJob} />
                 </Form.Item>
                 <Form.Item name="shipmentMode" label={t('jobForm.shipmentMode')} rules={[{ required: true, message: t('jobForm.shipmentModeRequired') }]}>
-                  <Select options={getShipmentModeOptions(t)} size="large" disabled={isTerminal} />
+                  <Select options={getShipmentModeOptions(t)} size="large" disabled={!canEditJob} />
                 </Form.Item>
                 <Form.Item name="status" label={t('jobForm.status')}>
-                  <Select options={getJobStatusOptions(t)} size="large" />
+                  <Select options={getJobStatusOptions(t)} size="large" disabled={!canEditJob} />
                 </Form.Item>
                 <Row gutter={16}>
                   <Col span={12}>
                     <Form.Item name="vesselName" label={t('jobForm.vessel')}>
-                      <Input placeholder={t('jobForm.vessel')} size="large" disabled={isTerminal} />
+                      <Input placeholder={t('jobForm.vessel')} size="large" disabled={!canEditJob} />
                     </Form.Item>
                   </Col>
                   <Col span={12}>
                     <Form.Item name="voyageNo" label={t('jobForm.voyage')}>
-                      <Input placeholder={t('jobForm.voyage')} size="large" disabled={isTerminal} />
+                      <Input placeholder={t('jobForm.voyage')} size="large" disabled={!canEditJob} />
                     </Form.Item>
                   </Col>
                 </Row>
                 <Row gutter={16}>
                   <Col span={12}>
                     <Form.Item name="pol" label={t('jobForm.pol')}>
-                      <Input placeholder={t('jobForm.polPlaceholder')} size="large" disabled={isTerminal} />
+                      <Input placeholder={t('jobForm.polPlaceholder')} size="large" disabled={!canEditJob} />
                     </Form.Item>
                   </Col>
                   <Col span={12}>
                     <Form.Item name="pod" label={t('jobForm.pod')}>
-                      <Input placeholder={t('jobForm.podPlaceholder')} size="large" disabled={isTerminal} />
+                      <Input placeholder={t('jobForm.podPlaceholder')} size="large" disabled={!canEditJob} />
                     </Form.Item>
                   </Col>
                 </Row>
                 <Form.Item name="origin" label={t('jobForm.origin')}>
-                  <Input placeholder={t('jobForm.origin')} size="large" disabled={isTerminal} />
+                  <Input placeholder={t('jobForm.origin')} size="large" disabled={!canEditJob} />
                 </Form.Item>
                 <Form.Item name="destination" label={t('jobForm.destination')}>
-                  <Input placeholder={t('jobForm.destination')} size="large" disabled={isTerminal} />
+                  <Input placeholder={t('jobForm.destination')} size="large" disabled={!canEditJob} />
                 </Form.Item>
                 <Row gutter={16}>
                   <Col span={12}>
                     <Form.Item name="etd" label={t('jobForm.etd')}>
-                      <DatePicker style={{ width: '100%' }} size="large" format="DD/MM/YYYY" disabled={isTerminal} />
+                      <DatePicker style={{ width: '100%' }} size="large" format="DD/MM/YYYY" disabled={!canEditJob} />
                     </Form.Item>
                   </Col>
                   <Col span={12}>
                     <Form.Item name="eta" label={t('jobForm.eta')}>
-                      <DatePicker style={{ width: '100%' }} size="large" format="DD/MM/YYYY" disabled={isTerminal} />
+                      <DatePicker style={{ width: '100%' }} size="large" format="DD/MM/YYYY" disabled={!canEditJob} />
                     </Form.Item>
                   </Col>
                 </Row>
                 <Row gutter={16}>
                   <Col span={12}>
                     <Form.Item name="atd" label={t('jobForm.atd')}>
-                      <DatePicker style={{ width: '100%' }} size="large" format="DD/MM/YYYY" disabled={isTerminal} />
+                      <DatePicker style={{ width: '100%' }} size="large" format="DD/MM/YYYY" disabled={!canEditJob} />
                     </Form.Item>
                   </Col>
                   <Col span={12}>
                     <Form.Item name="ata" label={t('jobForm.ata')}>
-                      <DatePicker style={{ width: '100%' }} size="large" format="DD/MM/YYYY" disabled={isTerminal} />
+                      <DatePicker style={{ width: '100%' }} size="large" format="DD/MM/YYYY" disabled={!canEditJob} />
                     </Form.Item>
                   </Col>
                 </Row>
                 <Form.Item name="actualDeliveryDate" label={t('jobForm.actualDeliveryDate')}>
-                  <DatePicker style={{ width: '100%' }} size="large" format="DD/MM/YYYY" disabled={isTerminal} />
+                  <DatePicker style={{ width: '100%' }} size="large" format="DD/MM/YYYY" disabled={!canEditJob} />
                 </Form.Item>
               </Card>
             </Col>

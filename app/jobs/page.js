@@ -136,7 +136,7 @@ function ExpandedRow({ record, t }) {
           size="small"
           onClick={() => router.push(`/jobs/detail?id=${record.backendId || record.id}`)}
         >
-          {t('jobs.detail')}
+          {t('jobs.detailEdit')}
         </Button>
       </div>
     </div>

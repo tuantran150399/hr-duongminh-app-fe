@@ -56,6 +56,8 @@ import { useGetServicePricesQuery } from '@/store/services/pricingApi';
 import { formatCurrency, formatDate } from '@/utils/format';
 import { getApiError } from '@/utils/getApiError';
 import { decimalInputProps } from '@/utils/formUtils';
+import { useAppSelector } from '@/store/hooks';
+import { selectUserRoles } from '@/store/slices/authSlice';
 
 function toDateString(value) {
   return value?.format ? value.format('YYYY-MM-DD') : value || undefined;
@@ -144,28 +146,39 @@ function validateLineItemQuantityRanges(lineItems, allPrices, t) {
 
 // ─── Auto-Pricing Line Items Component ────────────────────────────────────────
 
-function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId, selectedJobId, jobs, t, message }) {
+function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId, selectedJobIds, jobs, t, message }) {
+  const selectedJobs = useMemo(
+    () => jobs.filter((job) => selectedJobIds?.includes(job.backendId)),
+    [jobs, selectedJobIds]
+  );
+
+  const selectedJobOptions = useMemo(
+    () => selectedJobs.map((job) => ({ value: job.backendId, label: job.job_no || job.id })),
+    [selectedJobs]
+  );
+
   // Find applicable tariffs based on selected customer + job route
   const suggestedPrices = useMemo(() => {
-    if (!allPrices?.length) return [];
-
-    const selectedJob = jobs.find((j) => j.backendId === selectedJobId);
-
-    const origin = normalizeMatchText(selectedJob?.origin || selectedJob?.raw?.pol || '');
-    const destination = normalizeMatchText(selectedJob?.destination || selectedJob?.raw?.pod || '');
+    if (!allPrices?.length || !selectedJobs.length) return [];
     const customerPrices = allPrices.filter((price) => price.isActive !== false && price.partnerId === selectedPartnerId);
 
-    if (origin && destination) {
+    return selectedJobs.flatMap((selectedJob) => {
+      const origin = normalizeMatchText(selectedJob?.origin || selectedJob?.raw?.pol || '');
+      const destination = normalizeMatchText(selectedJob?.destination || selectedJob?.raw?.pod || '');
+
+      if (origin && destination) {
       const routePrices = customerPrices
         .filter((price) => normalizeMatchText(price.routeFrom) === origin && normalizeMatchText(price.routeTo) === destination)
         .sort(sortByServiceAndEffectiveDate);
-      if (routePrices.length) return routePrices;
-    }
+        if (routePrices.length) return routePrices.map((price) => ({ ...price, jobId: selectedJob.backendId, job: selectedJob }));
+      }
 
-    return customerPrices
-      .filter((price) => isBlankRoute(price.routeFrom) && isBlankRoute(price.routeTo))
-      .sort(sortByServiceAndEffectiveDate);
-  }, [allPrices, selectedPartnerId, selectedJobId, jobs]);
+      return customerPrices
+        .filter((price) => isBlankRoute(price.routeFrom) && isBlankRoute(price.routeTo))
+        .sort(sortByServiceAndEffectiveDate)
+        .map((price) => ({ ...price, jobId: selectedJob.backendId, job: selectedJob }));
+    });
+  }, [allPrices, selectedPartnerId, selectedJobs]);
 
   function applyPricing() {
     if (!suggestedPrices.length) {
@@ -173,23 +186,29 @@ function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId
       return;
     }
 
-    const selectedJob = jobs.find((j) => j.backendId === selectedJobId);
     const newLines = suggestedPrices.map((price, index) => {
-      const quantity = quantityForUnit(price.unit, selectedJob);
+      const quantity = quantityForUnit(price.unit, price.job);
       const unitPrice = Number(price.amount || 0);
       return ({
       key: `auto-${Date.now()}-${index}`,
+      jobId: price.jobId,
       serviceType: price.serviceType || '',
       description: [
+        price.job?.job_no || price.job?.id,
         price.serviceType,
         price.shipmentMode,
         [price.routeFrom, price.routeTo].filter(Boolean).join(' → '),
         price.unit ? `(${price.unit})` : '',
         price.notes
       ].filter(Boolean).join(' — '),
+      chargeNote: `${formatCurrency(unitPrice)} ${price.currency || 'VND'}/${price.unit || 'LOT'}`,
+      lineNote: '',
       quantity,
       unitPrice,
       amount: quantity * unitPrice,
+      creditAmount: 0,
+      vatRate: 0,
+      vatAmount: 0,
       currency: price.currency || 'VND',
       pricingId: price.id,
       isAutoFilled: true
@@ -205,11 +224,17 @@ function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId
       ...lineItems,
       {
         key: `manual-${Date.now()}`,
+        jobId: selectedJobIds?.[0] || null,
         serviceType: '',
         description: '',
+        chargeNote: '',
+        lineNote: '',
         quantity: 1,
         unitPrice: 0,
         amount: 0,
+        creditAmount: 0,
+        vatRate: 0,
+        vatAmount: 0,
         currency: 'VND',
         pricingId: null,
         isAutoFilled: false
@@ -225,6 +250,9 @@ function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId
         if (field === 'quantity' || field === 'unitPrice') {
           updated.amount = Number(updated.quantity || 0) * Number(updated.unitPrice || 0);
         }
+        if (field === 'quantity' || field === 'unitPrice' || field === 'vatRate') {
+          updated.vatAmount = Number(updated.amount || 0) * (Number(updated.vatRate || 0) / 100);
+        }
         return updated;
       })
     );
@@ -234,9 +262,25 @@ function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId
     setLineItems(lineItems.filter((line) => line.key !== key));
   }
 
-  const totalAmount = lineItems.reduce((sum, line) => sum + Number(line.amount || 0), 0);
+  const totalAmount = lineItems.reduce((sum, line) => sum + Number(line.amount || 0) - Number(line.creditAmount || 0) + Number(line.vatAmount || 0), 0);
 
   const lineColumns = [
+    {
+      title: t('debitNotes.jobNo'),
+      dataIndex: 'jobId',
+      width: 150,
+      render: (value, record) => (
+        <Select
+          value={value}
+          size="small"
+          allowClear
+          options={selectedJobOptions}
+          placeholder={t('debitNotes.selectJob')}
+          style={{ width: '100%' }}
+          onChange={(v) => updateLine(record.key, 'jobId', v)}
+        />
+      )
+    },
     {
       title: t('debitNotes.serviceType'),
       dataIndex: 'serviceType',
@@ -286,6 +330,19 @@ function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId
       )
     },
     {
+      title: 'Charge Note',
+      dataIndex: 'chargeNote',
+      width: 150,
+      render: (value, record) => (
+        <Input
+          value={value}
+          size="small"
+          placeholder="4,100,000 VND/40"
+          onChange={(e) => updateLine(record.key, 'chargeNote', e.target.value)}
+        />
+      )
+    },
+    {
       title: t('debitNotes.unitPrice'),
       dataIndex: 'unitPrice',
       width: 140,
@@ -307,6 +364,58 @@ function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId
       width: 130,
       align: 'right',
       render: (value) => <strong>{formatCurrency(value)}</strong>
+    },
+    {
+      title: 'Credit',
+      dataIndex: 'creditAmount',
+      width: 120,
+      render: (value, record) => (
+        <InputNumber
+          {...decimalInputProps}
+          value={value}
+          size="small"
+          min={0}
+          precision={2}
+          style={{ width: '100%' }}
+          onChange={(v) => updateLine(record.key, 'creditAmount', v)}
+        />
+      )
+    },
+    {
+      title: 'VAT %',
+      dataIndex: 'vatRate',
+      width: 90,
+      render: (value, record) => (
+        <InputNumber
+          {...decimalInputProps}
+          value={value}
+          size="small"
+          min={0}
+          precision={2}
+          style={{ width: '100%' }}
+          onChange={(v) => updateLine(record.key, 'vatRate', v)}
+        />
+      )
+    },
+    {
+      title: 'VAT',
+      dataIndex: 'vatAmount',
+      width: 110,
+      align: 'right',
+      render: (value) => <strong>{formatCurrency(value)}</strong>
+    },
+    {
+      title: 'Note',
+      dataIndex: 'lineNote',
+      width: 150,
+      render: (value, record) => (
+        <Input
+          value={value}
+          size="small"
+          placeholder="20833 / ghi chú"
+          onChange={(e) => updateLine(record.key, 'lineNote', e.target.value)}
+        />
+      )
     },
     {
       title: '',
@@ -352,6 +461,7 @@ function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId
         columns={lineColumns}
         rowKey="key"
         size="small"
+        scroll={{ x: 1320 }}
         pagination={false}
         footer={() => (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -373,6 +483,8 @@ function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId
 export default function DebitNotesPage() {
   const { t, language } = useLanguage();
   const { message } = App.useApp();
+  const userRoles = useAppSelector(selectUserRoles);
+  const isAdmin = userRoles.map((role) => role.name || role).some((role) => ['SUPER_ADMIN', 'ADMIN'].includes(role));
   const [form] = Form.useForm();
   const [voidForm] = Form.useForm();
   const [paymentForm] = Form.useForm();
@@ -383,7 +495,7 @@ export default function DebitNotesPage() {
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [lineItems, setLineItems] = useState([]);
   const [selectedPartnerId, setSelectedPartnerId] = useState(null);
-  const [selectedJobId, setSelectedJobId] = useState(null);
+  const [selectedJobIds, setSelectedJobIds] = useState([]);
   const [editingRecord, setEditingRecord] = useState(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -416,6 +528,14 @@ export default function DebitNotesPage() {
     () => (partnersData?.items || []).filter((p) => p.isActive),
     [partnersData]
   );
+  const partnersById = useMemo(
+    () =>
+      partners.reduce((result, partner) => {
+        if (partner) result[partner.backendId] = partner;
+        return result;
+      }, {}),
+    [partners]
+  );
   const allPrices = useMemo(() => pricingData?.items || [], [pricingData]);
   const loadError = loadErrorObj ? t('debitNotes.loadError') : '';
 
@@ -425,12 +545,15 @@ export default function DebitNotesPage() {
 
     return notes.filter((n) => {
       const customer = partners.find((p) => p.backendId === n.raw?.partnerId);
-      const job = jobs.find((j) => j.backendId === n.jobId);
+      const noteJobIds = n.raw?.jobIds?.length ? n.raw.jobIds : [n.jobId].filter(Boolean);
+      const jobCodes = noteJobIds
+        .map((jobId) => jobs.find((j) => j.backendId === jobId)?.job_no)
+        .filter(Boolean);
       
       const searchable = [
         customer?.name,
         customer?.code,
-        job?.job_no,
+        ...jobCodes,
         n.description,
         `DN-${n.backendId}`
       ].filter(Boolean).join(' ').toLowerCase();
@@ -440,8 +563,20 @@ export default function DebitNotesPage() {
   }, [notes, search, partners, jobs]);
 
   const jobOptions = useMemo(
-    () => jobs.map((job) => ({ value: job.backendId, label: `${job.job_no || job.id} - ${job.customer || ''}` })),
-    [jobs]
+    () =>
+      jobs
+        .filter((job) => !selectedPartnerId || job.partnerId === selectedPartnerId || job.raw?.partnerId === selectedPartnerId)
+        .map((job) => {
+        const customerName = job.partnerId != null
+          ? (partnersById[job.partnerId]?.name || job.customer || '')
+          : (job.customer || '');
+
+        return {
+          value: job.backendId,
+          label: `${job.job_no || job.id} - ${customerName}`
+        };
+      }),
+    [jobs, partnersById, selectedPartnerId]
   );
 
   const customerOptions = useMemo(
@@ -452,12 +587,19 @@ export default function DebitNotesPage() {
     [partners]
   );
 
-  // Auto-fill customer when a job is selected
+  function handlePartnerChange(partnerId) {
+    setSelectedPartnerId(partnerId || null);
+    setSelectedJobIds([]);
+    setLineItems([]);
+    form.setFieldsValue({ jobIds: [] });
+  }
+
+  // Keep all selected jobs under the same customer.
   const handleJobChange = useCallback(
-    (jobId) => {
-      setSelectedJobId(jobId);
-      if (!jobId) return;
-      const job = jobs.find((j) => j.backendId === jobId);
+    (jobIds = []) => {
+      setSelectedJobIds(jobIds);
+      if (!jobIds.length) return;
+      const job = jobs.find((j) => j.backendId === jobIds[0]);
       if (job?.raw?.partnerId) {
         form.setFieldsValue({ partnerId: job.raw.partnerId });
         setSelectedPartnerId(job.raw.partnerId);
@@ -472,29 +614,45 @@ export default function DebitNotesPage() {
     form.setFieldsValue({ currency: 'VND' });
     setLineItems([]);
     setSelectedPartnerId(null);
-    setSelectedJobId(null);
+    setSelectedJobIds([]);
     setModalOpen(true);
   }
 
   function openEditModal(record) {
+    const jobIds = record.raw?.jobIds?.length ? record.raw.jobIds : [record.jobId].filter(Boolean);
     setEditingRecord(record);
     form.setFieldsValue({
       partnerId: record.raw?.partnerId,
-      jobId: record.jobId,
+      jobIds,
       currency: record.currency || 'VND',
+      referenceNo: record.raw?.referenceNo,
+      groupCode: record.raw?.groupCode,
+      paymentTerm: record.raw?.paymentTerm,
+      movingType: record.raw?.movingType,
+      direction: record.raw?.direction,
+      mblNo: record.raw?.mblNo,
+      exportNote: record.raw?.exportNote,
+      bankName: record.raw?.bankName,
+      bankAccountNo: record.raw?.bankAccountNo,
       paymentMethod: record.raw?.paymentMethod,
       paymentAccountRef: record.raw?.paymentAccountRef,
       description: record.raw?.description || ''
     });
     setSelectedPartnerId(record.raw?.partnerId);
-    setSelectedJobId(record.jobId);
+    setSelectedJobIds(jobIds);
     const existingLines = (record.raw?.lineItems || []).map((line, idx) => ({
       key: `edit-${Date.now()}-${idx}`,
+      jobId: line.jobId || record.jobId,
       serviceType: line.serviceType || '',
       description: line.description || '',
+      chargeNote: line.chargeNote || '',
+      lineNote: line.lineNote || '',
       quantity: Number(line.quantity || 1),
       unitPrice: Number(line.unitPrice || 0),
       amount: Number(line.amount || 0),
+      creditAmount: Number(line.creditAmount || 0),
+      vatRate: Number(line.vatRate || 0),
+      vatAmount: Number(line.vatAmount || 0),
       currency: line.currency || 'VND',
       pricingId: line.pricingId || null,
       isAutoFilled: false
@@ -517,11 +675,23 @@ export default function DebitNotesPage() {
 
     setSaving(true);
     try {
-      const totalAmount = lineItems.reduce((sum, line) => sum + Number(line.amount || 0), 0);
+      const totalAmount = lineItems.reduce((sum, line) => sum + Number(line.amount || 0) - Number(line.creditAmount || 0) + Number(line.vatAmount || 0), 0);
+      const jobIds = values.jobIds || [];
 
       const payload = {
-        jobId: values.jobId,
+        partnerId: values.partnerId,
+        jobId: jobIds[0],
+        jobIds,
         currency: values.currency,
+        referenceNo: values.referenceNo || undefined,
+        groupCode: values.groupCode || undefined,
+        paymentTerm: values.paymentTerm || undefined,
+        movingType: values.movingType || undefined,
+        direction: values.direction || undefined,
+        mblNo: values.mblNo || undefined,
+        exportNote: values.exportNote || undefined,
+        bankName: values.bankName || undefined,
+        bankAccountNo: values.bankAccountNo || undefined,
         paymentMethod: values.paymentMethod || undefined,
         paymentAccountRef: values.paymentAccountRef || undefined,
         docDate: toDateString(values.docDate),
@@ -529,11 +699,17 @@ export default function DebitNotesPage() {
         description: values.description || '',
         amount: totalAmount,
         lineItems: lineItems.map((line) => ({
+          jobId: line.jobId || jobIds[0],
           serviceType: line.serviceType,
           description: line.description,
+          chargeNote: line.chargeNote,
+          lineNote: line.lineNote,
           quantity: Number(line.quantity || 1),
           unitPrice: Number(line.unitPrice || 0),
           amount: Number(line.amount || 0),
+          creditAmount: Number(line.creditAmount || 0),
+          vatRate: Number(line.vatRate || 0),
+          vatAmount: Number(line.vatAmount || 0),
           currency: line.currency,
           pricingId: line.pricingId || undefined
         }))
@@ -668,8 +844,11 @@ export default function DebitNotesPage() {
       key: 'job_no',
       width: 140,
       render: (_, record) => {
-        const job = jobs.find((j) => j.backendId === record.jobId);
-        return job?.job_no || record.job_no || '-';
+        const jobIds = record.raw?.jobIds?.length ? record.raw.jobIds : [record.jobId].filter(Boolean);
+        const jobCodes = jobIds
+          .map((jobId) => jobs.find((j) => j.backendId === jobId)?.job_no || `Job #${jobId}`)
+          .filter(Boolean);
+        return jobCodes.join(', ') || record.job_no || '-';
       }
     },
     {
@@ -743,14 +922,19 @@ export default function DebitNotesPage() {
         const isDraft = raw === 'DRAFT';
         const isPosted = raw === 'POSTED';
         const isPaid = record.raw?.paymentStatus === 'PAID';
+        const isLocked = Boolean(record.raw?.lockedAt);
+        const canEdit = isDraft || (isLocked && isAdmin && !isPaid && raw !== 'VOIDED');
+        const canDelete = isDraft && !isLocked;
 
         return (
           <Space>
             <Button size="small" icon={<FileExcelOutlined />} title="Export Excel" onClick={() => handleExport(record, 'excel')} />
             <Button size="small" icon={<FilePdfOutlined />} title="Export PDF" onClick={() => handleExport(record, 'pdf')} />
-            {isDraft && (
+            {canEdit && (
+              <Button size="small" icon={<EditOutlined />} title={t('debitNotes.edit')} onClick={() => openEditModal(record)} />
+            )}
+            {canDelete && (
               <>
-                <Button size="small" icon={<EditOutlined />} title={t('debitNotes.edit')} onClick={() => openEditModal(record)} />
                 <Popconfirm title={t('debitNotes.deleteConfirm')} onConfirm={async () => {
                   try {
                     await deleteDebitNote(record.backendId).unwrap();
@@ -762,8 +946,7 @@ export default function DebitNotesPage() {
                   <Button size="small" danger icon={<DeleteOutlined />} title={t('debitNotes.delete')} />
                 </Popconfirm>
               </>
-            )
-            }
+            )}
             {isDraft && (
               <Popconfirm title={t('debitNotes.postConfirm')} onConfirm={() => handlePost(record)}>
                 <Button type="primary" size="small" icon={<CheckCircleOutlined />} title={t('debitNotes.post')} />
@@ -871,22 +1054,10 @@ export default function DebitNotesPage() {
         onOk={() => form.submit()}
         confirmLoading={saving}
         destroyOnHidden
-        width={920}
+        width={1120}
       >
         <Form form={form} layout="vertical" onFinish={submitEntry}>
           <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item name="jobId" label={t('debitNotes.jobNo')} rules={[{ required: true, message: t('debitNotes.jobRequired') }]}>
-                <Select
-                  showSearch
-                  allowClear
-                  optionFilterProp="label"
-                  options={jobOptions}
-                  placeholder={t('debitNotes.selectJob')}
-                  onChange={handleJobChange}
-                />
-              </Form.Item>
-            </Col>
             <Col span={12}>
               <Form.Item name="partnerId" label={t('debitNotes.customer')} rules={[{ required: true, message: t('debitNotes.customerRequired') }]}>
                 <Select
@@ -894,7 +1065,21 @@ export default function DebitNotesPage() {
                   optionFilterProp="label"
                   options={customerOptions}
                   placeholder={t('debitNotes.customerFromJob')}
-                  disabled
+                  onChange={handlePartnerChange}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="jobIds" label={t('debitNotes.jobNo')} rules={[{ required: true, message: t('debitNotes.jobRequired') }]}>
+                <Select
+                  mode="multiple"
+                  showSearch
+                  allowClear
+                  optionFilterProp="label"
+                  options={jobOptions}
+                  placeholder={t('debitNotes.selectJob')}
+                  onChange={handleJobChange}
+                  disabled={!selectedPartnerId}
                 />
               </Form.Item>
             </Col>
@@ -925,6 +1110,64 @@ export default function DebitNotesPage() {
             </Col>
           </Row>
 
+          <Divider orientation="left" style={{ margin: '8px 0 16px' }}>
+            Thông tin xuất PDF
+          </Divider>
+
+          <Row gutter={16}>
+            <Col span={6}>
+              <Form.Item name="referenceNo" label="Reference No.">
+                <Input placeholder="Invoice0626/2144" />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item name="groupCode" label="Group Code">
+                <Input placeholder="10366" />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item name="paymentTerm" label="Payment Term">
+                <Input placeholder="At sight" />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item name="mblNo" label="MBL No.">
+                <Input placeholder="MBL / Bill No." />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={8}>
+              <Form.Item name="movingType" label="Moving Type">
+                <Input placeholder="Ground" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="direction" label="Direction">
+                <Input placeholder="Logistics" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="bankName" label="Bank Name">
+                <Input placeholder="Tên ngân hàng" />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={8}>
+              <Form.Item name="bankAccountNo" label="Account No.">
+                <Input placeholder="Số tài khoản" />
+              </Form.Item>
+            </Col>
+            <Col span={16}>
+              <Form.Item name="exportNote" label="Export Note">
+                <Input placeholder="Ghi chú hiển thị trên PDF" />
+              </Form.Item>
+            </Col>
+          </Row>
+
           <Row gutter={16}>
             <Col span={8}>
               <Form.Item name="docDate" label={t('debitNotes.docDate')}>
@@ -949,7 +1192,7 @@ export default function DebitNotesPage() {
           setLineItems={setLineItems}
           allPrices={allPrices}
           selectedPartnerId={selectedPartnerId}
-          selectedJobId={selectedJobId}
+          selectedJobIds={selectedJobIds}
           jobs={jobs}
           t={t}
           message={message}

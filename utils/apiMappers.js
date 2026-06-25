@@ -71,6 +71,7 @@ export function normalizeEntry(entry) {
     backendId        : entry.id,
     job_no           : entry.jobCode || entry.job?.jobCode || (entry.jobId ? `Job #${entry.jobId}` : '-'),
     jobId            : entry.jobId,
+    jobIds           : entry.jobIds || (entry.jobId ? [entry.jobId] : []),
     vendorId         : entry.vendorId,
     description      : entry.description || '-',
     amount           : Number(entry.localAmount ?? entry.amount ?? 0),
