@@ -330,7 +330,7 @@ function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId
       )
     },
     {
-      title: 'Charge Note',
+      title: t('debitNotes.chargeNote'),
       dataIndex: 'chargeNote',
       width: 150,
       render: (value, record) => (
@@ -366,7 +366,7 @@ function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId
       render: (value) => <strong>{formatCurrency(value)}</strong>
     },
     {
-      title: 'Credit',
+      title: t('debitNotes.credit'),
       dataIndex: 'creditAmount',
       width: 120,
       render: (value, record) => (
@@ -382,7 +382,7 @@ function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId
       )
     },
     {
-      title: 'VAT %',
+      title: t('debitNotes.vatPercent'),
       dataIndex: 'vatRate',
       width: 90,
       render: (value, record) => (
@@ -398,14 +398,14 @@ function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId
       )
     },
     {
-      title: 'VAT',
+      title: t('debitNotes.vat'),
       dataIndex: 'vatAmount',
       width: 110,
       align: 'right',
       render: (value) => <strong>{formatCurrency(value)}</strong>
     },
     {
-      title: 'Note',
+      title: t('debitNotes.lineNote'),
       dataIndex: 'lineNote',
       width: 150,
       render: (value, record) => (
@@ -1111,27 +1111,27 @@ export default function DebitNotesPage() {
           </Row>
 
           <Divider orientation="left" style={{ margin: '8px 0 16px' }}>
-            Thông tin xuất PDF
+            {t('debitNotes.pdfInfoSection')}
           </Divider>
 
           <Row gutter={16}>
             <Col span={6}>
-              <Form.Item name="referenceNo" label="Reference No.">
+              <Form.Item name="referenceNo" label={t('debitNotes.referenceNo')}>
                 <Input placeholder="Invoice0626/2144" />
               </Form.Item>
             </Col>
             <Col span={6}>
-              <Form.Item name="groupCode" label="Group Code">
+              <Form.Item name="groupCode" label={t('debitNotes.groupCode')}>
                 <Input placeholder="10366" />
               </Form.Item>
             </Col>
             <Col span={6}>
-              <Form.Item name="paymentTerm" label="Payment Term">
+              <Form.Item name="paymentTerm" label={t('debitNotes.paymentTermLabel')}>
                 <Input placeholder="At sight" />
               </Form.Item>
             </Col>
             <Col span={6}>
-              <Form.Item name="mblNo" label="MBL No.">
+              <Form.Item name="mblNo" label={t('debitNotes.mblNo')}>
                 <Input placeholder="MBL / Bill No." />
               </Form.Item>
             </Col>
@@ -1139,31 +1139,31 @@ export default function DebitNotesPage() {
 
           <Row gutter={16}>
             <Col span={8}>
-              <Form.Item name="movingType" label="Moving Type">
+              <Form.Item name="movingType" label={t('debitNotes.movingType')}>
                 <Input placeholder="Ground" />
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name="direction" label="Direction">
+              <Form.Item name="direction" label={t('debitNotes.direction')}>
                 <Input placeholder="Logistics" />
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name="bankName" label="Bank Name">
-                <Input placeholder="Tên ngân hàng" />
+              <Form.Item name="bankName" label={t('debitNotes.bankName')}>
+                <Input placeholder={t('debitNotes.bankName')} />
               </Form.Item>
             </Col>
           </Row>
 
           <Row gutter={16}>
             <Col span={8}>
-              <Form.Item name="bankAccountNo" label="Account No.">
-                <Input placeholder="Số tài khoản" />
+              <Form.Item name="bankAccountNo" label={t('debitNotes.bankAccountNo')}>
+                <Input placeholder={t('debitNotes.bankAccountNo')} />
               </Form.Item>
             </Col>
             <Col span={16}>
-              <Form.Item name="exportNote" label="Export Note">
-                <Input placeholder="Ghi chú hiển thị trên PDF" />
+              <Form.Item name="exportNote" label={t('debitNotes.exportNote')}>
+                <Input placeholder={t('debitNotes.exportNote')} />
               </Form.Item>
             </Col>
           </Row>

@@ -227,7 +227,7 @@ export default function HRMPage() {
       title: t('hrm.department'),
       dataIndex: 'department',
       key: 'department',
-      render: (department) => <Tag color={deptColors[department] || 'default'}>{department || '-'}</Tag>
+      render: (department) => <Tag color={deptColors[department] || 'default'}>{t(`hrm.departments.${department}`) || department || '-'}</Tag>
     },
     { title: t('hrm.joinDate'), dataIndex: 'hireDate', key: 'hireDate', render: (val) => formatDate(val, language) },
     { title: t('hrm.phone'), dataIndex: 'phone', key: 'phone', render: (value) => value || '-' },
@@ -321,7 +321,7 @@ export default function HRMPage() {
               onStatusChange={setDeptFilter}
               statusOptions={departments.map((department) => ({
                 value: department,
-                label: department === 'All' ? t('hrm.allDepartments') : department
+                label: department === 'All' ? t('hrm.allDepartments') : (t(`hrm.departments.${department}`) || department)
               }))}
               showDateRange={false}
             />
@@ -454,7 +454,7 @@ export default function HRMPage() {
             </Col>
             <Col xs={24} md={12}>
               <Form.Item name="department" label={t('hrm.department')} rules={[{ required: true }]}>
-                <Select options={departmentsSeed.map((department) => ({ value: department, label: department }))} />
+                <Select options={departmentsSeed.map((department) => ({ value: department, label: t(`hrm.departments.${department}`) || department }))} />
               </Form.Item>
             </Col>
           </Row>
@@ -528,7 +528,7 @@ export default function HRMPage() {
               <Col span={12}><strong>{t('hrm.fullName')}:</strong> {viewEmployee.fullName}</Col>
             </Row>
             <Row gutter={16}>
-              <Col span={12}><strong>{t('hrm.department')}:</strong> <Tag color={deptColors[viewEmployee.department] || 'default'}>{viewEmployee.department || '-'}</Tag></Col>
+              <Col span={12}><strong>{t('hrm.department')}:</strong> <Tag color={deptColors[viewEmployee.department] || 'default'}>{t(`hrm.departments.${viewEmployee.department}`) || viewEmployee.department || '-'}</Tag></Col>
               <Col span={12}><strong>{t('hrm.position')}:</strong> {viewEmployee.position || '-'}</Col>
             </Row>
             <Row gutter={16}>

@@ -15,9 +15,9 @@ function renderJson(value) {
   return <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{JSON.stringify(value, null, 2)}</pre>;
 }
 
-function actorLabel(record) {
+function actorLabel(record, t) {
   const actor = record.actor;
-  if (!actor) return record.userId === '-' ? 'Hệ thống' : `Người dùng #${record.userId}`;
+  if (!actor) return record.userId === '-' ? t('audit.systemActor') : `${t('audit.unknownUser').replace('#{id}', record.userId)}`;
   const name = actor.fullName || actor.username;
   const code = actor.employeeCode || actor.username;
   return code && name !== code ? `${name} (${code})` : name;
@@ -71,10 +71,10 @@ export default function AuditPage() {
     { title: t('audit.time'), dataIndex: 'createdAt', key: 'createdAt', render: (value) => formatDateTime(value, language) },
     { title: t('audit.action'), dataIndex: 'action', key: 'action', render: (value) => <Tag color="blue">{t(`audit.actionTypes.${value}`) !== `audit.actionTypes.${value}` ? t(`audit.actionTypes.${value}`) : value}</Tag> },
     { title: t('audit.entity'), dataIndex: 'entityName', key: 'entityName', render: (value) => t(`audit.entityTypes.${value}`) !== `audit.entityTypes.${value}` ? t(`audit.entityTypes.${value}`) : value },
-    { title: 'Đối tượng', key: 'entityDisplay', render: (_, record) => entityLabel(record, t) },
-    { title: 'Người thao tác', key: 'actor', render: (_, record) => actorLabel(record) },
-    { title: 'Doanh nghiệp / Chi nhánh', key: 'business', render: (_, record) => businessLabel(record) },
-    { title: 'Mã lô hàng', key: 'jobCode', render: (_, record) => record.entity?.jobCode || record.entity?.bookingRef || '-' },
+    { title: t('audit.entity'), key: 'entityDisplay', render: (_, record) => entityLabel(record, t) },
+    { title: t('audit.actor'), key: 'actor', render: (_, record) => actorLabel(record, t) },
+    { title: t('audit.business'), key: 'business', render: (_, record) => businessLabel(record) },
+    { title: t('audit.jobCode'), key: 'jobCode', render: (_, record) => record.entity?.jobCode || record.entity?.bookingRef || '-' },
     { title: t('audit.ip'), dataIndex: 'ipAddress', key: 'ipAddress' },
     {
       title: t('audit.actions'),
@@ -106,6 +106,8 @@ export default function AuditPage() {
             <Form.Item name="action" label={t('audit.actionLabel')}>
               <Select
                 allowClear
+                popupMatchSelectWidth={false}
+                style={{ minWidth: 220 }}
                 options={['CREATE', 'UPDATE', 'DELETE', 'POST', 'VOID', 'LOGIN', 'DEACTIVATE', 'RECORD_PAYMENT', 'CREATE_COLLECT_FROM_COB'].map((value) => ({ value, label: t(`audit.actionTypes.${value}`) !== `audit.actionTypes.${value}` ? t(`audit.actionTypes.${value}`) : value }))}
               />
             </Form.Item>
@@ -142,14 +144,14 @@ export default function AuditPage() {
           <Descriptions bordered column={1} size="small">
             <Descriptions.Item label={t('audit.action')}>{t(`audit.actionTypes.${selected.action}`) !== `audit.actionTypes.${selected.action}` ? t(`audit.actionTypes.${selected.action}`) : selected.action}</Descriptions.Item>
             <Descriptions.Item label={t('audit.entity')}>{t(`audit.entityTypes.${selected.entityName}`) !== `audit.entityTypes.${selected.entityName}` ? t(`audit.entityTypes.${selected.entityName}`) : selected.entityName}</Descriptions.Item>
-            <Descriptions.Item label="Đối tượng">{entityLabel(selected, t)}</Descriptions.Item>
-            <Descriptions.Item label="Người thao tác">{actorLabel(selected)}</Descriptions.Item>
-            <Descriptions.Item label="Mã nhân viên">{selected.actor?.employeeCode || '-'}</Descriptions.Item>
-            <Descriptions.Item label="Phòng ban / Chức vụ">{[selected.actor?.department, selected.actor?.position].filter(Boolean).join(' - ') || '-'}</Descriptions.Item>
-            <Descriptions.Item label="Chi nhánh người dùng">{[selected.actor?.branchCode, selected.actor?.branchName].filter(Boolean).join(' - ') || '-'}</Descriptions.Item>
-            <Descriptions.Item label="Doanh nghiệp / Đối tác">{businessLabel(selected)}</Descriptions.Item>
-            <Descriptions.Item label="Mã lô hàng">{selected.entity?.jobCode || '-'}</Descriptions.Item>
-            <Descriptions.Item label="Booking / HBL / MBL / Container">
+            <Descriptions.Item label={t('audit.entity')}>{entityLabel(selected, t)}</Descriptions.Item>
+            <Descriptions.Item label={t('audit.actor')}>{actorLabel(selected, t)}</Descriptions.Item>
+            <Descriptions.Item label={t('audit.employeeCode')}>{selected.actor?.employeeCode || '-'}</Descriptions.Item>
+            <Descriptions.Item label={t('audit.departmentPosition')}>{[selected.actor?.department, selected.actor?.position].filter(Boolean).join(' - ') || '-'}</Descriptions.Item>
+            <Descriptions.Item label={t('audit.userBranch')}>{[selected.actor?.branchCode, selected.actor?.branchName].filter(Boolean).join(' - ') || '-'}</Descriptions.Item>
+            <Descriptions.Item label={t('audit.businessPartner')}>{businessLabel(selected)}</Descriptions.Item>
+            <Descriptions.Item label={t('audit.jobCode')}>{selected.entity?.jobCode || '-'}</Descriptions.Item>
+            <Descriptions.Item label={t('audit.bookingRefs')}>
               {[selected.entity?.bookingRef, selected.entity?.hbl, selected.entity?.mbl, selected.entity?.containerNo].filter(Boolean).join(' · ') || '-'}
             </Descriptions.Item>
             <Descriptions.Item label={t('audit.ipAddress')}>{selected.ipAddress}</Descriptions.Item>
