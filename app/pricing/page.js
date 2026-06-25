@@ -41,7 +41,6 @@ import { getApiError } from '@/utils/getApiError';
 import { decimalInputProps } from '@/utils/formUtils';
 import { useGetServicePricesQuery, useCreateServicePriceMutation, useImportServicePricesMutation, useUpdateServicePriceMutation, useDeleteServicePriceMutation } from '@/store/services/pricingApi';
 import { useGetPartnersQuery } from '@/store/services/partnersApi';
-import { getCargoUnitOptions } from '@/config/jobConstants';
 
 export default function PricingPage() {
   const { t } = useLanguage();
@@ -76,7 +75,27 @@ export default function PricingPage() {
     { label: t('pricing.other'), value: 'OTHER' }
   ];
 
-  const priceUnitOptions = getCargoUnitOptions(t);
+  const pricingCategoryOptions = [
+    { label: t('pricing.categoryFcl'), value: 'FCL' },
+    { label: t('pricing.categoryLcl'), value: 'LCL' },
+    { label: t('pricing.categoryWaitingFee'), value: 'WAITING_FEE' },
+    { label: t('pricing.categoryDocumentProcedure'), value: 'DOCUMENT_PROCEDURE' },
+    { label: t('pricing.categoryOther'), value: 'OTHER' }
+  ];
+
+  const calculationTypeOptions = [
+    { label: t('pricing.calculationFixed'), value: 'FIXED' },
+    { label: t('pricing.calculationPercent'), value: 'PERCENT' }
+  ];
+
+  const directionOptions = [
+    { label: t('pricing.directionImport'), value: 'IMPORT' },
+    { label: t('pricing.directionExport'), value: 'EXPORT' },
+    { label: t('pricing.directionBoth'), value: 'BOTH' }
+  ];
+
+  const containerSizeOptions = ['20', '40', '45'].map((size) => ({ label: `${size}'`, value: size }));
+  const vehicleTypeOptions = ['TRUCK', 'CONTAINER', '1-3 TON', '3-5 TON', '5-8 TON', '8-10 TON'].map((value) => ({ label: value, value }));
 
   const partnerMap = useMemo(
     () => partners.reduce((result, partner) => {
@@ -92,8 +111,13 @@ export default function PricingPage() {
     return data.filter((item) => {
       const searchable = [
         partnerMap[item.partnerId]?.name,
+        item.pricingCategory,
+        item.chargeName,
         item.serviceType,
         item.shipmentMode,
+        item.direction,
+        item.containerSize,
+        item.vehicleType,
         item.routeFrom,
         item.routeTo,
         item.unit,
@@ -143,12 +167,18 @@ export default function PricingPage() {
     setEditingRecord(record);
     form.setFieldsValue({
       partnerId: record.partnerId,
+      pricingCategory: record.pricingCategory,
+      chargeName: record.chargeName,
       serviceType: record.serviceType,
       shipmentMode: record.shipmentMode,
+      direction: record.direction,
+      containerSize: record.containerSize,
+      vehicleType: record.vehicleType,
       routeFrom: record.routeFrom,
       routeTo: record.routeTo,
       unit: record.unit,
       currency: record.currency || 'VND',
+      calculationType: record.calculationType || 'FIXED',
       amount: record.amount,
       minQuantity: record.minQuantity,
       maxQuantity: record.maxQuantity,
@@ -207,11 +237,27 @@ export default function PricingPage() {
 
   const columns = [
     { title: t('pricing.partner'), dataIndex: 'partnerId', key: 'partnerId', render: value => partnerMap[value]?.name || t('pricing.generalTariff') },
+    {
+      title: t('pricing.category'),
+      dataIndex: 'pricingCategory',
+      key: 'pricingCategory',
+      render: value => {
+        const option = pricingCategoryOptions.find(opt => opt.value === value);
+        return value ? <Tag color="geekblue">{option?.label || value}</Tag> : '-';
+      }
+    },
+    { title: t('pricing.chargeName'), dataIndex: 'chargeName', key: 'chargeName', render: value => value || '-' },
     { title: t('pricing.serviceType'), dataIndex: 'serviceType', key: 'serviceType', render: value => {
       const option = serviceTypeOptions.find(opt => opt.value === value);
       return <Tag color="blue">{option ? option.label : value}</Tag>;
     } },
-    { title: t('pricing.shipment'), dataIndex: 'shipmentMode', key: 'shipmentMode', render: value => value || '-' },
+    {
+      title: t('pricing.priceAttributes'),
+      key: 'priceAttributes',
+      render: (_, record) => [record.shipmentMode, record.direction, record.containerSize ? `${record.containerSize}'` : null, record.vehicleType]
+        .filter(Boolean)
+        .join(' / ') || '-'
+    },
     {
       title: t('pricing.route'),
       key: 'route',
@@ -223,7 +269,11 @@ export default function PricingPage() {
       dataIndex: 'amount',
       key: 'rate',
       align: 'right',
-      render: (val, record) => <span style={{ fontWeight: 600, color: '#0057c2' }}>{formatCurrency(val)} {record.currency || 'VND'}</span>
+      render: (val, record) => (
+        <span style={{ fontWeight: 600, color: '#0057c2' }}>
+          {record.calculationType === 'PERCENT' ? `${Number(val || 0)}%` : `${formatCurrency(val)} ${record.currency || 'VND'}`}
+        </span>
+      )
     },
     { title: t('pricing.effectiveTo'), dataIndex: 'effectiveTo', key: 'effectiveTo', render: value => value || '-' },
     {
@@ -316,7 +366,7 @@ export default function PricingPage() {
         onCancel={() => { setModalOpen(false); setEditingRecord(null); }}
         onOk={() => form.submit()}
         confirmLoading={saving}
-        width={600}
+        width={760}
       >
         <Form form={form} layout="vertical" onFinish={handleSave}>
           <Form.Item name="partnerId" label={t('pricing.partner')}>
@@ -333,6 +383,18 @@ export default function PricingPage() {
           </Form.Item>
           <Row gutter={16}>
             <Col span={12}>
+              <Form.Item name="pricingCategory" label={t('pricing.category')}>
+                <Select allowClear options={pricingCategoryOptions} placeholder={t('pricing.categoryPlaceholder')} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="chargeName" label={t('pricing.chargeName')}>
+                <Input placeholder={t('pricing.chargeNamePlaceholder')} />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={16}>
+            <Col span={12}>
               <Form.Item name="serviceType" label={t('pricing.serviceType')} rules={[{ required: true, message: t('pricing.serviceTypeRequired') }]}>
                 <Select options={serviceTypeOptions} />
               </Form.Item>
@@ -340,6 +402,23 @@ export default function PricingPage() {
             <Col span={12}>
               <Form.Item name="shipmentMode" label={t('pricing.shipmentMode')}>
                 <Input placeholder={t('pricing.shipmentModePlaceholder')} />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={16}>
+            <Col span={8}>
+              <Form.Item name="direction" label={t('pricing.direction')}>
+                <Select allowClear options={directionOptions} />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="containerSize" label={t('pricing.containerSize')}>
+                <Select allowClear options={containerSizeOptions} />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="vehicleType" label={t('pricing.vehicleType')}>
+                <Select allowClear showSearch optionFilterProp="label" options={vehicleTypeOptions} />
               </Form.Item>
             </Col>
           </Row>
@@ -358,7 +437,7 @@ export default function PricingPage() {
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item name="unit" label={t('pricing.unit')}>
-                <Select allowClear showSearch optionFilterProp="label" options={priceUnitOptions} placeholder={t('pricing.unitPlaceholder')} />
+                <Input placeholder={t('pricing.unitPlaceholder')} />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -374,6 +453,13 @@ export default function PricingPage() {
               </Form.Item>
             </Col>
             <Col span={12}>
+              <Form.Item name="calculationType" label={t('pricing.calculationType')} initialValue="FIXED">
+                <Select options={calculationTypeOptions} />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={16}>
+            <Col span={12}>
               <Form.Item
                 name="minQuantity"
                 label={t('pricing.minQuantity')}
@@ -383,8 +469,6 @@ export default function PricingPage() {
                 <InputNumber {...decimalInputProps} style={{ width: '100%' }} min={0} />
               </Form.Item>
             </Col>
-          </Row>
-          <Row gutter={16}>
             <Col span={12}>
               <Form.Item
                 name="maxQuantity"
@@ -395,6 +479,8 @@ export default function PricingPage() {
                 <InputNumber {...decimalInputProps} style={{ width: '100%' }} min={0} />
               </Form.Item>
             </Col>
+          </Row>
+          <Row gutter={16}>
             <Col span={12}>
               <Form.Item name="effectiveFrom" label={t('pricing.effectiveFrom')}>
                 <DatePicker format="DD/MM/YYYY" style={{ width: '100%' }} />

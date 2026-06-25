@@ -282,7 +282,25 @@ function JobDetailContent() {
     }
   ];
 
+  function showDebitNoteLockConfirmation() {
+    modal.confirm({
+      title: t('jobForm.debitNoteLockConfirmTitle'),
+      content: t('jobForm.debitNoteLockConfirmContent'),
+      okText: t('jobForm.debitNoteLockConfirmOk'),
+      cancelText: t('jobForm.cancel'),
+      onOk: () => {
+        setConfirmedDebitNoteLock(true);
+        window.setTimeout(() => form.submit(), 0);
+      }
+    });
+  }
+
   async function onFinish(values) {
+    if (needsDebitNoteLockConfirmation && !confirmedDebitNoteLock) {
+      showDebitNoteLockConfirmation();
+      return;
+    }
+
     setSaving(true);
 
     try {
@@ -318,16 +336,7 @@ function JobDetailContent() {
 
   function handleSubmitJob() {
     if (needsDebitNoteLockConfirmation && !confirmedDebitNoteLock) {
-      modal.confirm({
-        title: 'Xác nhận sửa lô hàng đã có Debit Note?',
-        content: 'Debit Note cũ sẽ được khóa lại để giữ lịch sử. Admin vẫn có thể mở Debit Note đó để kế thừa và chỉnh sửa cho chứng từ mới.',
-        okText: 'Xác nhận và lưu',
-        cancelText: 'Hủy',
-        onOk: () => {
-          setConfirmedDebitNoteLock(true);
-          window.setTimeout(() => form.submit(), 0);
-        }
-      });
+      showDebitNoteLockConfirmation();
       return;
     }
     form.submit();
@@ -406,7 +415,7 @@ function JobDetailContent() {
           <Alert
             type="warning"
             showIcon
-            message="Lô hàng đã CLOSED/CANCELLED nên không thể sửa trực tiếp. Nếu cần thay đổi, hãy mở lại theo quy trình hoặc tạo log điều chỉnh."
+            message={t('jobForm.terminalEditWarning')}
             style={{ marginBottom: 16 }}
           />
         ) : null}
