@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import {
   App,
@@ -35,7 +35,7 @@ import {
   SendOutlined,
   ThunderboltOutlined
 } from '@ant-design/icons';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { useLanguage } from '@/components/AppProviders';
 import FilterCard from '@/components/FilterCard';
@@ -80,7 +80,7 @@ function normalizeUnit(value) {
   return normalizeMatchText(value)
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    .replace(/đ/g, 'd');
+    .replace(/Ä‘/g, 'd');
 }
 
 function countContainers(containerNo) {
@@ -144,9 +144,10 @@ function validateLineItemQuantityRanges(lineItems, allPrices, t) {
   return null;
 }
 
-// ─── Auto-Pricing Line Items Component ────────────────────────────────────────
+// â”€â”€â”€ Auto-Pricing Line Items Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId, selectedJobIds, jobs, t, message }) {
+  const [descriptionModal, setDescriptionModal] = useState({ open: false, lineKey: null });
   const selectedJobs = useMemo(
     () => jobs.filter((job) => selectedJobIds?.includes(job.backendId)),
     [jobs, selectedJobIds]
@@ -197,10 +198,10 @@ function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId
         price.job?.job_no || price.job?.id,
         price.serviceType,
         price.shipmentMode,
-        [price.routeFrom, price.routeTo].filter(Boolean).join(' → '),
+        [price.routeFrom, price.routeTo].filter(Boolean).join(' â†’ '),
         price.unit ? `(${price.unit})` : '',
         price.notes
-      ].filter(Boolean).join(' — '),
+      ].filter(Boolean).join(' â€” '),
       chargeNote: `${formatCurrency(unitPrice)} ${price.currency || 'VND'}/${price.unit || 'LOT'}`,
       lineNote: '',
       quantity,
@@ -219,12 +220,12 @@ function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId
     message.success(t('debitNotes.pricingApplied', { count: newLines.length }));
   }
 
-  function addEmptyLine() {
+  function addEmptyLine(jobId = selectedJobIds?.[0] || null) {
     setLineItems([
       ...lineItems,
       {
         key: `manual-${Date.now()}`,
-        jobId: selectedJobIds?.[0] || null,
+        jobId,
         serviceType: '',
         description: '',
         chargeNote: '',
@@ -263,8 +264,23 @@ function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId
   }
 
   const totalAmount = lineItems.reduce((sum, line) => sum + Number(line.amount || 0) - Number(line.creditAmount || 0) + Number(line.vatAmount || 0), 0);
+  const editingDescriptionLine = lineItems.find((line) => line.key === descriptionModal.lineKey);
 
-  const lineColumns = [
+  const groupedLineItems = useMemo(() => {
+    const groups = selectedJobs.map((job) => ({
+      key: job.backendId,
+      job,
+      title: job.job_no || job.id || `Job #${job.backendId}`,
+      lines: lineItems.filter((line) => line.jobId === job.backendId)
+    }));
+    const unassigned = lineItems.filter((line) => !selectedJobIds?.includes(line.jobId));
+    if (unassigned.length) {
+      groups.push({ key: 'unassigned', job: null, title: t('debitNotes.unassignedLines') || 'ChÆ°a gÃ¡n job', lines: unassigned });
+    }
+    return groups;
+  }, [lineItems, selectedJobs, selectedJobIds, t]);
+
+  const legacyLineColumns = [
     {
       title: t('debitNotes.jobNo'),
       dataIndex: 'jobId',
@@ -412,7 +428,7 @@ function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId
         <Input
           value={value}
           size="small"
-          placeholder="20833 / ghi chú"
+          placeholder="20833 / ghi chÃº"
           onChange={(e) => updateLine(record.key, 'lineNote', e.target.value)}
         />
       )
@@ -431,6 +447,208 @@ function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId
         />
       )
     }
+  ];
+
+  const lineColumns = [
+    {
+      title: t('debitNotes.jobNo'),
+      dataIndex: 'jobId',
+      width: 130,
+      render: (value, record) => (
+        <Select
+          value={value}
+          size="small"
+          allowClear
+          options={selectedJobOptions}
+          placeholder={t('debitNotes.selectJob')}
+          style={{ width: '100%' }}
+          onChange={(v) => updateLine(record.key, 'jobId', v)}
+        />
+      )
+    },
+    {
+      title: t('debitNotes.lineDescription'),
+      dataIndex: 'description',
+      width: 330,
+      render: (value, record) => (
+        <Space direction="vertical" size={6} style={{ width: '100%' }}>
+          <Space size={6} style={{ width: '100%' }}>
+            <Input
+              value={record.serviceType}
+              size="small"
+              placeholder={t('debitNotes.serviceType')}
+              onChange={(e) => updateLine(record.key, 'serviceType', e.target.value)}
+              style={{ width: 120 }}
+            />
+            <Typography.Text ellipsis style={{ flex: 1, maxWidth: 160 }}>
+              {value || t('debitNotes.descriptionPlaceholder')}
+            </Typography.Text>
+            <Button size="small" onClick={() => setDescriptionModal({ open: true, lineKey: record.key })}>
+              {t('debitNotes.editDescription') || 'MÃ´ táº£'}
+            </Button>
+            {record.isAutoFilled && (
+              <Tooltip title={t('debitNotes.autoFilledFromPricing')}>
+                <ThunderboltOutlined style={{ color: '#faad14', fontSize: 14 }} />
+              </Tooltip>
+            )}
+          </Space>
+          <Space size={6} style={{ width: '100%' }}>
+            <Input
+              value={record.chargeNote}
+              size="small"
+              placeholder="Charge note: 4,100,000 VND/40"
+              onChange={(e) => updateLine(record.key, 'chargeNote', e.target.value)}
+              style={{ width: 190 }}
+            />
+            <Input
+              value={record.lineNote}
+              size="small"
+              placeholder="Note: 20833 / ghi chÃº"
+              onChange={(e) => updateLine(record.key, 'lineNote', e.target.value)}
+              style={{ flex: 1 }}
+            />
+          </Space>
+        </Space>
+      )
+    },
+    {
+      title: t('debitNotes.qty'),
+      dataIndex: 'quantity',
+      width: 82,
+      render: (value, record) => (
+        <InputNumber
+          {...decimalInputProps}
+          value={value}
+          size="small"
+          min={1}
+          style={{ width: '100%' }}
+          onChange={(v) => updateLine(record.key, 'quantity', v)}
+        />
+      )
+    },
+    {
+      title: t('debitNotes.unitPrice'),
+      dataIndex: 'unitPrice',
+      width: 120,
+      render: (value, record) => (
+        <InputNumber
+          {...decimalInputProps}
+          value={value}
+          size="small"
+          min={0}
+          precision={2}
+          style={{ width: '100%' }}
+          onChange={(v) => updateLine(record.key, 'unitPrice', v)}
+        />
+      )
+    },
+    {
+      title: t('debitNotes.lineAmount'),
+      dataIndex: 'amount',
+      width: 115,
+      align: 'right',
+      render: (value) => <strong>{formatCurrency(value)}</strong>
+    },
+    {
+      title: 'Credit',
+      dataIndex: 'creditAmount',
+      width: 105,
+      render: (value, record) => (
+        <InputNumber
+          {...decimalInputProps}
+          value={value}
+          size="small"
+          min={0}
+          precision={2}
+          style={{ width: '100%' }}
+          onChange={(v) => updateLine(record.key, 'creditAmount', v)}
+        />
+      )
+    },
+    {
+      title: 'VAT',
+      dataIndex: 'vatRate',
+      width: 145,
+      render: (value, record) => (
+        <Space direction="vertical" size={4} style={{ width: '100%' }}>
+          <InputNumber
+            {...decimalInputProps}
+            value={value}
+            size="small"
+            min={0}
+            precision={2}
+            addonAfter="%"
+            style={{ width: '100%' }}
+            onChange={(v) => updateLine(record.key, 'vatRate', v)}
+          />
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            {formatCurrency(record.vatAmount)}
+          </Typography.Text>
+        </Space>
+      )
+    },
+    {
+      title: t('debitNotes.total'),
+      key: 'lineTotal',
+      width: 115,
+      align: 'right',
+      render: (_, record) => (
+        <strong>{formatCurrency(Number(record.amount || 0) - Number(record.creditAmount || 0) + Number(record.vatAmount || 0))}</strong>
+      )
+    },
+    {
+      title: '',
+      key: 'actions',
+      width: 40,
+      render: (_, record) => (
+        <Button
+          type="text"
+          danger
+          size="small"
+          icon={<DeleteOutlined />}
+          onClick={() => removeLine(record.key)}
+        />
+      )
+    }
+  ];
+
+  const compactLineColumns = [
+    {
+      title: t('debitNotes.lineDescription'),
+      dataIndex: 'description',
+      width: 330,
+      render: (value, record) => (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '96px minmax(0, 1fr) auto',
+            gap: 8,
+            alignItems: 'center',
+            minHeight: 34
+          }}
+        >
+          <Tag color="blue" style={{ marginInlineEnd: 0, textAlign: 'center' }}>
+            {record.serviceType || t('debitNotes.serviceType')}
+          </Tag>
+          <Tooltip title={[value, record.chargeNote, record.lineNote].filter(Boolean).join('\n')}>
+            <Typography.Text ellipsis style={{ maxWidth: 170 }}>
+              {value || record.chargeNote || record.lineNote || t('debitNotes.descriptionPlaceholder')}
+            </Typography.Text>
+          </Tooltip>
+          <Space size={4}>
+            <Button size="small" onClick={() => setDescriptionModal({ open: true, lineKey: record.key })}>
+              {t('debitNotes.editDescription')}
+            </Button>
+            {record.isAutoFilled && (
+              <Tooltip title={t('debitNotes.autoFilledFromPricing')}>
+                <ThunderboltOutlined style={{ color: '#faad14', fontSize: 14 }} />
+              </Tooltip>
+            )}
+          </Space>
+        </div>
+      )
+    },
+    ...lineColumns.slice(2)
   ];
 
   return (
@@ -456,29 +674,93 @@ function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId
         </div>
       )}
 
-      <Table
-        dataSource={lineItems}
-        columns={lineColumns}
-        rowKey="key"
-        size="small"
-        scroll={{ x: 1320 }}
-        pagination={false}
-        footer={() => (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Button type="dashed" size="small" icon={<PlusOutlined />} onClick={addEmptyLine}>
-              {t('debitNotes.addLine')}
-            </Button>
-            <Typography.Text strong style={{ fontSize: 14 }}>
-              {t('debitNotes.total')}: {formatCurrency(totalAmount)}
-            </Typography.Text>
-          </div>
-        )}
-      />
+      <Space direction="vertical" size={12} style={{ width: '100%' }}>
+        {groupedLineItems.map((group) => {
+          const groupTotal = group.lines.reduce((sum, line) => sum + Number(line.amount || 0) - Number(line.creditAmount || 0) + Number(line.vatAmount || 0), 0);
+          return (
+            <Card
+              key={group.key}
+              size="small"
+              title={
+                <Space>
+                  <Tag color={group.job ? 'blue' : 'default'}>{group.title}</Tag>
+                  <Typography.Text type="secondary">{group.lines.length} {t('debitNotes.lineItems').toLowerCase()}</Typography.Text>
+                </Space>
+              }
+              extra={<Typography.Text strong>{formatCurrency(groupTotal)}</Typography.Text>}
+              bodyStyle={{ padding: 0 }}
+            >
+              <Table
+                dataSource={group.lines}
+                columns={group.job ? compactLineColumns : [lineColumns[0], ...compactLineColumns]}
+                rowKey="key"
+                size="small"
+                scroll={{ x: group.job ? 980 : 1120 }}
+                pagination={false}
+                footer={() => (
+                  <Button type="dashed" size="small" icon={<PlusOutlined />} onClick={() => addEmptyLine(group.job?.backendId || null)}>
+                    {t('debitNotes.addLine')}
+                  </Button>
+                )}
+              />
+            </Card>
+          );
+        })}
+        {!groupedLineItems.length ? (
+          <Button type="dashed" icon={<PlusOutlined />} onClick={() => addEmptyLine()}>
+            {t('debitNotes.addLine')}
+          </Button>
+        ) : null}
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <Typography.Text strong style={{ fontSize: 14 }}>
+            {t('debitNotes.total')}: {formatCurrency(totalAmount)}
+          </Typography.Text>
+        </div>
+      </Space>
+
+      <Modal
+        title={t('debitNotes.editDescription') || 'MÃ´ táº£ dÃ²ng phÃ­'}
+        open={descriptionModal.open}
+        onCancel={() => setDescriptionModal({ open: false, lineKey: null })}
+        onOk={() => setDescriptionModal({ open: false, lineKey: null })}
+        width={680}
+      >
+        {editingDescriptionLine ? (
+          <Space direction="vertical" size={12} style={{ width: '100%' }}>
+            <div>
+              <Typography.Text strong>{t('debitNotes.lineDescription')}</Typography.Text>
+              <Input.TextArea
+                rows={4}
+                value={editingDescriptionLine.description}
+                placeholder={t('debitNotes.descriptionPlaceholder')}
+                onChange={(e) => updateLine(editingDescriptionLine.key, 'description', e.target.value)}
+              />
+            </div>
+            <div>
+              <Typography.Text strong>Charge Note</Typography.Text>
+              <Input
+                value={editingDescriptionLine.chargeNote}
+                placeholder="4,100,000 VND/40"
+                onChange={(e) => updateLine(editingDescriptionLine.key, 'chargeNote', e.target.value)}
+              />
+            </div>
+            <div>
+              <Typography.Text strong>Note</Typography.Text>
+              <Input.TextArea
+                rows={3}
+                value={editingDescriptionLine.lineNote}
+                placeholder="20833 / ghi chÃº ná»™i bá»™ trÃªn báº£ng kÃª"
+                onChange={(e) => updateLine(editingDescriptionLine.key, 'lineNote', e.target.value)}
+              />
+            </div>
+          </Space>
+        ) : null}
+      </Modal>
     </>
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Main Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export default function DebitNotesPage() {
   const { t, language } = useLanguage();
@@ -499,6 +781,8 @@ export default function DebitNotesPage() {
   const [editingRecord, setEditingRecord] = useState(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [exportingKey, setExportingKey] = useState(null);
+  const exportingRef = useRef(new Set());
 
   const statusColor = {
     DRAFT: 'default',
@@ -801,6 +1085,10 @@ export default function DebitNotesPage() {
   }
 
   async function handleExport(record, format) {
+    const key = `${record.backendId}-${format}`;
+    if (exportingRef.current.has(key)) return;
+    exportingRef.current.add(key);
+    setExportingKey(key);
     try {
       const blob = await exportDebitNote({ id: record.backendId, format }).unwrap();
       const isExcel = format === 'excel';
@@ -819,6 +1107,9 @@ export default function DebitNotesPage() {
       window.URL.revokeObjectURL(url);
     } catch (err) {
       message.error(getApiError(err, t, 'debitNotes.loadError'));
+    } finally {
+      exportingRef.current.delete(key);
+      setExportingKey((current) => (current === key ? null : current));
     }
   }
 
@@ -928,8 +1219,28 @@ export default function DebitNotesPage() {
 
         return (
           <Space>
-            <Button size="small" icon={<FileExcelOutlined />} title="Export Excel" onClick={() => handleExport(record, 'excel')} />
-            <Button size="small" icon={<FilePdfOutlined />} title="Export PDF" onClick={() => handleExport(record, 'pdf')} />
+            <Button
+              size="small"
+              icon={<FileExcelOutlined />}
+              title="Export Excel"
+              loading={exportingKey === `${record.backendId}-excel`}
+              disabled={exportingKey === `${record.backendId}-pdf`}
+              onClick={(event) => {
+                event.stopPropagation();
+                handleExport(record, 'excel');
+              }}
+            />
+            <Button
+              size="small"
+              icon={<FilePdfOutlined />}
+              title="Export PDF"
+              loading={exportingKey === `${record.backendId}-pdf`}
+              disabled={exportingKey === `${record.backendId}-excel`}
+              onClick={(event) => {
+                event.stopPropagation();
+                handleExport(record, 'pdf');
+              }}
+            />
             {canEdit && (
               <Button size="small" icon={<EditOutlined />} title={t('debitNotes.edit')} onClick={() => openEditModal(record)} />
             )}
@@ -1041,7 +1352,7 @@ export default function DebitNotesPage() {
         />
       </Card>
 
-      {/* ── Create Modal with Auto-Pricing ── */}
+      {/* â”€â”€ Create Modal with Auto-Pricing â”€â”€ */}
       <Modal
         title={
           <Space>
@@ -1056,9 +1367,10 @@ export default function DebitNotesPage() {
         destroyOnHidden
         width={1120}
       >
+        <div style={{ maxHeight: '72vh', overflowY: 'auto', paddingRight: 8 }}>
         <Form form={form} layout="vertical" onFinish={submitEntry}>
           <Row gutter={16}>
-            <Col span={12}>
+            <Col xs={24} md={12}>
               <Form.Item name="partnerId" label={t('debitNotes.customer')} rules={[{ required: true, message: t('debitNotes.customerRequired') }]}>
                 <Select
                   showSearch
@@ -1069,7 +1381,7 @@ export default function DebitNotesPage() {
                 />
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col xs={24} md={12}>
               <Form.Item name="jobIds" label={t('debitNotes.jobNo')} rules={[{ required: true, message: t('debitNotes.jobRequired') }]}>
                 <Select
                   mode="multiple"
@@ -1086,12 +1398,12 @@ export default function DebitNotesPage() {
           </Row>
 
           <Row gutter={16}>
-            <Col span={8}>
+            <Col xs={24} md={8}>
               <Form.Item name="currency" label={t('debitNotes.currency')} rules={[{ required: true }]}>
                 <Select options={[{ value: 'VND', label: 'VND' }, { value: 'USD', label: 'USD' }, { value: 'EUR', label: 'EUR' }]} />
               </Form.Item>
             </Col>
-            <Col span={8}>
+            <Col xs={24} md={8}>
               <Form.Item name="paymentMethod" label={t('debitNotes.paymentMethod')}>
                 <Select
                   allowClear
@@ -1103,7 +1415,7 @@ export default function DebitNotesPage() {
                 />
               </Form.Item>
             </Col>
-            <Col span={8}>
+            <Col xs={24} md={8}>
               <Form.Item name="paymentAccountRef" label={t('debitNotes.paymentAccountRef')}>
                 <Input placeholder={t('debitNotes.paymentAccountRefPlaceholder')} />
               </Form.Item>
@@ -1115,22 +1427,22 @@ export default function DebitNotesPage() {
           </Divider>
 
           <Row gutter={16}>
-            <Col span={6}>
+            <Col xs={24} md={6}>
               <Form.Item name="referenceNo" label={t('debitNotes.referenceNo')}>
                 <Input placeholder="Invoice0626/2144" />
               </Form.Item>
             </Col>
-            <Col span={6}>
+            <Col xs={24} md={6}>
               <Form.Item name="groupCode" label={t('debitNotes.groupCode')}>
                 <Input placeholder="10366" />
               </Form.Item>
             </Col>
-            <Col span={6}>
+            <Col xs={24} md={6}>
               <Form.Item name="paymentTerm" label={t('debitNotes.paymentTermLabel')}>
                 <Input placeholder="At sight" />
               </Form.Item>
             </Col>
-            <Col span={6}>
+            <Col xs={24} md={6}>
               <Form.Item name="mblNo" label={t('debitNotes.mblNo')}>
                 <Input placeholder="MBL / Bill No." />
               </Form.Item>
@@ -1138,17 +1450,17 @@ export default function DebitNotesPage() {
           </Row>
 
           <Row gutter={16}>
-            <Col span={8}>
+            <Col xs={24} md={8}>
               <Form.Item name="movingType" label={t('debitNotes.movingType')}>
                 <Input placeholder="Ground" />
               </Form.Item>
             </Col>
-            <Col span={8}>
+            <Col xs={24} md={8}>
               <Form.Item name="direction" label={t('debitNotes.direction')}>
                 <Input placeholder="Logistics" />
               </Form.Item>
             </Col>
-            <Col span={8}>
+            <Col xs={24} md={8}>
               <Form.Item name="bankName" label={t('debitNotes.bankName')}>
                 <Input placeholder={t('debitNotes.bankName')} />
               </Form.Item>
@@ -1156,12 +1468,12 @@ export default function DebitNotesPage() {
           </Row>
 
           <Row gutter={16}>
-            <Col span={8}>
+            <Col xs={24} md={8}>
               <Form.Item name="bankAccountNo" label={t('debitNotes.bankAccountNo')}>
                 <Input placeholder={t('debitNotes.bankAccountNo')} />
               </Form.Item>
             </Col>
-            <Col span={16}>
+            <Col xs={24} md={16}>
               <Form.Item name="exportNote" label={t('debitNotes.exportNote')}>
                 <Input placeholder={t('debitNotes.exportNote')} />
               </Form.Item>
@@ -1169,12 +1481,12 @@ export default function DebitNotesPage() {
           </Row>
 
           <Row gutter={16}>
-            <Col span={8}>
+            <Col xs={24} md={8}>
               <Form.Item name="docDate" label={t('debitNotes.docDate')}>
                 <DatePicker format="YYYY-MM-DD" style={{ width: '100%' }} />
               </Form.Item>
             </Col>
-            <Col span={8}>
+            <Col xs={24} md={8}>
               <Form.Item name="dueDate" label={t('debitNotes.dueDate')}>
                 <DatePicker format="YYYY-MM-DD" style={{ width: '100%' }} />
               </Form.Item>
@@ -1197,6 +1509,7 @@ export default function DebitNotesPage() {
           t={t}
           message={message}
         />
+        </div>
       </Modal>
 
       <Modal
