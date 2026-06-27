@@ -33,6 +33,41 @@ import {
 } from '@/store/services/adminExtApi';
 import { getApiError } from '@/utils/getApiError';
 
+const ROLE_LABELS = {
+  en: {
+    SUPER_ADMIN: 'Super Administrator',
+    ADMIN: 'Administrator',
+    MANAGER: 'Manager',
+    ACCOUNTANT: 'Accountant',
+    OPERATION: 'Operations',
+    STAFF: 'Staff',
+    VIEWER: 'Viewer'
+  },
+  vi: {
+    SUPER_ADMIN: 'Quản trị hệ thống',
+    ADMIN: 'Quản trị viên',
+    MANAGER: 'Quản lý',
+    ACCOUNTANT: 'Kế toán',
+    OPERATION: 'Nhân viên vận hành',
+    STAFF: 'Nhân viên',
+    VIEWER: 'Chỉ xem'
+  }
+};
+
+function formatRoleLabel(roleName, language) {
+  const name = String(roleName || '').trim();
+  const roleCode = name.toUpperCase().replace(/[\s-]+/g, '_');
+  const translated = ROLE_LABELS[language]?.[roleCode];
+
+  if (translated) return translated;
+  if (!/^[A-Z0-9_-]+$/.test(name)) return name;
+
+  return name
+    .toLowerCase()
+    .replace(/[_-]+/g, ' ')
+    .replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
 function roleIdsFromUser(user) {
   return (user?.roles || []).map((role) => role.id || role.backendId).filter(Boolean);
 }
@@ -46,7 +81,7 @@ function isMasterAccount(record) {
 }
 
 export default function UsersPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { message } = App.useApp();
   const isHighestRole = useAppSelector(selectHasRole(ROLES.SUPER_ADMIN));
   const canManageUsers = useAppSelector(selectHasPermission(PERMISSIONS.USER_MANAGE)) && isHighestRole;
@@ -78,8 +113,8 @@ export default function UsersPage() {
   const savingBlock = isBlockingUser || isUnblockingUser;
 
   const roleOptions = useMemo(
-    () => roles.map((role) => ({ label: role.name, value: role.backendId })),
-    [roles]
+    () => roles.map((role) => ({ label: formatRoleLabel(role.name, language), value: role.backendId })),
+    [roles, language]
   );
   const branchOptions = useMemo(
     () => branches.map((branch) => ({ label: `${branch.code} - ${branch.name}`, value: branch.backendId })),
@@ -221,7 +256,7 @@ export default function UsersPage() {
       key: 'roleNames',
       render: (items = []) => (
         <Space wrap size={[4, 4]}>
-          {items.map((role) => <Tag key={role}>{role}</Tag>)}
+          {items.map((role) => <Tag key={role}>{formatRoleLabel(role, language)}</Tag>)}
         </Space>
       )
     },
@@ -292,7 +327,12 @@ export default function UsersPage() {
   ];
 
   const roleColumns = [
-    { title: t('users.roleName'), dataIndex: 'name', key: 'name' },
+    {
+      title: t('users.roleName'),
+      dataIndex: 'name',
+      key: 'name',
+      render: (name) => formatRoleLabel(name, language)
+    },
     { title: t('users.description'), dataIndex: 'description', key: 'description' },
     {
       title: t('users.permissions'),

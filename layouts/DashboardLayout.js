@@ -11,7 +11,7 @@ import {
   SettingOutlined,
   UserOutlined
 } from '@ant-design/icons';
-import { Avatar, Button, Dropdown, Grid, Layout, Menu, Tooltip, Typography } from 'antd';
+import { Avatar, Button, Dropdown, Grid, Layout, Menu, Typography } from 'antd';
 import { usePathname, useRouter } from 'next/navigation';
 import { useLanguage } from '@/components/AppProviders';
 import AuthGuard from '@/components/AuthGuard';
@@ -98,12 +98,12 @@ export default function DashboardLayout({ children }) {
     {
       key: 'profile',
       label: (
-        <span>
+        <div className="user-menu-identity">
           <strong>{user?.fullName || user?.username || 'User'}</strong>
-          <br />
-          <small style={{ color: '#888' }}>{user?.email || ''}</small>
-        </span>
+          <span>{user?.email || user?.username || ''}</span>
+        </div>
       ),
+      className: 'user-menu-profile',
       disabled: true
     },
     { type: 'divider' },
@@ -241,10 +241,12 @@ export default function DashboardLayout({ children }) {
                 }}
                 trigger={['click']}
                 placement="bottomRight"
+                overlayClassName="header-user-dropdown"
               >
-                <Tooltip
+                <Button
+                  type="text"
+                  className="header-user-trigger"
                   title={user?.fullName || user?.username || ''}
-                  placement="bottomRight"
                 >
                   <Avatar
                     size={34}
@@ -258,7 +260,12 @@ export default function DashboardLayout({ children }) {
                       ? user.fullName.charAt(0).toUpperCase()
                       : undefined}
                   </Avatar>
-                </Tooltip>
+                  <span className="header-user-copy">
+                    <strong>{user?.fullName || user?.username || 'User'}</strong>
+                    <small>{user?.email || user?.username || ''}</small>
+                  </span>
+                  <DownOutlined className="header-user-chevron" />
+                </Button>
               </Dropdown>
             </div>
           </Header>
