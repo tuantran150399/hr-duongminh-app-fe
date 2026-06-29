@@ -36,14 +36,14 @@ import { useMemo, useState } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { useLanguage } from '@/components/AppProviders';
 import FilterCard from '@/components/FilterCard';
-import { formatCurrency } from '@/utils/format';
+import { formatCurrency, formatDate } from '@/utils/format';
 import { getApiError } from '@/utils/getApiError';
 import { decimalInputProps } from '@/utils/formUtils';
 import { useGetServicePricesQuery, useCreateServicePriceMutation, useImportServicePricesMutation, useUpdateServicePriceMutation, useDeleteServicePriceMutation } from '@/store/services/pricingApi';
 import { useGetPartnersQuery } from '@/store/services/partnersApi';
 
 export default function PricingPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { message } = App.useApp();
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
@@ -275,7 +275,7 @@ export default function PricingPage() {
         </span>
       )
     },
-    { title: t('pricing.effectiveTo'), dataIndex: 'effectiveTo', key: 'effectiveTo', render: value => value || '-' },
+    { title: t('pricing.effectiveTo'), dataIndex: 'effectiveTo', key: 'effectiveTo', render: value => formatDate(value, language) },
     {
       title: t('pricing.status'),
       dataIndex: 'isActive',
@@ -486,10 +486,12 @@ export default function PricingPage() {
                 <DatePicker format="DD/MM/YYYY" style={{ width: '100%' }} />
               </Form.Item>
             </Col>
+            <Col span={12}>
+              <Form.Item name="effectiveTo" label={t('pricing.effectiveTo')}>
+                <DatePicker format="DD/MM/YYYY" style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
           </Row>
-          <Form.Item name="effectiveTo" label={t('pricing.effectiveTo')}>
-            <DatePicker format="DD/MM/YYYY" style={{ width: '100%' }} />
-          </Form.Item>
           <Form.Item name="notes" label={t('pricing.notes')}>
             <Input.TextArea rows={3} placeholder={t('pricing.notes')} />
           </Form.Item>

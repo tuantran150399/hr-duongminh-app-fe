@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import {
   App,
@@ -144,8 +144,6 @@ function validateLineItemQuantityRanges(lineItems, allPrices, t) {
   return null;
 }
 
-// â”€â”€â”€ Auto-Pricing Line Items Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
 function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId, selectedJobIds, jobs, t, message }) {
   const [descriptionModal, setDescriptionModal] = useState({ open: false, lineKey: null });
   const selectedJobs = useMemo(
@@ -191,29 +189,29 @@ function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId
       const quantity = quantityForUnit(price.unit, price.job);
       const unitPrice = Number(price.amount || 0);
       return ({
-      key: `auto-${Date.now()}-${index}`,
-      jobId: price.jobId,
-      serviceType: price.serviceType || '',
-      description: [
-        price.job?.job_no || price.job?.id,
-        price.serviceType,
-        price.shipmentMode,
-        [price.routeFrom, price.routeTo].filter(Boolean).join(' â†’ '),
-        price.unit ? `(${price.unit})` : '',
-        price.notes
-      ].filter(Boolean).join(' â€” '),
-      chargeNote: `${formatCurrency(unitPrice)} ${price.currency || 'VND'}/${price.unit || 'LOT'}`,
-      lineNote: '',
-      quantity,
-      unitPrice,
-      amount: quantity * unitPrice,
-      creditAmount: 0,
-      vatRate: 0,
-      vatAmount: 0,
-      currency: price.currency || 'VND',
-      pricingId: price.id,
-      isAutoFilled: true
-    });
+        key: `auto-${Date.now()}-${index}`,
+        jobId: price.jobId,
+        serviceType: price.serviceType || '',
+        description: [
+          price.job?.job_no || price.job?.id,
+          price.serviceType,
+          price.shipmentMode,
+          [price.routeFrom, price.routeTo].filter(Boolean).join(' → '),
+          price.unit ? `(${price.unit})` : '',
+          price.notes
+        ].filter(Boolean).join(' - '),
+        chargeNote: `${formatCurrency(unitPrice)} ${price.currency || 'VND'}/${price.unit || 'LOT'}`,
+        lineNote: '',
+        quantity,
+        unitPrice,
+        amount: quantity * unitPrice,
+        creditAmount: 0,
+        vatRate: 0,
+        vatAmount: 0,
+        currency: price.currency || 'VND',
+        pricingId: price.id,
+        isAutoFilled: true
+      });
     });
 
     setLineItems(newLines);
@@ -275,7 +273,7 @@ function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId
     }));
     const unassigned = lineItems.filter((line) => !selectedJobIds?.includes(line.jobId));
     if (unassigned.length) {
-      groups.push({ key: 'unassigned', job: null, title: t('debitNotes.unassignedLines') || 'ChÆ°a gÃ¡n job', lines: unassigned });
+      groups.push({ key: 'unassigned', job: null, title: t('debitNotes.unassignedLines'), lines: unassigned });
     }
     return groups;
   }, [lineItems, selectedJobs, selectedJobIds, t]);
@@ -484,7 +482,7 @@ function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId
               {value || t('debitNotes.descriptionPlaceholder')}
             </Typography.Text>
             <Button size="small" onClick={() => setDescriptionModal({ open: true, lineKey: record.key })}>
-              {t('debitNotes.editDescription') || 'MÃ´ táº£'}
+              {t('debitNotes.editDescription')}
             </Button>
             {record.isAutoFilled && (
               <Tooltip title={t('debitNotes.autoFilledFromPricing')}>
@@ -719,7 +717,7 @@ function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId
       </Space>
 
       <Modal
-        title={t('debitNotes.editDescription') || 'MÃ´ táº£ dÃ²ng phÃ­'}
+        title={t('debitNotes.editDescription')}
         open={descriptionModal.open}
         onCancel={() => setDescriptionModal({ open: false, lineKey: null })}
         onOk={() => setDescriptionModal({ open: false, lineKey: null })}
@@ -737,7 +735,7 @@ function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId
               />
             </div>
             <div>
-              <Typography.Text strong>Charge Note</Typography.Text>
+              <Typography.Text strong>{t('debitNotes.chargeNote') || 'Charge Note'}</Typography.Text>
               <Input
                 value={editingDescriptionLine.chargeNote}
                 placeholder="4,100,000 VND/40"
@@ -745,11 +743,11 @@ function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId
               />
             </div>
             <div>
-              <Typography.Text strong>Note</Typography.Text>
+              <Typography.Text strong>{t('debitNotes.lineNote') || 'Note'}</Typography.Text>
               <Input.TextArea
                 rows={3}
                 value={editingDescriptionLine.lineNote}
-                placeholder="20833 / ghi chÃº ná»™i bá»™ trÃªn báº£ng kÃª"
+                placeholder="Ghi chú nội bộ trên bảng kê"
                 onChange={(e) => updateLine(editingDescriptionLine.key, 'lineNote', e.target.value)}
               />
             </div>
@@ -1222,7 +1220,7 @@ export default function DebitNotesPage() {
             <Button
               size="small"
               icon={<FileExcelOutlined />}
-              title="Export Excel"
+              title={t('debitNotes.exportExcel') || 'Export Excel'}
               loading={exportingKey === `${record.backendId}-excel`}
               disabled={exportingKey === `${record.backendId}-pdf`}
               onClick={(event) => {
@@ -1233,7 +1231,7 @@ export default function DebitNotesPage() {
             <Button
               size="small"
               icon={<FilePdfOutlined />}
-              title="Export PDF"
+              title={t('debitNotes.exportPdf') || 'Export PDF'}
               loading={exportingKey === `${record.backendId}-pdf`}
               disabled={exportingKey === `${record.backendId}-excel`}
               onClick={(event) => {
@@ -1328,15 +1326,15 @@ export default function DebitNotesPage() {
       <FilterCard
         searchValue={search}
         onSearchChange={(e) => setSearch(e.target.value)}
-        searchPlaceholder={t('debitNotes.searchPlaceholder') || 'Search...'}
+        searchPlaceholder={t('debitNotes.searchPlaceholder')}
         statusValue={statusFilter}
         onStatusChange={setStatusFilter}
         statusOptions={[
-          { value: 'all', label: t('debitNotes.allStatuses') || 'All Statuses' },
-          { value: 'DRAFT', label: t('debitNotes.statusDraft') || 'Draft' },
-          { value: 'POSTED', label: t('debitNotes.statusPosted') || 'Posted' },
-          { value: 'SENT', label: t('debitNotes.statusSent') || 'Sent' },
-          { value: 'VOIDED', label: t('debitNotes.statusVoided') || 'Voided' }
+          { value: 'all', label: t('debitNotes.allStatuses') },
+          { value: 'DRAFT', label: t('debitNotes.statusDraft') },
+          { value: 'POSTED', label: t('debitNotes.statusPosted') },
+          { value: 'SENT', label: t('debitNotes.statusSent') },
+          { value: 'VOIDED', label: t('debitNotes.statusVoided') }
         ]}
         showDateRange={false}
       />
@@ -1483,12 +1481,12 @@ export default function DebitNotesPage() {
           <Row gutter={16}>
             <Col xs={24} md={8}>
               <Form.Item name="docDate" label={t('debitNotes.docDate')}>
-                <DatePicker format="YYYY-MM-DD" style={{ width: '100%' }} />
+                <DatePicker format="DD/MM/YYYY" style={{ width: '100%' }} />
               </Form.Item>
             </Col>
             <Col xs={24} md={8}>
               <Form.Item name="dueDate" label={t('debitNotes.dueDate')}>
-                <DatePicker format="YYYY-MM-DD" style={{ width: '100%' }} />
+                <DatePicker format="DD/MM/YYYY" style={{ width: '100%' }} />
               </Form.Item>
             </Col>
           </Row>
@@ -1536,7 +1534,7 @@ export default function DebitNotesPage() {
             <Input placeholder={t('debitNotes.paymentAccountRefPlaceholder')} />
           </Form.Item>
           <Form.Item name="paymentDate" label={t('debitNotes.paymentDate')}>
-            <DatePicker format="YYYY-MM-DD" style={{ width: '100%' }} />
+            <DatePicker format="DD/MM/YYYY" style={{ width: '100%' }} />
           </Form.Item>
         </Form>
       </Modal>
