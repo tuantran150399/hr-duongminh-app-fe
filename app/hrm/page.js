@@ -36,6 +36,27 @@ const deptColors = {
 
 const departmentsSeed = ['Operations', 'Accounting', 'Sales', 'Support', 'Management'];
 
+const departmentAliases = {
+  'Vận hành': 'Operations',
+  'Kế toán': 'Accounting',
+  'Kinh doanh': 'Sales',
+  'Hỗ trợ': 'Support',
+  'Quản lý': 'Management',
+  'Ban giám đốc': 'Management'
+};
+
+function normalizeDepartment(department) {
+  return departmentAliases[department] || department;
+}
+
+function getDepartmentLabel(department, t) {
+  if (!department) return '-';
+  const normalized = normalizeDepartment(department);
+  const translationKey = `hrm.departments.${normalized}`;
+  const translated = t(translationKey);
+  return translated === translationKey ? department : translated;
+}
+
 
 
 function getPayrollMonth(record) {
@@ -85,7 +106,7 @@ export default function HRMPage() {
         workHours: Number(record.workHours || 0)
       };
     }),
-    [attData?.items, employeeMap]
+    [attData?.items, employeeMap, language]
   );
 
   const payroll = useMemo(
@@ -117,12 +138,15 @@ export default function HRMPage() {
       !keyword ||
       employee.fullName?.toLowerCase().includes(keyword) ||
       code.toLowerCase().includes(keyword);
-    const matchDept = deptFilter === 'All' || employee.department === deptFilter;
+    const matchDept = deptFilter === 'All' || normalizeDepartment(employee.department) === deptFilter;
     return matchSearch && matchDept;
   }), [employees, search, deptFilter]);
 
   const departments = useMemo(
-    () => ['All', ...new Set([...departmentsSeed, ...employees.map((employee) => employee.department).filter(Boolean)])],
+    () => ['All', ...new Set([
+      ...departmentsSeed,
+      ...employees.map((employee) => normalizeDepartment(employee.department)).filter(Boolean)
+    ])],
     [employees]
   );
 
@@ -227,7 +251,11 @@ export default function HRMPage() {
       title: t('hrm.department'),
       dataIndex: 'department',
       key: 'department',
-      render: (department) => <Tag color={deptColors[department] || 'default'}>{t(`hrm.departments.${department}`) || department || '-'}</Tag>
+      render: (department) => (
+        <Tag color={deptColors[normalizeDepartment(department)] || 'default'}>
+          {getDepartmentLabel(department, t)}
+        </Tag>
+      )
     },
     { title: t('hrm.joinDate'), dataIndex: 'hireDate', key: 'hireDate', render: (val) => formatDate(val, language) },
     { title: t('hrm.phone'), dataIndex: 'phone', key: 'phone', render: (value) => value || '-' },
@@ -321,7 +349,7 @@ export default function HRMPage() {
               onStatusChange={setDeptFilter}
               statusOptions={departments.map((department) => ({
                 value: department,
-                label: department === 'All' ? t('hrm.allDepartments') : (t(`hrm.departments.${department}`) || department)
+                label: department === 'All' ? t('hrm.allDepartments') : getDepartmentLabel(department, t)
               }))}
               showDateRange={false}
             />
@@ -454,7 +482,10 @@ export default function HRMPage() {
             </Col>
             <Col xs={24} md={12}>
               <Form.Item name="department" label={t('hrm.department')} rules={[{ required: true }]}>
-                <Select options={departmentsSeed.map((department) => ({ value: department, label: t(`hrm.departments.${department}`) || department }))} />
+                <Select options={departmentsSeed.map((department) => ({
+                  value: department,
+                  label: getDepartmentLabel(department, t)
+                }))} />
               </Form.Item>
             </Col>
           </Row>
@@ -528,7 +559,12 @@ export default function HRMPage() {
               <Col span={12}><strong>{t('hrm.fullName')}:</strong> {viewEmployee.fullName}</Col>
             </Row>
             <Row gutter={16}>
-              <Col span={12}><strong>{t('hrm.department')}:</strong> <Tag color={deptColors[viewEmployee.department] || 'default'}>{t(`hrm.departments.${viewEmployee.department}`) || viewEmployee.department || '-'}</Tag></Col>
+              <Col span={12}>
+                <strong>{t('hrm.department')}:</strong>{' '}
+                <Tag color={deptColors[normalizeDepartment(viewEmployee.department)] || 'default'}>
+                  {getDepartmentLabel(viewEmployee.department, t)}
+                </Tag>
+              </Col>
               <Col span={12}><strong>{t('hrm.position')}:</strong> {viewEmployee.position || '-'}</Col>
             </Row>
             <Row gutter={16}>
