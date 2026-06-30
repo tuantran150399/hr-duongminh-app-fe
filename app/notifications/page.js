@@ -35,15 +35,15 @@ const TYPE_COLOR = {
   WARNING: 'orange', ERROR: 'red', SUCCESS: 'green', INFO: 'blue'
 };
 
-function timeAgo(dateStr) {
+function timeAgo(dateStr, t) {
   if (!dateStr) return '-';
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 1) return t('timeAgo.justNow');
+  if (mins < 60) return t('timeAgo.minutesAgo', { count: mins });
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
+  if (hrs < 24) return t('timeAgo.hoursAgo', { count: hrs });
+  return t('timeAgo.daysAgo', { count: Math.floor(hrs / 24) });
 }
 
 export default function NotificationsPage() {
@@ -192,7 +192,7 @@ export default function NotificationsPage() {
                 actions={[
                   (item.actionUrl || item.entityType === 'PAYMENT_REQUEST') && (
                     <Button key="open" type="link" size="small" onClick={() => handleOpen(item)}>
-                      {item.actionLabel || 'Xem chi tiết'}
+                      {item.actionLabel || t('notifications.viewDetail')}
                     </Button>
                   ),
                   !item.isRead && (
@@ -235,7 +235,7 @@ export default function NotificationsPage() {
                         color={TYPE_COLOR[item.type] ?? 'default'}
                         style={{ marginLeft: 4, fontSize: 11 }}
                       >
-                        {item.type}
+                        {item.type ? t(`notifications.types.${item.type}`) || item.type.replace(/_/g, ' ') : null}
                       </Tag>
                     </span>
                   }
@@ -243,7 +243,7 @@ export default function NotificationsPage() {
                     <span style={{ color: '#555' }}>
                       {item.message}
                       <span style={{ marginLeft: 12, color: '#aaa', fontSize: 12 }}>
-                        {timeAgo(item.createdAt)}
+                        {timeAgo(item.createdAt, t)}
                       </span>
                     </span>
                   }

@@ -213,7 +213,7 @@ export default function NotificationBell() {
                           {item.title}
                         </Typography.Text>
                         <Tag color={config.color} style={{ fontSize: 10, lineHeight: '16px', padding: '0 4px', margin: 0 }}>
-                          {item.type?.replace(/_/g, ' ')}
+                          {item.type ? t(`notifications.types.${item.type}`) || item.type.replace(/_/g, ' ') : null}
                         </Tag>
                       </div>
                     }

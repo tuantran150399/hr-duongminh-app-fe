@@ -213,7 +213,10 @@ export default function CobPage() {
       dataIndex: 'status',
       key: 'status',
       width: 120,
-      render: (v) => <Tag color={v?.toUpperCase() === 'SETTLED' ? 'green' : 'orange'}>{v}</Tag>
+      render: (v) => {
+        const isSettled = v?.toUpperCase() === 'SETTLED';
+        return <Tag color={isSettled ? 'green' : 'orange'}>{isSettled ? t('cob.statusSettled') : (v?.toUpperCase() === 'OPEN' ? t('cob.statusOpen') : v)}</Tag>;
+      }
     },
     {
       title: t('cob.actions'),
@@ -293,7 +296,10 @@ export default function CobPage() {
       dataIndex: 'status',
       key: 'status',
       width: 120,
-      render: (v) => <Tag color={v?.toUpperCase() === 'SETTLED' ? 'green' : 'orange'}>{v}</Tag>
+      render: (v) => {
+        const isSettled = v?.toUpperCase() === 'SETTLED';
+        return <Tag color={isSettled ? 'green' : 'orange'}>{isSettled ? t('cob.statusSettled') : (v?.toUpperCase() === 'OPEN' ? t('cob.statusOpen') : v)}</Tag>;
+      }
     },
     {
       title: t('cob.actions'),
@@ -346,8 +352,8 @@ export default function CobPage() {
         onStatusChange={setStatusFilter}
         statusOptions={[
           { value: 'all', label: t('common.allStatuses') },
-          { value: 'OPEN', label: 'OPEN' },
-          { value: 'SETTLED', label: 'SETTLED' }
+          { value: 'OPEN', label: t('cob.statusOpen') || 'OPEN' },
+          { value: 'SETTLED', label: t('cob.statusSettled') || 'SETTLED' }
         ]}
         showDateRange={false}
         searchValue=""

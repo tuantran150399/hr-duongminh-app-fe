@@ -122,7 +122,7 @@ export default function SecurityPage() {
     try {
       await deleteIpRule(id).unwrap();
       message.success(t('security.deleteRuleSuccess'));
-    } catch {
+    } catch (err) {
       message.error(getApiError(err, t, 'security.deleteRuleError'));
     }
   }

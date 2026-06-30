@@ -448,7 +448,9 @@ const dictionary = {
       pendingApproval: 'Pending Approval',
       finalApproved: 'Final Approved',
       rejected: 'Rejected',
+      searchPlaceholder: 'Search by request, job...',
       loadError: 'Unable to load payment requests from the backend.',
+      allStatuses: 'All Statuses',
       createSuccess: 'Payment request created successfully.',
       createError: 'Unable to create payment request.',
       approveSuccess: 'Payment request approved by department.',
@@ -510,7 +512,21 @@ const dictionary = {
       paymentMethod: 'Payment Method',
       paymentMethodCash: 'Cash',
       paymentMethodBank: 'Bank Transfer',
-      selectPaymentMethod: 'Select payment method'
+      selectPaymentMethod: 'Select payment method',
+      rejectedByDepartment: 'Rejected by Department',
+      rejectedByDirector: 'Rejected by Director',
+      paid: 'Paid',
+      departmentApprovalComment: 'Department Approval Comment',
+      finalApprovalComment: 'Director Approval Comment',
+      approveDepartmentTitle: 'Department Approval',
+      approveFinalTitle: 'Final Approval',
+      confirmApprove: 'Confirm Approval',
+      approvalComment: 'Approval Comment',
+      approvalCommentPlaceholder: 'Enter comment or notes (optional)',
+      confirmMarkPaid: 'Confirm this request has been paid?',
+      markPaidButton: 'Confirm Paid',
+      markPaidSuccess: 'Payment confirmed.',
+      markPaidError: 'Unable to confirm payment.'
     },
     debitNotes: {
       title: 'Debit Notes',
@@ -701,7 +717,9 @@ const dictionary = {
       deleteConfirm: 'Delete this entry?',
       deleteSuccess: 'Entry deleted.',
       deleteError: 'Unable to delete entry.',
-      jobRequired: 'Job is required.'
+      jobRequired: 'Job is required.',
+      statusOpen: 'OPEN',
+      statusSettled: 'SETTLED'
     },
     notifications: {
       title: 'Notifications',
@@ -725,7 +743,21 @@ const dictionary = {
       type: 'Type',
       time: 'Time',
       message: 'Message',
-      loadError: 'Unable to load notifications.'
+      loadError: 'Unable to load notifications.',
+      viewDetail: 'View Detail',
+      types: {
+        PAYMENT_APPROVED: 'Payment Approved',
+        PAYMENT_REJECTED: 'Payment Rejected',
+        PAYMENT_PENDING: 'Payment Pending',
+        ADVANCE_APPROVED: 'Advance Approved',
+        ADVANCE_REJECTED: 'Advance Rejected',
+        COB_CREATED: 'COB Created',
+        DEBIT_NOTE_POSTED: 'Debit Note Posted',
+        INFO: 'Info',
+        WARNING: 'Warning',
+        ERROR: 'Error',
+        SUCCESS: 'Success'
+      }
     },
     adjustments: {
       title: 'Adjustments & Reconciliation',
@@ -1990,7 +2022,21 @@ const dictionary = {
       paymentMethod: 'Phương thức TT',
       paymentMethodCash: 'Tiền mặt',
       paymentMethodBank: 'Chuyển khoản',
-      selectPaymentMethod: 'Chọn phương thức TT'
+      selectPaymentMethod: 'Chọn phương thức TT',
+      rejectedByDepartment: 'Trưởng bộ phận từ chối',
+      rejectedByDirector: 'Ban Giám đốc từ chối',
+      paid: 'Đã thanh toán',
+      departmentApprovalComment: 'Nhận xét Trưởng bộ phận',
+      finalApprovalComment: 'Nhận xét Ban Giám đốc',
+      approveDepartmentTitle: 'Duyệt cấp bộ phận',
+      approveFinalTitle: 'Phê duyệt cuối',
+      confirmApprove: 'Xác nhận duyệt',
+      approvalComment: 'Nhận xét duyệt',
+      approvalCommentPlaceholder: 'Nhập nhận xét hoặc ghi chú (không bắt buộc)',
+      confirmMarkPaid: 'Xác nhận đề nghị này đã được thanh toán?',
+      markPaidButton: 'Xác nhận đã thanh toán',
+      markPaidSuccess: 'Đã xác nhận thanh toán',
+      markPaidError: 'Không thể xác nhận thanh toán'
     },
     debitNotes: {
       title: 'Bảng kê / Debit Note',
@@ -2181,7 +2227,9 @@ const dictionary = {
       deleteConfirm: 'Xóa khoản này?',
       deleteSuccess: 'Đã xóa.',
       deleteError: 'Không thể xóa.',
-      jobRequired: 'Vui lòng chọn Job.'
+      jobRequired: 'Vui lòng chọn Job.',
+      statusOpen: 'CHƯA TT',
+      statusSettled: 'ĐÃ TẤT TOÁN'
     },
     notifications: {
       title: 'Thông báo',
@@ -2205,7 +2253,21 @@ const dictionary = {
       type: 'Loại',
       time: 'Thời gian',
       message: 'Nội dung',
-      loadError: 'Không thể tải thông báo.'
+      loadError: 'Không thể tải thông báo.',
+      viewDetail: 'Xem chi tiết',
+      types: {
+        PAYMENT_APPROVED: 'Đã duyệt TT',
+        PAYMENT_REJECTED: 'Từ chối TT',
+        PAYMENT_PENDING: 'Chờ duyệt TT',
+        ADVANCE_APPROVED: 'Đã duyệt tạm ứng',
+        ADVANCE_REJECTED: 'Từ chối tạm ứng',
+        COB_CREATED: 'Đã tạo chi hộ',
+        DEBIT_NOTE_POSTED: 'Đã chốt bảng kê',
+        INFO: 'Thông tin',
+        WARNING: 'Cảnh báo',
+        ERROR: 'Lỗi',
+        SUCCESS: 'Thành công'
+      }
     },
     adjustments: {
       title: 'Điều chỉnh & Quyết toán',

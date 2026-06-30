@@ -91,10 +91,10 @@ export default function PaymentRequestsPage() {
   const statusLabel = {
     PENDING_DEPARTMENT_APPROVAL: t('paymentRequests.pendingDepartmentApproval'),
     DEPARTMENT_APPROVED: t('paymentRequests.departmentApproved'),
-    REJECTED_BY_DEPARTMENT: 'Trưởng bộ phận từ chối',
-    REJECTED_BY_DIRECTOR: 'Ban Giám đốc từ chối',
+    REJECTED_BY_DEPARTMENT: t('paymentRequests.rejectedByDepartment'),
+    REJECTED_BY_DIRECTOR: t('paymentRequests.rejectedByDirector'),
     FINAL_APPROVED: t('paymentRequests.finalApprovedStatus'),
-    PAID: 'Đã thanh toán'
+    PAID: t('paymentRequests.paid')
   };
 
   const { data: requestsData, isLoading: loading, error: loadErrorObj } = useGetPaymentRequestsQuery({
@@ -252,10 +252,10 @@ export default function PaymentRequestsPage() {
   async function handleMarkPaid(record) {
     try {
       await markPaymentRequestPaid(record.backendId).unwrap();
-      message.success('Đã xác nhận thanh toán');
+      message.success(t('paymentRequests.markPaidSuccess'));
       setViewRecord(null);
     } catch (err) {
-      message.error(getApiError(err, t, 'Không thể xác nhận thanh toán'));
+      message.error(getApiError(err, t, 'paymentRequests.markPaidError'));
     }
   }
 
@@ -342,7 +342,10 @@ export default function PaymentRequestsPage() {
       dataIndex: 'status',
       key: 'status',
       width: 160,
-      render: (value) => <Tag color={statusColor[value]}>{statusLabel[value] || value}</Tag>
+      render: (_, record) => {
+        const rawStatus = record.raw?.status;
+        return <Tag color={statusColor[rawStatus]}>{statusLabel[rawStatus] || rawStatus || '-'}</Tag>;
+      }
     },
     {
       title: t('paymentRequests.actions'),
@@ -350,8 +353,9 @@ export default function PaymentRequestsPage() {
       width: 200,
       fixed: 'right',
       render: (_, record) => {
-        const isPending = record.status === 'PENDING_DEPARTMENT_APPROVAL';
-        const isDeptApproved = record.status === 'DEPARTMENT_APPROVED';
+        const rawStatus = record.raw?.status;
+        const isPending = rawStatus === 'PENDING_DEPARTMENT_APPROVAL';
+        const isDeptApproved = rawStatus === 'DEPARTMENT_APPROVED';
 
         return (
           <Space size={4}>
@@ -383,9 +387,9 @@ export default function PaymentRequestsPage() {
                   onClick={() => openApprovalModal(record, 'final')}
               />
             )}
-            {record.status === 'FINAL_APPROVED' && canMarkPaid && (
-              <Popconfirm title="Xác nhận đề nghị này đã được thanh toán?" onConfirm={() => handleMarkPaid(record)}>
-                <Button type="primary" size="small">Đã thanh toán</Button>
+            {rawStatus === 'FINAL_APPROVED' && canMarkPaid && (
+              <Popconfirm title={t('paymentRequests.confirmMarkPaid')} onConfirm={() => handleMarkPaid(record)}>
+                <Button type="primary" size="small">{t('paymentRequests.markPaidButton')}</Button>
               </Popconfirm>
             )}
             {((isPending && canDepartmentApprove) || (isDeptApproved && canFinalApprove)) && (
@@ -398,9 +402,9 @@ export default function PaymentRequestsPage() {
   ];
 
   const totalAmount = requests.reduce((sum, request) => sum + Number(request.amount || 0), 0);
-  const pendingCount = requests.filter((request) => request.status === 'PENDING_DEPARTMENT_APPROVAL').length;
-  const approvedCount = requests.filter((request) => ['FINAL_APPROVED', 'PAID'].includes(request.status)).length;
-  const rejectedCount = requests.filter((request) => ['REJECTED_BY_DEPARTMENT', 'REJECTED_BY_DIRECTOR'].includes(request.status)).length;
+  const pendingCount = requests.filter((r) => r.raw?.status === 'PENDING_DEPARTMENT_APPROVAL').length;
+  const approvedCount = requests.filter((r) => ['FINAL_APPROVED', 'PAID'].includes(r.raw?.status)).length;
+  const rejectedCount = requests.filter((r) => ['REJECTED_BY_DEPARTMENT', 'REJECTED_BY_DIRECTOR'].includes(r.raw?.status)).length;
 
   return (
     <DashboardLayout>
@@ -562,17 +566,17 @@ export default function PaymentRequestsPage() {
       </Modal>
 
       <Modal
-        title={approvalModal?.stage === 'department' ? 'Duyệt cấp bộ phận' : 'Phê duyệt cuối'}
+        title={approvalModal?.stage === 'department' ? t('paymentRequests.approveDepartmentTitle') : t('paymentRequests.approveFinalTitle')}
         open={Boolean(approvalModal)}
         onCancel={() => setApprovalModal(null)}
         onOk={() => approvalForm.submit()}
         confirmLoading={saving}
-        okText="Xác nhận duyệt"
+        okText={t('paymentRequests.confirmApprove')}
         destroyOnHidden
       >
         <Form form={approvalForm} layout="vertical" onFinish={handleApproval}>
-          <Form.Item name="comment" label="Nhận xét duyệt">
-            <Input.TextArea rows={3} placeholder="Nhập nhận xét hoặc ghi chú (không bắt buộc)" />
+          <Form.Item name="comment" label={t('paymentRequests.approvalComment')}>
+            <Input.TextArea rows={3} placeholder={t('paymentRequests.approvalCommentPlaceholder')} />
           </Form.Item>
         </Form>
       </Modal>
@@ -584,22 +588,22 @@ export default function PaymentRequestsPage() {
         onCancel={() => setViewRecord(null)}
         footer={
           <Space>
-            {viewRecord?.status === 'PENDING_DEPARTMENT_APPROVAL' && canDepartmentApprove && (
+            {viewRecord?.raw?.status === 'PENDING_DEPARTMENT_APPROVAL' && canDepartmentApprove && (
               <>
                 <Button icon={<EditOutlined />} onClick={() => { setViewRecord(null); openEditModal(viewRecord); }}>{t('paymentRequests.edit')}</Button>
                 <Button type="primary" icon={<CheckCircleOutlined />} onClick={() => openApprovalModal(viewRecord, 'department')}>{t('paymentRequests.departmentApprove')}</Button>
               </>
             )}
-            {viewRecord?.status === 'DEPARTMENT_APPROVED' && canFinalApprove && (
+            {viewRecord?.raw?.status === 'DEPARTMENT_APPROVED' && canFinalApprove && (
               <Button type="primary" icon={<SafetyCertificateOutlined />} style={{ backgroundColor: '#52c41a' }} onClick={() => openApprovalModal(viewRecord, 'final')}>{t('paymentRequests.finalApprove')}</Button>
             )}
-            {viewRecord?.status === 'FINAL_APPROVED' && canMarkPaid && (
-              <Popconfirm title="Xác nhận đề nghị này đã được thanh toán?" onConfirm={() => handleMarkPaid(viewRecord)}>
-                <Button type="primary">Xác nhận đã thanh toán</Button>
+            {viewRecord?.raw?.status === 'FINAL_APPROVED' && canMarkPaid && (
+              <Popconfirm title={t('paymentRequests.confirmMarkPaid')} onConfirm={() => handleMarkPaid(viewRecord)}>
+                <Button type="primary">{t('paymentRequests.markPaidButton')}</Button>
               </Popconfirm>
             )}
-            {((viewRecord?.status === 'PENDING_DEPARTMENT_APPROVAL' && canDepartmentApprove)
-              || (viewRecord?.status === 'DEPARTMENT_APPROVED' && canFinalApprove)) && (
+            {((viewRecord?.raw?.status === 'PENDING_DEPARTMENT_APPROVAL' && canDepartmentApprove)
+              || (viewRecord?.raw?.status === 'DEPARTMENT_APPROVED' && canFinalApprove)) && (
               <Button danger icon={<CloseCircleOutlined />} onClick={() => { setViewRecord(null); openRejectModal(viewRecord); }}>{t('paymentRequests.reject')}</Button>
             )}
             <Button onClick={() => setViewRecord(null)}>{t('paymentRequests.close')}</Button>
@@ -623,7 +627,7 @@ export default function PaymentRequestsPage() {
               {formatDate(viewRecord.requestedPaymentDate, language)}
             </Descriptions.Item>
             <Descriptions.Item label={t('paymentRequests.status')}>
-              <Tag color={statusColor[viewRecord.status]}>{statusLabel[viewRecord.status] || viewRecord.status}</Tag>
+              <Tag color={statusColor[viewRecord.raw?.status]}>{statusLabel[viewRecord.raw?.status] || viewRecord.raw?.status || '-'}</Tag>
             </Descriptions.Item>
             <Descriptions.Item label={t('paymentRequests.paymentMethod')}>
               {viewRecord.raw?.paymentMethod === 'CASH' ? t('paymentRequests.paymentMethodCash') : viewRecord.raw?.paymentMethod === 'BANK' ? t('paymentRequests.paymentMethodBank') : '-'}
@@ -647,16 +651,16 @@ export default function PaymentRequestsPage() {
             <Descriptions.Item label={t('paymentRequests.reason')}>
               {viewRecord.reason || viewRecord.raw?.reason || '-'}
             </Descriptions.Item>
-            {(['REJECTED_BY_DEPARTMENT', 'REJECTED_BY_DIRECTOR'].includes(viewRecord.status) && (viewRecord.rejectionReason || viewRecord.raw?.rejectionReason || viewRecord.raw?.rejectReason)) && (
+            {(['REJECTED_BY_DEPARTMENT', 'REJECTED_BY_DIRECTOR'].includes(viewRecord.raw?.status) && (viewRecord.rejectionReason || viewRecord.raw?.rejectionReason || viewRecord.raw?.rejectReason)) && (
               <Descriptions.Item label={t('paymentRequests.rejectionReason')}>
                 <Typography.Text type="danger">{viewRecord.rejectionReason || viewRecord.raw?.rejectionReason || viewRecord.raw?.rejectReason}</Typography.Text>
               </Descriptions.Item>
             )}
             {viewRecord.raw?.departmentApprovalComment ? (
-              <Descriptions.Item label="Nhận xét Trưởng bộ phận">{viewRecord.raw.departmentApprovalComment}</Descriptions.Item>
+              <Descriptions.Item label={t('paymentRequests.departmentApprovalComment')}>{viewRecord.raw.departmentApprovalComment}</Descriptions.Item>
             ) : null}
             {viewRecord.raw?.finalApprovalComment ? (
-              <Descriptions.Item label="Nhận xét Ban Giám đốc">{viewRecord.raw.finalApprovalComment}</Descriptions.Item>
+              <Descriptions.Item label={t('paymentRequests.finalApprovalComment')}>{viewRecord.raw.finalApprovalComment}</Descriptions.Item>
             ) : null}
           </Descriptions>
         )}

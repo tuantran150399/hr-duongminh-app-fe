@@ -57,11 +57,11 @@ export default function FilterCard({
     <Card className="filter-card">
       <Row gutter={[16, 16]} align="bottom">
         <Col xs={24} md={showDateRange ? 8 : 10}>
-          <Text className="filter-label">{t('filterCard.search')}</Text>
+          <Text className="filter-label">{t('common.search')}</Text>
           <Input
             allowClear
             prefix={<SearchOutlined />}
-            placeholder={searchPlaceholder || t('filterCard.searchPlaceholder')}
+            placeholder={searchPlaceholder || t('common.searchPlaceholder') || 'Search...'}
             value={searchValue}
             onChange={onSearchChange}
             size="large"
@@ -70,7 +70,7 @@ export default function FilterCard({
 
         {statusOptions.length > 0 ? (
           <Col xs={24} md={showDateRange ? 6 : 8}>
-            <Text className="filter-label">{t('filterCard.status')}</Text>
+            <Text className="filter-label">{t('common.status')}</Text>
             <Select
               value={statusValue}
               onChange={onStatusChange}
@@ -83,7 +83,7 @@ export default function FilterCard({
 
         {showDateRange ? (
           <Col xs={24} md={7}>
-            <Text className="filter-label">{t('filterCard.dateRange')}</Text>
+            <Text className="filter-label">{t('common.dateRange')}</Text>
             <RangePicker
               value={dateRange}
               onChange={onDateRangeChange}
@@ -97,7 +97,7 @@ export default function FilterCard({
         {onReset ? (
           <Col xs={24} md={3}>
             <Button block size="large" onClick={onReset}>
-              {t('filterCard.reset')}
+              {t('common.reset')}
             </Button>
           </Col>
         ) : null}
