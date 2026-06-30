@@ -112,6 +112,47 @@ export function normalizeDebtPolicy(policy) {
   };
 }
 
+export const normalizeDebtSummary = (summary) => {
+  if (!summary) return null;
+
+  return {
+    totalDebt      : summary.totalDebt      === null || summary.totalDebt      === undefined ? null : Number(summary.totalDebt),
+    totalLimit     : summary.totalLimit     === null || summary.totalLimit     === undefined ? null : Number(summary.totalLimit),
+    remainingLimit : summary.remainingLimit === null || summary.remainingLimit === undefined ? null : Number(summary.remainingLimit),
+    overdueDebt    : summary.overdueDebt    === null || summary.overdueDebt    === undefined ? null : Number(summary.overdueDebt),
+    raw            : summary
+  };
+};
+
+export const normalizeDebtCustomer = (customer) => {
+  if (!customer) return null;
+
+  return {
+    id          : String(customer.id),
+    backendId   : customer.id,
+    name        : customer.name        || '-',
+    currentDebt : customer.currentDebt  === null || customer.currentDebt  === undefined ? null : Number(customer.currentDebt),
+    creditLimit : customer.creditLimit  === null || customer.creditLimit  === undefined ? null : Number(customer.creditLimit),
+    usagePercent: customer.usagePercent === null || customer.usagePercent === undefined ? null : Number(customer.usagePercent),
+    status      : customer.status       || null,   // enum: normal | near_limit | over_limit | overdue
+    raw         : customer
+  };
+};
+
+export const normalizeDebtItem = (item) => {
+  if (!item) return null;
+
+  return {
+    id         : String(item.id),
+    backendId  : item.id,
+    invoiceCode: item.invoiceCode || null,
+    amount     : item.amount === null || item.amount === undefined ? null : Number(item.amount),
+    dueDate    : item.dueDate    || null,
+    isOverdue  : Boolean(item.isOverdue),
+    raw        : item
+  };
+};
+
 export function normalizeUser(user) {
   if (!user) return null;
 

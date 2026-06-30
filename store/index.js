@@ -13,6 +13,7 @@ import { advancesApi } from '@/store/services/advancesApi';
 import { accountingApi } from '@/store/services/accountingApi';
 import { paymentRequestsApi } from '@/store/services/paymentRequestsApi';
 import { debtPoliciesApi } from '@/store/services/debtPoliciesApi';
+import { debtsApi } from '@/store/services/debtsApi';
 import { reportsApi } from '@/store/services/reportsApi';
 import { pricingApi } from '@/store/services/pricingApi';
 import { adminExtApi } from '@/store/services/adminExtApi';
@@ -40,6 +41,7 @@ export const store = configureStore({
     [accountingApi.reducerPath]: accountingApi.reducer,
     [paymentRequestsApi.reducerPath]: paymentRequestsApi.reducer,
     [debtPoliciesApi.reducerPath]: debtPoliciesApi.reducer,
+    [debtsApi.reducerPath]: debtsApi.reducer,
     [reportsApi.reducerPath]: reportsApi.reducer,
     [pricingApi.reducerPath]: pricingApi.reducer,
     [adminExtApi.reducerPath]: adminExtApi.reducer,
@@ -61,6 +63,7 @@ export const store = configureStore({
       accountingApi.middleware,
       paymentRequestsApi.middleware,
       debtPoliciesApi.middleware,
+      debtsApi.middleware,
       reportsApi.middleware,
       pricingApi.middleware,
       adminExtApi.middleware,

@@ -4,6 +4,7 @@ import {
   BankOutlined,
   BranchesOutlined,
   DashboardOutlined,
+  FundOutlined,
   InboxOutlined,
   SettingOutlined,
   TeamOutlined,
@@ -67,6 +68,13 @@ export const APP_ROUTES = [
     showInMenu: true,
     icon: FileProtectOutlined,
     labelKey: 'menu.debtPolicies'
+  },
+  {
+    path: '/debts',
+    permission: PERMISSIONS.PARTNER_MANAGE,
+    showInMenu: true,
+    icon: FundOutlined,
+    labelKey: 'menu.debts'
   },
   {
     path: '/reports',

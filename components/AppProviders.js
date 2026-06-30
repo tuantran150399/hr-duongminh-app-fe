@@ -130,7 +130,8 @@ const dictionary = {
       cob: 'COB (Charge on Behalf)',
       security: 'Security',
       notifications: 'Notifications',
-      adjustments: 'Adjustments & Reconciliation'
+      adjustments: 'Adjustments & Reconciliation',
+      debts: 'Debt Management'
     },
     login: {
       loginSuccess: 'Signed in successfully',
@@ -437,6 +438,29 @@ const dictionary = {
       daysPlaceholder: 'E.g., 30',
       notAvailable: 'N/A',
       daysSuffix: '{count} days'
+    },
+    debts: {
+      title: 'Debt Management',
+      subtitle: 'Monitor customer debt status and overdue items.',
+      loadError: 'Unable to load debt data.',
+      totalDebt: 'Total Debt',
+      totalLimit: 'Total Credit Limit',
+      remainingLimit: 'Remaining Limit',
+      overdueDebt: 'Overdue Debt',
+      usagePercent: 'Limit Usage',
+      customerName: 'Customer',
+      currentDebt: 'Current Debt',
+      creditLimit: 'Credit Limit',
+      status: 'Status',
+      statusNormal: 'Normal',
+      statusNearLimit: 'Near Limit',
+      statusOverLimit: 'Over Limit',
+      statusOverdue: 'Overdue',
+      detailDrawerTitle: 'Outstanding Debt Items',
+      invoiceCode: 'Invoice Code',
+      amount: 'Amount',
+      dueDate: 'Due Date',
+      isOverdue: 'Overdue'
     },
     paymentRequests: {
       title: 'Payment Requests',
@@ -1636,7 +1660,8 @@ const dictionary = {
       cob: 'Chi hộ / Thu hộ',
       security: 'Bảo mật',
       notifications: 'Thông báo',
-      adjustments: 'Điều chỉnh & Quyết toán'
+      adjustments: 'Điều chỉnh & Quyết toán',
+      debts: 'Quản lý công nợ'
     },
     login: {
       loginSuccess: 'Đăng nhập thành công',
@@ -1949,6 +1974,29 @@ const dictionary = {
       daysPlaceholder: 'Ví dụ: 30',
       notAvailable: 'Không áp dụng',
       daysSuffix: '{count} ngày'
+    },
+    debts: {
+      title: 'Quản lý công nợ',
+      subtitle: 'Theo dõi trạng thái công nợ và các khoản nợ quá hạn của khách hàng.',
+      loadError: 'Không thể tải dữ liệu công nợ.',
+      totalDebt: 'Tổng công nợ',
+      totalLimit: 'Tổng hạn mức',
+      remainingLimit: 'Hạn mức còn lại',
+      overdueDebt: 'Nợ quá hạn',
+      usagePercent: 'Mức sử dụng hạn mức',
+      customerName: 'Khách hàng',
+      currentDebt: 'Công nợ hiện tại',
+      creditLimit: 'Hạn mức tín dụng',
+      status: 'Trạng thái',
+      statusNormal: 'Bình thường',
+      statusNearLimit: 'Sắp chạm hạn mức',
+      statusOverLimit: 'Vượt hạn mức',
+      statusOverdue: 'Có nợ quá hạn',
+      detailDrawerTitle: 'Danh sách khoản nợ',
+      invoiceCode: 'Mã hóa đơn',
+      amount: 'Số tiền',
+      dueDate: 'Ngày đến hạn',
+      isOverdue: 'Quá hạn'
     },
     paymentRequests: {
       title: 'Yêu cầu thanh toán',

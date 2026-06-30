@@ -33,7 +33,19 @@ const DEFAULT_COLOR_MAP = {
   // Active / Inactive
   Active: 'green',
   Inactive: 'red',
-  Locked: 'red'
+  Locked: 'red',
+
+  // Debt statuses (raw enum keys)
+  normal    : 'success',   // Bình thường
+  near_limit: 'gold',      // Sắp chạm hạn mức
+  over_limit: 'error',     // Vượt hạn mức
+  overdue   : 'magenta',   // Có nợ quá hạn
+
+  // Debt statuses (formatted labels — dùng khi caller truyền label đã format)
+  'Bình thường'      : 'success',
+  'Sắp chạm hạn mức': 'gold',
+  'Vượt hạn mức'    : 'error',
+  'Có nợ quá hạn'   : 'magenta'
 };
 
 /**
