@@ -59,6 +59,8 @@ export default function CobPage() {
   const [cobModalOpen, setCobModalOpen] = useState(false);
   const [collectModalOpen, setCollectModalOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
+  const selectedCobPartnerId = Form.useWatch('partnerId', cobForm);
+  const selectedCollectPartnerId = Form.useWatch('partnerId', collectForm);
 
   // Data queries
   const { data: cobData, isLoading: cobLoading, error: cobError, refetch: refetchCob } = useGetCobEntriesQuery({ status: statusFilter !== 'all' ? statusFilter : undefined });
@@ -83,9 +85,18 @@ export default function CobPage() {
     [partnersData]
   );
 
-  const jobOptions = useMemo(
-    () => jobs.map((j) => ({ value: j.backendId, label: `${j.job_no || j.id} - ${j.customer || ''}` })),
-    [jobs]
+  const cobJobOptions = useMemo(
+    () => jobs
+      .filter((job) => selectedCobPartnerId != null && Number(job.partnerId ?? job.raw?.partnerId) === Number(selectedCobPartnerId))
+      .map((job) => ({ value: job.backendId, label: `${job.job_no || job.id} - ${job.customer || ''}` })),
+    [jobs, selectedCobPartnerId]
+  );
+
+  const collectJobOptions = useMemo(
+    () => jobs
+      .filter((job) => selectedCollectPartnerId != null && Number(job.partnerId ?? job.raw?.partnerId) === Number(selectedCollectPartnerId))
+      .map((job) => ({ value: job.backendId, label: `${job.job_no || job.id} - ${job.customer || ''}` })),
+    [jobs, selectedCollectPartnerId]
   );
 
   const customerOptions = useMemo(
@@ -458,10 +469,23 @@ export default function CobPage() {
             <Select showSearch optionFilterProp="label" options={vendorOptions} placeholder={t('cob.selectVendor')} />
           </Form.Item>
           <Form.Item name="partnerId" label={t('cob.chargeToCustomer')} rules={[{ required: true, message: t('cob.customerRequired') }]}>
-            <Select showSearch optionFilterProp="label" options={customerOptions} placeholder={t('cob.selectCustomer')} />
+            <Select
+              showSearch
+              optionFilterProp="label"
+              options={customerOptions}
+              placeholder={t('cob.selectCustomer')}
+              onChange={() => cobForm.setFieldValue('jobId', undefined)}
+            />
           </Form.Item>
           <Form.Item name="jobId" label={t('cob.job')} rules={[{ required: true, message: t('cob.jobRequired') }]}>
-            <Select showSearch allowClear optionFilterProp="label" options={jobOptions} placeholder={t('cob.selectJob')} />
+            <Select
+              showSearch
+              allowClear
+              disabled={!selectedCobPartnerId}
+              optionFilterProp="label"
+              options={cobJobOptions}
+              placeholder={t('cob.selectJob')}
+            />
           </Form.Item>
           <Row gutter={16}>
             <Col span={12}>
@@ -503,13 +527,26 @@ export default function CobPage() {
       >
         <Form form={collectForm} layout="vertical" onFinish={submitCollect}>
           <Form.Item name="partnerId" label={t('cob.customer')} rules={[{ required: true, message: t('cob.customerRequired') }]}>
-            <Select showSearch optionFilterProp="label" options={customerOptions} placeholder={t('cob.selectCustomer')} />
+            <Select
+              showSearch
+              optionFilterProp="label"
+              options={customerOptions}
+              placeholder={t('cob.selectCustomer')}
+              onChange={() => collectForm.setFieldValue('jobId', undefined)}
+            />
           </Form.Item>
           <Form.Item name="vendorId" label={t('cob.payToVendor')} rules={[{ required: true, message: t('cob.vendorRequired') }]}>
             <Select showSearch optionFilterProp="label" options={vendorOptions} placeholder={t('cob.selectVendor')} />
           </Form.Item>
           <Form.Item name="jobId" label={t('cob.jobOptional')}>
-            <Select showSearch allowClear optionFilterProp="label" options={jobOptions} placeholder={t('cob.selectJob')} />
+            <Select
+              showSearch
+              allowClear
+              disabled={!selectedCollectPartnerId}
+              optionFilterProp="label"
+              options={collectJobOptions}
+              placeholder={t('cob.selectJob')}
+            />
           </Form.Item>
           <Row gutter={16}>
             <Col span={12}>
