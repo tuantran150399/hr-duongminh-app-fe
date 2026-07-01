@@ -336,12 +336,12 @@ export default function JobsPage() {
               className="toolbar-icon-button"
               icon={<ReloadOutlined />}
               onClick={refetch}
-              aria-label="Refresh jobs"
+              aria-label={t('jobs.refresh')}
             />
             <Button
               className="toolbar-icon-button"
               icon={<SettingOutlined />}
-              aria-label="Table settings"
+              aria-label={t('jobs.columnSettings')}
               onClick={() => setSettingsOpen((prev) => !prev)}
             />
             {settingsOpen && (
@@ -360,7 +360,7 @@ export default function JobsPage() {
                 }}
               >
                 <div style={{ fontWeight: 600, marginBottom: 6, fontSize: 13, color: '#555' }}>
-                  {t('jobs.columnSettings') || 'Columns'}
+                  {t('jobs.columnSettings')}
                 </div>
                 {allColumnKeys.map((key) => (
                   <div key={key}>

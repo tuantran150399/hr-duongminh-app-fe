@@ -9,15 +9,19 @@ function normalizeLoginEvent(item) {
     userId: item.userId ?? item.user_id ?? null,
     username: item.username || '-',
     status: item.status || '-',
-    ipAddress: item.ipAddress || item.ip_address || '-',
+    ipAddress: item.ipAddress || item.ip_address || item.clientIp || item.client_ip || item.ip || '-',
     userAgent: item.userAgent || item.user_agent || '-',
     deviceFingerprint: item.deviceFingerprint || item.device_fingerprint || '-',
+    deviceInfo: item.deviceInfo || item.device_info || item.userAgent || item.user_agent || '-',
     countryCode: item.countryCode || item.country_code || '-',
     locationLabel: item.locationLabel || item.location_label || '-',
     failureReason: item.failureReason || item.failure_reason || '-',
     riskScore: Number(item.riskScore ?? item.risk_score ?? 0),
     signals: item.signals || null,
     createdAt: item.createdAt || item.created_at || null,
+    createdBy: item.createdBy ?? item.created_by ?? null,
+    blockedByName: item.blockedByName || item.blocked_by_name || null,
+    blockedByUsername: item.blockedByUsername || item.blocked_by_username || null,
     raw: item,
   };
 }
@@ -55,6 +59,9 @@ function normalizeIpRule(item) {
     description: item.description || '-',
     isActive: Boolean(item.isActive ?? item.is_active),
     createdAt: item.createdAt || item.created_at || null,
+    createdBy: item.createdBy ?? item.created_by ?? null,
+    blockedByName: item.blockedByName || item.blocked_by_name || null,
+    blockedByUsername: item.blockedByUsername || item.blocked_by_username || null,
     raw: item,
   };
 }
@@ -62,7 +69,7 @@ function normalizeIpRule(item) {
 export const securityApi = createApi({
   reducerPath: 'securityApi',
   baseQuery: axiosBaseQuery(),
-  tagTypes: ['SecurityAlert', 'SecurityLoginEvent', 'IpAccessRule'],
+  tagTypes: ['SecurityAlert', 'SecurityLoginEvent', 'IpAccessRule', 'BlockedIp'],
   endpoints: (builder) => ({
     getLoginEvents: builder.query({
       query: (params = {}) => ({
@@ -75,6 +82,10 @@ export const securityApi = createApi({
         return { items: items.map(normalizeLoginEvent), meta };
       },
       providesTags: ['SecurityLoginEvent'],
+    }),
+
+    getSecurityFeatures: builder.query({
+      query: () => ({ url: '/security/features', method: 'GET' }),
     }),
 
     getSecurityAlerts: builder.query({
@@ -137,15 +148,40 @@ export const securityApi = createApi({
       }),
       invalidatesTags: ['IpAccessRule'],
     }),
+
+    getBlockedIps: builder.query({
+      query: (params = {}) => ({
+        url: '/security/blocked-ips', method: 'GET', params: { page: 1, limit: 30, ...params },
+      }),
+      transformResponse: (response) => {
+        const { items, meta } = extractPaginatedItems(response);
+        return { items: items.map(normalizeIpRule), meta };
+      },
+      providesTags: ['BlockedIp'],
+    }),
+
+    blockIp: builder.mutation({
+      query: (payload) => ({ url: '/security/blocked-ips', method: 'POST', data: payload }),
+      invalidatesTags: ['BlockedIp', 'IpAccessRule'],
+    }),
+
+    unblockIp: builder.mutation({
+      query: (id) => ({ url: `/security/blocked-ips/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['BlockedIp', 'IpAccessRule'],
+    }),
   }),
 });
 
 export const {
   useGetLoginEventsQuery,
+  useGetSecurityFeaturesQuery,
   useGetSecurityAlertsQuery,
   useUpdateSecurityAlertStatusMutation,
   useGetIpRulesQuery,
   useCreateIpRuleMutation,
   useUpdateIpRuleMutation,
   useDeleteIpRuleMutation,
+  useGetBlockedIpsQuery,
+  useBlockIpMutation,
+  useUnblockIpMutation,
 } = securityApi;

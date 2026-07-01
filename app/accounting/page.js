@@ -67,11 +67,11 @@ function formatCompactCurrency(value) {
   return `${amount}`;
 }
 
-function formatPeriodLabel(period, locale = 'vi-VN') {
+function formatPeriodLabel(period, locale, t) {
   if (!period) return '-';
   if (/^\d{4}-\d{2}$/.test(period)) {
     const [year, month] = period.split('-');
-    return locale === 'vi-VN' ? `T${Number(month)}/${year}` : `${month}/${year}`;
+    return t('accounting.monthYear', { month: Number(month), year });
   }
 
   const date = new Date(period);
@@ -151,7 +151,7 @@ function ChartRow({ revenueChart, costChart, t, language }) {
                 key={entry.chartKey}
                 title={
                   <div>
-                    <div style={{ fontWeight: 600 }}>{formatPeriodLabel(entry.chartLabel, locale)}</div>
+                    <div style={{ fontWeight: 600 }}>{formatPeriodLabel(entry.chartLabel, locale, t)}</div>
                     <div>{chartText.amount}: {formatCurrency(val)}</div>
                     {entry.chartCount > 0 ? <div>{chartText.entries}: {entry.chartCount}</div> : null}
                   </div>
@@ -203,7 +203,7 @@ function ChartRow({ revenueChart, costChart, t, language }) {
                 textOverflow: 'ellipsis'
               }}
             >
-              {formatPeriodLabel(entry.chartLabel, locale)}
+              {formatPeriodLabel(entry.chartLabel, locale, t)}
             </div>
           ))}
         </div>

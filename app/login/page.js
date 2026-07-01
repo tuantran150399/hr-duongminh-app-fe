@@ -36,10 +36,10 @@ export default function LoginPage() {
           : loginError?.message || loginError?.data?.message || t('login.loginError');
 
       Modal.error({
-        title: t('login.loginErrorTitle') || 'Login Failed',
+        title: t('login.loginErrorTitle'),
         content: detail,
         centered: true,
-        okText: t('login.tryAgain') || 'Try Again',
+        okText: t('login.tryAgain'),
         icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
         onOk: () => {
           // Focus the password field so the user can retry quickly

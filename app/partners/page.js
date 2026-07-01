@@ -235,28 +235,28 @@ export default function PartnersPage() {
             </Form.Item>
           </div>
           <Form.Item name="name" label={t('partners.partnerName')} rules={[{ required: true, message: t('partners.partnerNameRequired') }]}>
-            <Input placeholder="Company name" />
+            <Input placeholder={t('partners.partnerNamePlaceholder')} />
           </Form.Item>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 16 }}>
             <Form.Item name="taxCode" label={t('partners.taxCode')}>
-              <Input placeholder="Tax code" />
+              <Input placeholder={t('partners.taxCodePlaceholder')} />
             </Form.Item>
             <Form.Item name="contactPerson" label={t('partners.contactPerson')}>
-              <Input placeholder="Primary contact" />
+              <Input placeholder={t('partners.contactPlaceholder')} />
             </Form.Item>
             <Form.Item
               name="phone"
               label={t('partners.phone')}
               rules={[{ pattern: /^[0-9+\-\s().]{7,20}$/, message: t('partners.phoneValidation') }]}
             >
-              <Input placeholder="Phone number" />
+              <Input placeholder={t('partners.phonePlaceholder')} />
             </Form.Item>
             <Form.Item name="email" label={t('partners.email')} rules={[{ type: 'email', message: t('partners.emailValidation') }]}>
               <Input placeholder="name@company.com" />
             </Form.Item>
           </div>
           <Form.Item name="address" label={t('partners.address')}>
-            <Input.TextArea rows={3} placeholder="Business address" />
+            <Input.TextArea rows={3} placeholder={t('partners.addressPlaceholder')} />
           </Form.Item>
           {editingPartner ? (
             <Form.Item name="isActive" label={t('partners.status')}>

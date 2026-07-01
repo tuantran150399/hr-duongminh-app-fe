@@ -273,7 +273,7 @@ function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId
     const groups = selectedJobs.map((job) => ({
       key: job.backendId,
       job,
-      title: job.job_no || job.id || `Job #${job.backendId}`,
+      title: job.job_no || job.id || t('debitNotes.jobFallback', { id: job.backendId }),
       lines: lineItems.filter((line) => line.jobId === job.backendId)
     }));
     const unassigned = lineItems.filter((line) => !selectedJobIds?.includes(line.jobId));
@@ -308,7 +308,7 @@ function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId
         <Input
           value={value}
           size="small"
-          placeholder="CUSTOMS"
+          placeholder={t('debitNotes.serviceTypePlaceholder')}
           onChange={(e) => updateLine(record.key, 'serviceType', e.target.value)}
         />
       )
@@ -431,7 +431,7 @@ function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId
         <Input
           value={value}
           size="small"
-          placeholder="20833 / ghi chÃº"
+          placeholder={t('debitNotes.lineNotePlaceholder')}
           onChange={(e) => updateLine(record.key, 'lineNote', e.target.value)}
         />
       )
@@ -499,14 +499,14 @@ function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId
             <Input
               value={record.chargeNote}
               size="small"
-              placeholder="Charge note: 4,100,000 VND/40"
+              placeholder={t('debitNotes.chargeNotePlaceholder')}
               onChange={(e) => updateLine(record.key, 'chargeNote', e.target.value)}
               style={{ width: 190 }}
             />
             <Input
               value={record.lineNote}
               size="small"
-              placeholder="Note: 20833 / ghi chÃº"
+              placeholder={t('debitNotes.lineNotePlaceholder')}
               onChange={(e) => updateLine(record.key, 'lineNote', e.target.value)}
               style={{ flex: 1 }}
             />
@@ -553,7 +553,7 @@ function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId
       render: (value) => <strong>{formatCurrency(value)}</strong>
     },
     {
-      title: 'Credit',
+      title: t('debitNotes.credit'),
       dataIndex: 'creditAmount',
       width: 105,
       render: (value, record) => (
@@ -740,7 +740,7 @@ function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId
               />
             </div>
             <div>
-              <Typography.Text strong>{t('debitNotes.chargeNote') || 'Charge Note'}</Typography.Text>
+              <Typography.Text strong>{t('debitNotes.chargeNote')}</Typography.Text>
               <Input
                 value={editingDescriptionLine.chargeNote}
                 placeholder="4,100,000 VND/40"
@@ -748,11 +748,11 @@ function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId
               />
             </div>
             <div>
-              <Typography.Text strong>{t('debitNotes.lineNote') || 'Note'}</Typography.Text>
+              <Typography.Text strong>{t('debitNotes.lineNote')}</Typography.Text>
               <Input.TextArea
                 rows={3}
                 value={editingDescriptionLine.lineNote}
-                placeholder="Ghi chú nội bộ trên bảng kê"
+                placeholder={t('debitNotes.internalNotePlaceholder')}
                 onChange={(e) => updateLine(editingDescriptionLine.key, 'lineNote', e.target.value)}
               />
             </div>
@@ -1235,7 +1235,7 @@ export default function DebitNotesPage() {
       render: (_, record) => {
         const jobIds = record.raw?.jobIds?.length ? record.raw.jobIds : [record.jobId].filter(Boolean);
         const jobCodes = jobIds
-          .map((jobId) => jobs.find((j) => j.backendId === jobId)?.job_no || `Job #${jobId}`)
+          .map((jobId) => jobs.find((j) => j.backendId === jobId)?.job_no || t('debitNotes.jobFallback', { id: jobId }))
           .filter(Boolean);
         return jobCodes.join(', ') || record.job_no || '-';
       }
@@ -1320,7 +1320,7 @@ export default function DebitNotesPage() {
             <Button
               size="small"
               icon={<FileExcelOutlined />}
-              title={t('debitNotes.exportExcel') || 'Export Excel'}
+              title={t('debitNotes.exportExcel')}
               loading={exportingKey === `${record.backendId}-excel`}
               disabled={exportingKey === `${record.backendId}-pdf`}
               onClick={(event) => {
@@ -1331,7 +1331,7 @@ export default function DebitNotesPage() {
             <Button
               size="small"
               icon={<FilePdfOutlined />}
-              title={t('debitNotes.exportPdf') || 'Export PDF'}
+              title={t('debitNotes.exportPdf')}
               loading={exportingKey === `${record.backendId}-pdf`}
               disabled={exportingKey === `${record.backendId}-excel`}
               onClick={(event) => {
@@ -1537,12 +1537,12 @@ export default function DebitNotesPage() {
             </Col>
             <Col xs={24} md={6}>
               <Form.Item name="paymentTerm" label={t('debitNotes.paymentTermLabel')}>
-                <Input placeholder="At sight" />
+                <Input placeholder={t('debitNotes.paymentTermPlaceholder')} />
               </Form.Item>
             </Col>
             <Col xs={24} md={6}>
               <Form.Item name="mblNo" label={t('debitNotes.mblNo')}>
-                <Input placeholder="MBL / Bill No." />
+                <Input placeholder={t('debitNotes.mblNoPlaceholder')} />
               </Form.Item>
             </Col>
           </Row>
@@ -1550,12 +1550,12 @@ export default function DebitNotesPage() {
           <Row gutter={16}>
             <Col xs={24} md={8}>
               <Form.Item name="movingType" label={t('debitNotes.movingType')}>
-                <Input placeholder="Ground" />
+                <Input placeholder={t('debitNotes.movingTypePlaceholder')} />
               </Form.Item>
             </Col>
             <Col xs={24} md={8}>
               <Form.Item name="direction" label={t('debitNotes.direction')}>
-                <Input placeholder="Logistics" />
+                <Input placeholder={t('debitNotes.directionPlaceholder')} />
               </Form.Item>
             </Col>
             <Col xs={24} md={8}>
@@ -1617,7 +1617,7 @@ export default function DebitNotesPage() {
                 {
                   title: t('debitNotes.jobNo'),
                   dataIndex: 'jobId',
-                  render: (jobId) => jobs.find((job) => job.backendId === jobId)?.job_no || `Job #${jobId}`
+                  render: (jobId) => jobs.find((job) => job.backendId === jobId)?.job_no || t('debitNotes.jobFallback', { id: jobId })
                 },
                 { title: t('debitNotes.description'), dataIndex: 'description' },
                 {

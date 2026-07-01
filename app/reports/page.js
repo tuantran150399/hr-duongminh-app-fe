@@ -55,15 +55,21 @@ function compactNumber(value) {
   return amount.toLocaleString();
 }
 
-function statusLabel(value, language) {
-  const labels = {
-    vi: {
-      DRAFT: 'Nháp', CONFIRMED: 'Đã xác nhận', IN_PROGRESS: 'Đang xử lý',
-      COMPLETED: 'Hoàn thành', CLOSED: 'Đã đóng', CANCELLED: 'Đã hủy',
-      UNPAID: 'Chưa thanh toán', PARTIAL: 'Thanh toán một phần', PAID: 'Đã thanh toán'
-    }
-  };
-  return labels[language]?.[value] || String(value || '-').replaceAll('_', ' ');
+const STATUS_TRANSLATION_KEYS = {
+  DRAFT: 'draft',
+  CONFIRMED: 'confirmed',
+  IN_PROGRESS: 'inProgress',
+  COMPLETED: 'completed',
+  CLOSED: 'closed',
+  CANCELLED: 'cancelled',
+  UNPAID: 'unpaid',
+  PARTIAL: 'partial',
+  PAID: 'paid'
+};
+
+function statusLabel(value, t) {
+  const key = STATUS_TRANSLATION_KEYS[value];
+  return key ? t(`reports.statusLabels.${key}`) : String(value || '-').replaceAll('_', ' ');
 }
 
 function MetricStrip({ metrics }) {
@@ -79,7 +85,7 @@ function MetricStrip({ metrics }) {
   );
 }
 
-function GroupedBarChart({ data, labelFor, series, language }) {
+function GroupedBarChart({ data, labelFor, series, t }) {
   const maxValue = Math.max(
     ...data.flatMap((item) => series.map((entry) => Math.abs(Number(item[entry.key] || 0)))),
     1
@@ -119,13 +125,13 @@ function GroupedBarChart({ data, labelFor, series, language }) {
       </div>
       <div className={styles.legend}>
         {series.map((entry) => <span key={entry.key}><i style={{ background: entry.color }} />{entry.label}</span>)}
-        <small>{language === 'vi' ? 'Di chuột lên cột để xem chi tiết' : 'Hover over a bar for details'}</small>
+        <small>{t('reports.chartHoverHint')}</small>
       </div>
     </div>
   );
 }
 
-function DonutChart({ data, language }) {
+function DonutChart({ data, t }) {
   const total = data.reduce((sum, item) => sum + Number(item.count || 0), 0);
   const stops = data.map((item, index) => {
     const previousTotal = data
@@ -139,13 +145,13 @@ function DonutChart({ data, language }) {
   return (
     <div className={styles.donutLayout}>
       <div className={styles.donut} style={{ background: `conic-gradient(${stops.join(', ')})` }}>
-        <div><strong>{total}</strong><span>{language === 'vi' ? 'lô hàng' : 'shipments'}</span></div>
+        <div><strong>{total}</strong><span>{t('reports.shipmentCount', { count: total })}</span></div>
       </div>
       <div className={styles.donutLegend}>
         {data.map((item, index) => (
           <div key={item.status}>
             <i style={{ background: CHART_COLORS[index % CHART_COLORS.length] }} />
-            <span>{statusLabel(item.status, language)}</span>
+            <span>{statusLabel(item.status, t)}</span>
             <strong>{item.count}</strong>
             <small>{total ? `${Math.round((Number(item.count) / total) * 100)}%` : '0%'}</small>
           </div>
@@ -286,27 +292,27 @@ export default function ReportsPage() {
   function renderChart() {
     if (!data.length) return <Empty className={styles.empty} description={t('accounting.chart.noData')} />;
     if (activeTab === 'branch-summary') {
-      return <GroupedBarChart data={data} labelFor={(item) => branchMap[item.branchId]?.name || item.branchId} series={financialSeries} language={language} />;
+      return <GroupedBarChart data={data} labelFor={(item) => branchMap[item.branchId]?.name || item.branchId} series={financialSeries} t={t} />;
     }
     if (activeTab === 'customer-summary') {
-      return <GroupedBarChart data={data} labelFor={(item) => partnerMap[item.partnerId]?.name || item.partnerId} series={financialSeries} language={language} />;
+      return <GroupedBarChart data={data} labelFor={(item) => partnerMap[item.partnerId]?.name || item.partnerId} series={financialSeries} t={t} />;
     }
     if (activeTab === 'pnl') {
-      return <GroupedBarChart data={data} labelFor={(item) => item.period} series={financialSeries} language={language} />;
+      return <GroupedBarChart data={data} labelFor={(item) => item.period} series={financialSeries} t={t} />;
     }
     if (activeTab === 'cash-flow') {
-      return <GroupedBarChart data={data} labelFor={(item) => item.period} series={cashSeries} language={language} />;
+      return <GroupedBarChart data={data} labelFor={(item) => item.period} series={cashSeries} t={t} />;
     }
-    if (activeTab === 'job-status') return <DonutChart data={data} language={language} />;
+    if (activeTab === 'job-status') return <DonutChart data={data} t={t} />;
     if (['receivables', 'payables'].includes(activeTab)) {
-      return <HorizontalChart data={data} valueKey="totalAmount" labelFor={(item) => statusLabel(item.paymentStatus, language)} secondaryFor={(item) => `${item.count} ${language === 'vi' ? 'bút toán' : 'entries'}`} />;
+      return <HorizontalChart data={data} valueKey="totalAmount" labelFor={(item) => statusLabel(item.paymentStatus, t)} secondaryFor={(item) => t('reports.entriesCount', { count: item.count })} />;
     }
     return (
       <HorizontalChart
         data={data}
         valueKey="localAmount"
         labelFor={(item) => jobMap[item.jobId]?.job_no || `#${item.jobId}`}
-        secondaryFor={(item) => `${language === 'vi' ? 'Hạn thanh toán' : 'Due'}: ${formatDate(item.dueDate, language)}`}
+        secondaryFor={(item) => t('reports.dueDateValue', { date: formatDate(item.dueDate, language) })}
       />
     );
   }
@@ -347,7 +353,7 @@ export default function ReportsPage() {
         </header>
 
         <section className={styles.filters}>
-          <div className={styles.filterTitle}><FilterOutlined /><span>{language === 'vi' ? 'Bộ lọc báo cáo' : 'Report filters'}</span></div>
+          <div className={styles.filterTitle}><FilterOutlined /><span>{t('reports.filters')}</span></div>
           <div className={styles.filterControl}>
             <label>{t('reports.dateRange')}</label>
             <RangePicker value={dateRange} onChange={(value) => setDateRange(value || [null, null])} />
@@ -369,8 +375,8 @@ export default function ReportsPage() {
             <>
               <MetricStrip metrics={getMetrics()} />
               <div className={styles.chartTitle}>
-                <div><span>{language === 'vi' ? 'TRỰC QUAN DỮ LIỆU' : 'DATA VISUALIZATION'}</span><h2>{tabItems.find((item) => item.key === activeTab)?.label}</h2></div>
-                <small>{dateRange[0] && dateRange[1] ? `${dateRange[0].format('DD/MM/YYYY')} - ${dateRange[1].format('DD/MM/YYYY')}` : (language === 'vi' ? 'Toàn bộ thời gian' : 'All time')}</small>
+                <div><span>{t('reports.dataVisualization')}</span><h2>{tabItems.find((item) => item.key === activeTab)?.label}</h2></div>
+                <small>{dateRange[0] && dateRange[1] ? `${dateRange[0].format('DD/MM/YYYY')} - ${dateRange[1].format('DD/MM/YYYY')}` : t('reports.allTime')}</small>
               </div>
               <div className={styles.chartCanvas}>{renderChart()}</div>
             </>

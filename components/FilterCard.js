@@ -61,7 +61,7 @@ export default function FilterCard({
           <Input
             allowClear
             prefix={<SearchOutlined />}
-            placeholder={searchPlaceholder || t('common.searchPlaceholder') || 'Search...'}
+            placeholder={searchPlaceholder || t('common.searchPlaceholder')}
             value={searchValue}
             onChange={onSearchChange}
             size="large"

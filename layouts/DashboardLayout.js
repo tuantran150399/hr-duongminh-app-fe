@@ -99,7 +99,7 @@ export default function DashboardLayout({ children }) {
       key: 'profile',
       label: (
         <div className="user-menu-identity">
-          <strong>{user?.fullName || user?.username || 'User'}</strong>
+          <strong>{user?.fullName || user?.username || t('common.user')}</strong>
           <span>{user?.email || user?.username || ''}</span>
         </div>
       ),
@@ -127,7 +127,7 @@ export default function DashboardLayout({ children }) {
           <button
             type="button"
             className="dashboard-sider-backdrop"
-            aria-label="Close navigation"
+            aria-label={t('menu.closeNavigation')}
             onClick={() => setCollapsed(true)}
           />
         ) : null}
@@ -151,7 +151,7 @@ export default function DashboardLayout({ children }) {
             />
           </div>
 
-          <div className="sider-section-label">{collapsed ? 'NAV' : t('menu.navigation')}</div>
+          <div className="sider-section-label">{collapsed ? t('menu.navigationShort') : t('menu.navigation')}</div>
 
           <Menu
             theme="light"
@@ -253,7 +253,7 @@ export default function DashboardLayout({ children }) {
                     className="header-avatar"
                     src={user?.avatarUrl || null}
                     icon={!user?.avatarUrl ? <UserOutlined /> : undefined}
-                    alt={user?.fullName || 'Profile'}
+                    alt={user?.fullName || t('account.profileAlt')}
                     style={{ cursor: 'pointer' }}
                   >
                     {!user?.avatarUrl && user?.fullName
@@ -261,7 +261,7 @@ export default function DashboardLayout({ children }) {
                       : undefined}
                   </Avatar>
                   <span className="header-user-copy">
-                    <strong>{user?.fullName || user?.username || 'User'}</strong>
+                    <strong>{user?.fullName || user?.username || t('common.user')}</strong>
                     <small>{user?.email || user?.username || ''}</small>
                   </span>
                   <DownOutlined className="header-user-chevron" />

@@ -33,33 +33,22 @@ import {
 } from '@/store/services/adminExtApi';
 import { getApiError } from '@/utils/getApiError';
 
-const ROLE_LABELS = {
-  en: {
-    SUPER_ADMIN: 'Super Administrator',
-    ADMIN: 'Administrator',
-    MANAGER: 'Manager',
-    ACCOUNTANT: 'Accountant',
-    OPERATION: 'Operations',
-    STAFF: 'Staff',
-    VIEWER: 'Viewer'
-  },
-  vi: {
-    SUPER_ADMIN: 'Quản trị hệ thống',
-    ADMIN: 'Quản trị viên',
-    MANAGER: 'Quản lý',
-    ACCOUNTANT: 'Kế toán',
-    OPERATION: 'Nhân viên vận hành',
-    STAFF: 'Nhân viên',
-    VIEWER: 'Chỉ xem'
-  }
+const ROLE_TRANSLATION_KEYS = {
+  SUPER_ADMIN: 'superAdmin',
+  ADMIN: 'admin',
+  MANAGER: 'manager',
+  ACCOUNTANT: 'accountant',
+  OPERATION: 'operation',
+  STAFF: 'staff',
+  VIEWER: 'viewer'
 };
 
-function formatRoleLabel(roleName, language) {
+function formatRoleLabel(roleName, t) {
   const name = String(roleName || '').trim();
   const roleCode = name.toUpperCase().replace(/[\s-]+/g, '_');
-  const translated = ROLE_LABELS[language]?.[roleCode];
+  const translationKey = ROLE_TRANSLATION_KEYS[roleCode];
 
-  if (translated) return translated;
+  if (translationKey) return t(`users.roleLabels.${translationKey}`);
   if (!/^[A-Z0-9_-]+$/.test(name)) return name;
 
   return name
@@ -81,7 +70,7 @@ function isMasterAccount(record) {
 }
 
 export default function UsersPage() {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const { message } = App.useApp();
   const isHighestRole = useAppSelector(selectHasRole(ROLES.SUPER_ADMIN));
   const canManageUsers = useAppSelector(selectHasPermission(PERMISSIONS.USER_MANAGE)) && isHighestRole;
@@ -113,8 +102,8 @@ export default function UsersPage() {
   const savingBlock = isBlockingUser || isUnblockingUser;
 
   const roleOptions = useMemo(
-    () => roles.map((role) => ({ label: formatRoleLabel(role.name, language), value: role.backendId })),
-    [roles, language]
+    () => roles.map((role) => ({ label: formatRoleLabel(role.name, t), value: role.backendId })),
+    [roles, t]
   );
   const branchOptions = useMemo(
     () => branches.map((branch) => ({ label: `${branch.code} - ${branch.name}`, value: branch.backendId })),
@@ -256,7 +245,7 @@ export default function UsersPage() {
       key: 'roleNames',
       render: (items = []) => (
         <Space wrap size={[4, 4]}>
-          {items.map((role) => <Tag key={role}>{formatRoleLabel(role, language)}</Tag>)}
+          {items.map((role) => <Tag key={role}>{formatRoleLabel(role, t)}</Tag>)}
         </Space>
       )
     },
@@ -331,7 +320,7 @@ export default function UsersPage() {
       title: t('users.roleName'),
       dataIndex: 'name',
       key: 'name',
-      render: (name) => formatRoleLabel(name, language)
+      render: (name) => formatRoleLabel(name, t)
     },
     { title: t('users.description'), dataIndex: 'description', key: 'description' },
     {

@@ -374,7 +374,7 @@ export default function AdvancesPage() {
           <FilterCard
             searchValue={search}
             onSearchChange={(e) => setSearch(e.target.value)}
-            searchPlaceholder={t('advances.searchPlaceholder') || 'Search...'}
+            searchPlaceholder={t('advances.searchPlaceholder')}
             statusValue={statusFilter}
             onStatusChange={setStatusFilter}
             statusOptions={[

@@ -13,6 +13,7 @@ import {
   selectUserRoles
 } from '@/store/slices/authSlice';
 import { canAccessPath, getFirstAuthorizedPath, PUBLIC_ROUTES } from '@/config/routes';
+import { useLanguage } from '@/components/AppProviders';
 
 /**
  * AuthGuard — bảo vệ toàn bộ ứng dụng.
@@ -26,6 +27,7 @@ export default function AuthGuard({ children }) {
   const router = useRouter();
   const pathname = usePathname();
   const dispatch = useAppDispatch();
+  const { t } = useLanguage();
 
   const sessionStatus = useAppSelector(selectSessionStatus);
   const user = useAppSelector(selectUser);
@@ -45,7 +47,7 @@ export default function AuthGuard({ children }) {
   if (sessionStatus === 'idle' || sessionStatus === 'loading') {
     return (
       <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}>
-        <Spin size="large" tip="Đang tải...">
+        <Spin size="large" tip={t('common.loading')}>
           <div />
         </Spin>
       </div>
@@ -82,15 +84,17 @@ export default function AuthGuard({ children }) {
         <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}>
           <Result
             status="403"
-            title="403 — Không có quyền truy cập"
-            subTitle="Bạn không có quyền xem trang này. Vui lòng liên hệ quản trị viên."
+            title={t('authGuard.forbiddenTitle')}
+            subTitle={t('authGuard.forbiddenSubtitle')}
             extra={[
               <Button
                 key="fallback"
                 type="primary"
                 onClick={() => router.push(fallbackPath)}
               >
-                {fallbackPath === '/no-access' ? 'Xem trạng thái tài khoản' : 'Đi đến trang được cấp quyền'}
+                {fallbackPath === '/no-access'
+                  ? t('authGuard.viewAccountStatus')
+                  : t('authGuard.goToAuthorizedPage')}
               </Button>,
               <Button
                 key="logout"
@@ -99,7 +103,7 @@ export default function AuthGuard({ children }) {
                   router.replace('/login');
                 }}
               >
-                Đăng xuất
+                {t('common.signOut')}
               </Button>
             ]}
           />

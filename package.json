@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --webpack",
+    "prebuild": "npm run i18n:audit",
     "build": "next build",
     "export": "next build",
     "build:static": "next build",
@@ -12,6 +13,7 @@
     "start": "npx serve@latest out -l 3000",
     "start:static": "npx serve@latest out -l 3000",
     "lint": "eslint .",
+    "i18n:audit": "node scripts/i18n-audit.cjs",
     "clean": "powershell -NoProfile -Command \"if (Test-Path .next) { Remove-Item -Recurse -Force .next }\"",
     "deploy:zip": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/create-static-zip.ps1"
   },
@@ -28,6 +30,8 @@
     "react-redux": "^9.2.0"
   },
   "devDependencies": {
+    "@babel/parser": "^8.0.0",
+    "@babel/traverse": "^8.0.0",
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.2.4"
   }

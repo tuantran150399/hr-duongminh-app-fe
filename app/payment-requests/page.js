@@ -442,11 +442,11 @@ export default function PaymentRequestsPage() {
       <FilterCard
         searchValue={search}
         onSearchChange={(e) => setSearch(e.target.value)}
-        searchPlaceholder={t('paymentRequests.searchPlaceholder') || 'Search...'}
+        searchPlaceholder={t('paymentRequests.searchPlaceholder')}
         statusValue={statusFilter}
         onStatusChange={setStatusFilter}
         statusOptions={[
-          { value: 'all', label: t('paymentRequests.allStatuses') || 'All Statuses' },
+          { value: 'all', label: t('paymentRequests.allStatuses') },
           { value: 'PENDING_DEPARTMENT_APPROVAL', label: statusLabel.PENDING_DEPARTMENT_APPROVAL },
           { value: 'DEPARTMENT_APPROVED', label: statusLabel.DEPARTMENT_APPROVED },
           { value: 'FINAL_APPROVED', label: statusLabel.FINAL_APPROVED },

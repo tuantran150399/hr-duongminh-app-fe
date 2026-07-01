@@ -1,376 +1,190 @@
 'use client';
 
 import {
-  Alert, Badge, Button, Card, Col, Form, Input, Modal,
-  Popconfirm, Row, Select, Space, Statistic, Switch, Table, Tag, Tabs, Typography, App
+  Alert, Badge, Button, Card, Col, DatePicker, Form, Input, Modal, Popconfirm,
+  Row, Select, Space, Statistic, Table, Tag, Tabs, Typography, App
 } from 'antd';
 import {
-  AuditOutlined,
-  CheckCircleOutlined,
-  DeleteOutlined,
-  EditOutlined,
-  GlobalOutlined,
-  LockOutlined,
-  PlusOutlined,
-  SafetyCertificateOutlined,
-  StopOutlined,
-  WarningOutlined
+  AuditOutlined, CheckCircleOutlined, LockOutlined, PlusOutlined,
+  SafetyCertificateOutlined, StopOutlined, WarningOutlined
 } from '@ant-design/icons';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { useLanguage } from '@/components/AppProviders';
+import { useGetUsersQuery } from '@/store/services/adminApi';
 import {
-  useGetLoginEventsQuery,
-  useGetSecurityAlertsQuery,
-  useGetIpRulesQuery,
-  useUpdateSecurityAlertStatusMutation,
-  useCreateIpRuleMutation,
-  useUpdateIpRuleMutation,
-  useDeleteIpRuleMutation
+  useBlockIpMutation, useGetBlockedIpsQuery, useGetLoginEventsQuery,
+  useGetSecurityAlertsQuery, useGetSecurityFeaturesQuery, useUnblockIpMutation,
+  useUpdateSecurityAlertStatusMutation
 } from '@/store/services/securityApi';
 import { getApiError } from '@/utils/getApiError';
 import { formatDateTime } from '@/utils/format';
 
-const SEVERITY_COLORS = { LOW: 'blue', MEDIUM: 'orange', HIGH: 'red', CRITICAL: 'volcano' };
 const STATUS_COLORS = { SUCCESS: 'green', FAILED: 'red', BLOCKED: 'orange' };
 const ALERT_STATUS_COLORS = { OPEN: 'red', ACKNOWLEDGED: 'orange', RESOLVED: 'green' };
+const SEVERITY_COLORS = { LOW: 'blue', MEDIUM: 'orange', HIGH: 'red', CRITICAL: 'volcano' };
+const EMPTY_FILTERS = { userId: undefined, ipAddress: '', status: undefined, dates: null };
 
-
-function RiskBadge({ score }) {
-  const color = score >= 75 ? '#ff4d4f' : score >= 40 ? '#fa8c16' : '#52c41a';
-  return (
-    <span style={{
-      display: 'inline-block', minWidth: 42, textAlign: 'center',
-      background: color + '22', color, border: `1px solid ${color}55`,
-      borderRadius: 20, padding: '1px 10px', fontWeight: 700, fontSize: 13
-    }}>
-      {score}
-    </span>
-  );
+function toEventParams(filters, page) {
+  const params = { page, limit: 20 };
+  if (filters.userId) params.userId = filters.userId;
+  if (filters.ipAddress?.trim()) params.ipAddress = filters.ipAddress.trim();
+  if (filters.status) params.status = filters.status;
+  if (filters.dates?.[0]) params.dateFrom = filters.dates[0].startOf('day').toISOString();
+  if (filters.dates?.[1]) params.dateTo = filters.dates[1].endOf('day').toISOString();
+  return params;
 }
 
 export default function SecurityPage() {
   const { t, language } = useLanguage();
   const { message } = App.useApp();
   const [activeTab, setActiveTab] = useState('events');
-  const [ruleModalOpen, setRuleModalOpen] = useState(false);
-  const [editingRule, setEditingRule] = useState(null);
-  const [ruleForm] = Form.useForm();
+  const [eventPage, setEventPage] = useState(1);
+  const [draftFilters, setDraftFilters] = useState(EMPTY_FILTERS);
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [blockModalOpen, setBlockModalOpen] = useState(false);
+  const [blockForm] = Form.useForm();
 
-  const { data: eventsData, isLoading: loadingEvents, error: eventsError } = useGetLoginEventsQuery({ limit: 50 });
-  const { data: alertsData, isLoading: loadingAlerts, error: alertsError } = useGetSecurityAlertsQuery({ limit: 50 });
-  const { data: ipRulesData, isLoading: loadingRules, error: rulesError } = useGetIpRulesQuery({ limit: 100 });
+  const { data: features } = useGetSecurityFeaturesQuery();
+  // Feature flag UI check: the alert tab/actions remain implemented below and
+  // reappear when ENABLE_SECURITY_ALERT_RESOLUTION is enabled on the API.
+  const alertResolutionEnabled = features?.alertResolutionEnabled === true;
+  const { data: eventsData, isLoading: loadingEvents, error: eventsError } = useGetLoginEventsQuery(toEventParams(filters, eventPage));
+  const { data: alertsData, isLoading: loadingAlerts, error: alertsError } = useGetSecurityAlertsQuery(
+    { limit: 50 }, { skip: !alertResolutionEnabled }
+  );
+  const { data: blockedData, isLoading: loadingBlocked, error: blockedError } = useGetBlockedIpsQuery({ limit: 100 });
+  const { data: users = [] } = useGetUsersQuery();
 
   const [updateAlertStatus] = useUpdateSecurityAlertStatusMutation();
-  const [createIpRule] = useCreateIpRuleMutation();
-  const [updateIpRule] = useUpdateIpRuleMutation();
-  const [deleteIpRule] = useDeleteIpRuleMutation();
+  const [blockIp] = useBlockIpMutation();
+  const [unblockIp] = useUnblockIpMutation();
 
-  const events = useMemo(() => eventsData?.items ?? [], [eventsData]);
-  const alerts = useMemo(() => alertsData?.items ?? [], [alertsData]);
-  const ipRules = useMemo(() => ipRulesData?.items ?? [], [ipRulesData]);
-
-  const hasError = eventsError || alertsError || rulesError;
-  const openAlerts = alerts.filter(a => a.status === 'OPEN').length;
-  const blockedLogins = events.filter(e => e.status === 'BLOCKED').length;
-  const activeRules = ipRules.filter(r => r.isActive).length;
+  const events = eventsData?.items ?? [];
+  const alerts = alertsData?.items ?? [];
+  const blockedIps = blockedData?.items ?? [];
+  const openAlerts = alerts.filter((item) => item.status === 'OPEN').length;
+  const blockedLogins = events.filter((item) => item.status === 'BLOCKED').length;
+  const hasError = eventsError || blockedError || (alertResolutionEnabled && alertsError);
 
   async function handleAlertAction(id, status) {
     try {
       await updateAlertStatus({ id, status }).unwrap();
       message.success(status === 'ACKNOWLEDGED' ? t('security.acknowledgeSuccess') : t('security.resolveSuccess'));
-    } catch (err) {
-      message.error(getApiError(err, t, status === 'ACKNOWLEDGED' ? 'security.acknowledgeError' : 'security.resolveError'));
+    } catch (error) {
+      message.error(getApiError(error, t, 'security.resolveError'));
     }
   }
 
-  function openCreateRule() {
-    setEditingRule(null);
-    ruleForm.resetFields();
-    ruleForm.setFieldsValue({ isActive: true });
-    setRuleModalOpen(true);
+  function openBlockIp(ipAddress = '') {
+    blockForm.resetFields();
+    blockForm.setFieldsValue({ ipAddress: ipAddress === '-' ? '' : ipAddress });
+    setBlockModalOpen(true);
   }
 
-  function openEditRule(rule) {
-    setEditingRule(rule);
-    ruleForm.setFieldsValue({
-      type: rule.type,
-      ipPattern: rule.ipPattern,
-      label: rule.label,
-      description: rule.description === '-' ? '' : rule.description,
-      isActive: rule.isActive
-    });
-    setRuleModalOpen(true);
-  }
-
-  async function handleRuleSave(values) {
+  async function handleBlock(values) {
     try {
-      if (editingRule) {
-        await updateIpRule({ id: editingRule.backendId, ...values }).unwrap();
-      } else {
-        await createIpRule(values).unwrap();
-      }
-      message.success(t('security.saveRuleSuccess'));
-      setRuleModalOpen(false);
-      ruleForm.resetFields();
-    } catch (err) {
-      message.error(getApiError(err, t, 'security.saveRuleError'));
+      await blockIp(values).unwrap();
+      message.success(t('security.blockIpSuccess'));
+      setBlockModalOpen(false);
+    } catch (error) {
+      message.error(getApiError(error, t, 'security.blockIpError'));
     }
   }
 
-  async function handleDeleteRule(id) {
+  async function perform(action, successKey, errorKey) {
     try {
-      await deleteIpRule(id).unwrap();
-      message.success(t('security.deleteRuleSuccess'));
-    } catch (err) {
-      message.error(getApiError(err, t, 'security.deleteRuleError'));
+      await action().unwrap();
+      message.success(t(successKey));
+    } catch (error) {
+      message.error(getApiError(error, t, errorKey));
     }
   }
 
-  /* ── Column definitions ─────────────────────────────────────────────────── */
   const eventColumns = [
+    { title: t('security.time'), dataIndex: 'createdAt', render: (value) => formatDateTime(value, language) },
+    { title: t('security.username'), dataIndex: 'username', render: (value) => <strong>{value}</strong> },
+    { title: t('security.ipAddress'), dataIndex: 'ipAddress', render: (value) => <code>{value}</code> },
+    { title: t('security.deviceBrowser'), dataIndex: 'deviceInfo', ellipsis: true },
+    { title: t('security.location'), render: (_, row) => row.locationLabel !== '-' ? row.locationLabel : row.countryCode },
+    { title: t('security.status'), dataIndex: 'status', render: (value) => <Tag color={STATUS_COLORS[value]}>{value}</Tag> },
     {
-      title: t('security.username'), dataIndex: 'username', key: 'username',
-      render: v => <strong>{v}</strong>
-    },
-    {
-      title: t('security.status'), dataIndex: 'status', key: 'status',
-      render: s => <Tag color={STATUS_COLORS[s] ?? 'default'}>{s}</Tag>
-    },
-    { title: t('security.ipAddress'), dataIndex: 'ipAddress', key: 'ipAddress' },
-    {
-      title: t('security.riskScore'), dataIndex: 'riskScore', key: 'riskScore',
-      align: 'center', render: score => <RiskBadge score={score} />
-    },
-    {
-      title: t('security.time'), dataIndex: 'createdAt', key: 'createdAt',
-      render: (val) => formatDateTime(val, language)
+      title: t('security.actions'), render: (_, row) => row.ipAddress !== '-' ? (
+        <Button danger size="small" icon={<StopOutlined />} onClick={() => openBlockIp(row.ipAddress)}>
+          {t('security.blockIp')}
+        </Button>
+      ) : null
     }
   ];
 
   const alertColumns = [
+    { title: t('security.alertType'), dataIndex: 'type', render: (value) => <Tag icon={<WarningOutlined />}>{value?.replace(/_/g, ' ')}</Tag> },
+    { title: t('security.severity'), dataIndex: 'severity', render: (value) => <Tag color={SEVERITY_COLORS[value]}>{value}</Tag> },
+    { title: t('security.username'), dataIndex: 'username' },
+    { title: t('security.message'), dataIndex: 'message', ellipsis: true },
+    { title: t('security.status'), dataIndex: 'status', render: (value) => <Tag color={ALERT_STATUS_COLORS[value]}>{value}</Tag> },
+    { title: t('security.time'), dataIndex: 'createdAt', render: (value) => formatDateTime(value, language) },
     {
-      title: t('security.alertType'), dataIndex: 'type', key: 'type',
-      render: v => <Tag icon={<WarningOutlined />}>{v?.replace(/_/g, ' ')}</Tag>
-    },
-    {
-      title: t('security.severity'), dataIndex: 'severity', key: 'severity',
-      render: s => <Tag color={SEVERITY_COLORS[s] ?? 'default'}>{s}</Tag>
-    },
-    { title: t('security.username'), dataIndex: 'username', key: 'username' },
-    { title: t('security.message'), dataIndex: 'message', key: 'message', ellipsis: true },
-    {
-      title: t('security.status'), dataIndex: 'status', key: 'status',
-      render: s => <Tag color={ALERT_STATUS_COLORS[s] ?? 'default'}>{s}</Tag>
-    },
-    { title: t('security.time'), dataIndex: 'createdAt', key: 'createdAt', render: (val) => formatDateTime(val, language) },
-    {
-      title: t('security.actions'), key: 'actions',
-      render: (_, record) => record.status === 'OPEN' ? (
-        <Space size={4}>
-          <Button size="small" icon={<CheckCircleOutlined />} title={t('security.acknowledge')}
-            onClick={() => handleAlertAction(record.backendId, 'ACKNOWLEDGED')} />
-          <Button size="small" type="primary" icon={<CheckCircleOutlined />} title={t('security.resolve')}
-            onClick={() => handleAlertAction(record.backendId, 'RESOLVED')} />
+      title: t('security.actions'), render: (_, row) => row.status !== 'RESOLVED' ? (
+        <Space>
+          {row.status === 'OPEN' ? <Button size="small" onClick={() => handleAlertAction(row.backendId, 'ACKNOWLEDGED')}>{t('security.acknowledge')}</Button> : null}
+          <Button size="small" type="primary" onClick={() => handleAlertAction(row.backendId, 'RESOLVED')}>{t('security.resolve')}</Button>
         </Space>
-      ) : record.status === 'ACKNOWLEDGED' ? (
-        <Button size="small" type="primary" icon={<CheckCircleOutlined />} title={t('security.resolve')}
-          onClick={() => handleAlertAction(record.backendId, 'RESOLVED')} />
       ) : <Tag color="green" icon={<CheckCircleOutlined />}>{t('security.resolved')}</Tag>
     }
   ];
 
-  const ipRuleColumns = [
+  const blockedColumns = [
+    { title: t('security.ipAddress'), dataIndex: 'ipPattern', render: (value) => <code>{value}</code> },
+    { title: t('security.label'), dataIndex: 'label' },
+    { title: t('security.reason'), dataIndex: 'description', ellipsis: true },
+    { title: t('security.blockedBy'), render: (_, row) => row.blockedByName || row.blockedByUsername || `#${row.createdBy ?? '-'}` },
+    { title: t('security.blockedAt'), dataIndex: 'createdAt', render: (value) => formatDateTime(value, language) },
     {
-      title: t('security.ruleType'), dataIndex: 'type', key: 'type',
-      render: type => (
-        <Tag color={type === 'ALLOW' ? 'green' : 'red'}
-          icon={type === 'ALLOW' ? <CheckCircleOutlined /> : <StopOutlined />}>
-          {type}
-        </Tag>
-      )
-    },
-    { title: t('security.ipPattern'), dataIndex: 'ipPattern', key: 'ipPattern', render: v => <code>{v}</code> },
-    { title: t('security.label'), dataIndex: 'label', key: 'label', render: v => <strong>{v}</strong> },
-    { title: t('security.description'), dataIndex: 'description', key: 'description', ellipsis: true },
-    {
-      title: t('security.ruleActive'), dataIndex: 'isActive', key: 'isActive',
-      render: v => v
-        ? <Badge status="success" text={t('security.active')} />
-        : <Badge status="default" text={t('security.inactive')} />
-    },
-    {
-      title: t('security.actions'), key: 'actions',
-      render: (_, record) => (
-        <Space size={4}>
-          <Button size="small" icon={<EditOutlined />} title={t('security.editRule')} onClick={() => openEditRule(record)} />
-          <Popconfirm title={t('security.deleteRuleConfirm')}
-            onConfirm={() => handleDeleteRule(record.backendId)}>
-            <Button size="small" danger icon={<DeleteOutlined />} title={t('security.deleteRule')} />
-          </Popconfirm>
-        </Space>
+      title: t('security.actions'), render: (_, row) => (
+        <Popconfirm title={t('security.unblockConfirm')} onConfirm={() => perform(() => unblockIp(row.backendId), 'security.unblockSuccess', 'security.unblockError')}>
+          <Button size="small">{t('security.unblock')}</Button>
+        </Popconfirm>
       )
     }
   ];
 
-  const tabItems = [
+  const tabs = [
     {
-      key: 'events',
-      label: <span><AuditOutlined /> {t('security.loginEventsTab')}</span>,
-      children: (
-        <Table
-          rowKey="id"
-          loading={loadingEvents}
-          columns={eventColumns}
-          dataSource={events}
-          pagination={{ pageSize: 15, showSizeChanger: false }}
-          scroll={{ x: 900 }}
-        />
-      )
-    },
-    {
-      key: 'alerts',
-      label: (
-        <span>
-          <WarningOutlined /> {t('security.alertsTab')}
-          {openAlerts > 0 && <Badge count={openAlerts} style={{ marginLeft: 6 }} />}
-        </span>
-      ),
-      children: (
-        <Table
-          rowKey="id"
-          loading={loadingAlerts}
-          columns={alertColumns}
-          dataSource={alerts}
-          pagination={{ pageSize: 15, showSizeChanger: false }}
-          scroll={{ x: 1100 }}
-        />
-      )
-    },
-    {
-      key: 'ip-rules',
-      label: <span><GlobalOutlined /> {t('security.ipRulesTab')}</span>,
-      children: (
-        <div>
-          <div className="security-rule-toolbar">
-            <Button type="primary" icon={<PlusOutlined />} onClick={openCreateRule}>
-              {t('security.addRule')}
-            </Button>
-          </div>
-          <Table
-            rowKey="id"
-            loading={loadingRules}
-            columns={ipRuleColumns}
-            dataSource={ipRules}
-            pagination={{ pageSize: 15, showSizeChanger: false }}
-            scroll={{ x: 900 }}
-          />
-        </div>
-      )
-    }
-  ];
-
-  return (
-    <DashboardLayout>
-      <div className="page-header">
-        <div>
-          <Typography.Title level={1} className="page-title">
-            <SafetyCertificateOutlined style={{ marginRight: 10, color: '#0057c2' }} />
-            {t('security.title')}
-          </Typography.Title>
-          <Typography.Paragraph className="page-subtitle">{t('security.subtitle')}</Typography.Paragraph>
-        </div>
-      </div>
-
-      {hasError && (
-        <Alert type="error" showIcon message={t('security.loadError')} style={{ marginBottom: 16 }} />
-      )}
-
-      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
-        <Col xs={12} md={6}>
-          <Card>
-            <Statistic
-              title={t('security.totalEvents')}
-              value={events.length}
-              prefix={<AuditOutlined />}
-            />
-          </Card>
-        </Col>
-        <Col xs={12} md={6}>
-          <Card>
-            <Statistic
-              title={t('security.openAlerts')}
-              value={openAlerts}
-              prefix={<WarningOutlined />}
-              valueStyle={{ color: openAlerts > 0 ? '#ff4d4f' : '#52c41a' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={12} md={6}>
-          <Card>
-            <Statistic
-              title={t('security.blockedLogins')}
-              value={blockedLogins}
-              prefix={<LockOutlined />}
-              valueStyle={{ color: blockedLogins > 0 ? '#fa8c16' : '#52c41a' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={12} md={6}>
-          <Card>
-            <Statistic
-              title={t('security.activeIpRules')}
-              value={activeRules}
-              prefix={<GlobalOutlined />}
-              valueStyle={{ color: '#0057c2' }}
-            />
-          </Card>
-        </Col>
-      </Row>
-
-      <Card className="table-card">
-        <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} />
-      </Card>
-
-      {/* IP Rule create/edit modal */}
-      <Modal
-        title={editingRule ? t('security.editRuleTitle') : t('security.createRuleTitle')}
-        open={ruleModalOpen}
-        onCancel={() => setRuleModalOpen(false)}
-        onOk={() => ruleForm.submit()}
-        destroyOnHidden
-        width={520}
-      >
-        <Form form={ruleForm} layout="vertical" onFinish={handleRuleSave}>
-          <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <Form.Item name="type" label={t('security.ruleTypeLabel')}
-                rules={[{ required: true, message: t('security.typeRequired') }]}>
-                <Select options={[
-                  { value: 'ALLOW', label: <Tag color="green">ALLOW</Tag> },
-                  { value: 'BLOCK', label: <Tag color="red">BLOCK</Tag> }
-                ]} />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item name="isActive" label={t('security.ruleActive')} valuePropName="checked">
-                <Switch />
-              </Form.Item>
-            </Col>
+      key: 'events', label: <span><AuditOutlined /> {t('security.loginEventsTab')}</span>, children: <>
+        <Card size="small" style={{ marginBottom: 16 }}>
+          <Row gutter={[12, 12]} align="bottom">
+            <Col xs={24} md={5}><Typography.Text>{t('security.user')}</Typography.Text><Select allowClear showSearch optionFilterProp="label" style={{ width: '100%' }} value={draftFilters.userId} onChange={(userId) => setDraftFilters((old) => ({ ...old, userId }))} options={users.map((user) => ({ value: Number(user.id), label: user.fullName || user.username }))} /></Col>
+            <Col xs={24} md={5}><Typography.Text>{t('security.ipAddress')}</Typography.Text><Input allowClear value={draftFilters.ipAddress} onChange={(e) => setDraftFilters((old) => ({ ...old, ipAddress: e.target.value }))} /></Col>
+            <Col xs={24} md={4}><Typography.Text>{t('security.status')}</Typography.Text><Select allowClear style={{ width: '100%' }} value={draftFilters.status} onChange={(status) => setDraftFilters((old) => ({ ...old, status }))} options={Object.keys(STATUS_COLORS).map((value) => ({ value, label: value }))} /></Col>
+            <Col xs={24} md={6}><Typography.Text>{t('security.dateRange')}</Typography.Text><DatePicker.RangePicker style={{ width: '100%' }} value={draftFilters.dates} onChange={(dates) => setDraftFilters((old) => ({ ...old, dates }))} /></Col>
+            <Col xs={24} md={4}><Space><Button type="primary" onClick={() => { setEventPage(1); setFilters(draftFilters); }}>{t('security.applyFilters')}</Button><Button onClick={() => { setDraftFilters(EMPTY_FILTERS); setFilters(EMPTY_FILTERS); setEventPage(1); }}>{t('common.reset')}</Button></Space></Col>
           </Row>
-          <Form.Item name="ipPattern" label={t('security.ipPatternLabel')}
-            rules={[{ required: true, message: t('security.ipPatternRequired') }]}>
-            <Input placeholder={t('security.ipPatternPlaceholder')} />
-          </Form.Item>
-          <Form.Item name="label" label={t('security.ruleLabel')}
-            rules={[{ required: true, message: t('security.labelRequired') }]}>
-            <Input placeholder={t('security.ruleLabelPlaceholder')} />
-          </Form.Item>
-          <Form.Item name="description" label={t('security.ruleDescription')}>
-            <Input.TextArea rows={2} placeholder={t('security.ruleDescriptionPlaceholder')} />
-          </Form.Item>
-        </Form>
-      </Modal>
-    </DashboardLayout>
-  );
+        </Card>
+        <Table rowKey="id" loading={loadingEvents} columns={eventColumns} dataSource={events} scroll={{ x: 1150 }} pagination={{ current: eventPage, pageSize: 20, total: eventsData?.meta?.total ?? 0, showSizeChanger: false, onChange: setEventPage }} />
+      </>
+    },
+    ...(alertResolutionEnabled ? [{ key: 'alerts', label: <span><WarningOutlined /> {t('security.alertsTab')} {openAlerts ? <Badge count={openAlerts} /> : null}</span>, children: <Table rowKey="id" loading={loadingAlerts} columns={alertColumns} dataSource={alerts} scroll={{ x: 1100 }} /> }] : []),
+    { key: 'blocked', label: <span><StopOutlined /> {t('security.blockedIpsTab')}</span>, children: <><div className="security-rule-toolbar"><Button danger icon={<PlusOutlined />} onClick={() => openBlockIp()}>{t('security.addBlockedIp')}</Button></div><Table rowKey="id" loading={loadingBlocked} columns={blockedColumns} dataSource={blockedIps} scroll={{ x: 900 }} /></> }
+  ];
+
+  return <DashboardLayout>
+    <div className="page-header"><div><Typography.Title level={1} className="page-title"><SafetyCertificateOutlined style={{ marginRight: 10, color: '#0057c2' }} />{t('security.title')}</Typography.Title><Typography.Paragraph className="page-subtitle">{t('security.subtitle')}</Typography.Paragraph></div></div>
+    {hasError ? <Alert type="error" showIcon message={t('security.loadError')} style={{ marginBottom: 16 }} /> : null}
+    <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+      <Col xs={12} md={6}><Card><Statistic title={t('security.totalEvents')} value={eventsData?.meta?.total ?? 0} prefix={<AuditOutlined />} /></Card></Col>
+      <Col xs={12} md={6}><Card><Statistic title={t('security.blockedLogins')} value={blockedLogins} prefix={<LockOutlined />} /></Card></Col>
+      <Col xs={12} md={6}><Card><Statistic title={t('security.blockedIpsTab')} value={blockedData?.meta?.total ?? 0} prefix={<StopOutlined />} /></Card></Col>
+      <Col xs={12} md={6}><Card><Statistic title={t('security.successfulLogins')} value={events.filter((row) => row.status === 'SUCCESS').length} prefix={<CheckCircleOutlined />} /></Card></Col>
+    </Row>
+    <Card className="table-card"><Tabs activeKey={activeTab} onChange={setActiveTab} items={tabs} /></Card>
+
+    <Modal title={t('security.blockIpTitle')} open={blockModalOpen} onCancel={() => setBlockModalOpen(false)} onOk={() => blockForm.submit()} destroyOnHidden>
+      <Form form={blockForm} layout="vertical" onFinish={handleBlock}>
+        <Form.Item name="ipAddress" label={t('security.ipAddress')} rules={[{ required: true, message: t('security.ipRequired') }]}><Input placeholder="203.0.113.10" /></Form.Item>
+        <Form.Item name="label" label={t('security.label')}><Input /></Form.Item>
+        <Form.Item name="reason" label={t('security.reason')}><Input.TextArea rows={3} /></Form.Item>
+      </Form>
+    </Modal>
+  </DashboardLayout>;
 }

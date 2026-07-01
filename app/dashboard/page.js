@@ -11,10 +11,10 @@ import { useLanguage } from '@/components/AppProviders';
 import { formatCurrency } from '@/utils/format';
 import styles from './page.module.css';
 
-function formatPeriod(period, language) {
+function formatPeriod(period, t) {
   if (!/^\d{4}-\d{2}$/.test(period || '')) return period || '-';
   const [year, month] = period.split('-');
-  return language === 'vi' ? `T${Number(month)}/${year}` : `${month}/${year}`;
+  return t('dashboard.monthYear', { month: Number(month), year });
 }
 
 function formatCompactCurrency(value) {
@@ -25,7 +25,7 @@ function formatCompactCurrency(value) {
   return String(amount);
 }
 
-function RevenueChart({ data, language, title, noDataLabel }) {
+function RevenueChart({ data, t, title, noDataLabel }) {
   const entries = (Array.isArray(data?.data) ? data.data : [])
     .map((entry) => ({
       period: entry.period,
@@ -42,11 +42,11 @@ function RevenueChart({ data, language, title, noDataLabel }) {
       <div className={styles.chartHeader}>
         <div>
           <span className={styles.sectionLabel}>{title}</span>
-          <h2>{language === 'vi' ? 'Biến động doanh thu theo tháng' : 'Monthly revenue trend'}</h2>
+          <h2>{t('dashboard.monthlyRevenueTrend')}</h2>
         </div>
         <div className={styles.chartLegend}>
           <span />
-          {language === 'vi' ? 'Doanh thu đã ghi nhận' : 'Recorded revenue'}
+          {t('dashboard.recordedRevenue')}
         </div>
       </div>
 
@@ -65,9 +65,9 @@ function RevenueChart({ data, language, title, noDataLabel }) {
                   key={`${entry.period}-${index}`}
                   title={(
                     <div>
-                      <strong>{formatPeriod(entry.period, language)}</strong>
+                      <strong>{formatPeriod(entry.period, t)}</strong>
                       <div>{formatCurrency(entry.amount)}</div>
-                      <div>{entry.count} {language === 'vi' ? 'bút toán' : 'entries'}</div>
+                      <div>{t('dashboard.entryCount', { count: entry.count })}</div>
                     </div>
                   )}
                 >
@@ -77,7 +77,7 @@ function RevenueChart({ data, language, title, noDataLabel }) {
                       className={styles.bar}
                       style={{ height: `${Math.max((entry.amount / maxAmount) * 100, 3)}%` }}
                     />
-                    <span className={styles.period}>{formatPeriod(entry.period, language)}</span>
+                    <span className={styles.period}>{formatPeriod(entry.period, t)}</span>
                   </div>
                 </Tooltip>
               ))}
@@ -92,7 +92,7 @@ function RevenueChart({ data, language, title, noDataLabel }) {
 }
 
 export default function DashboardPage() {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const { data: stats, isLoading, error } = useGetDashboardStatsQuery();
   const { data: revenueChart, isLoading: chartLoading } = useGetRevenueChartQuery();
 
@@ -102,9 +102,9 @@ export default function DashboardPage() {
         <header className={styles.heading}>
           <div>
             <h1>{t('dashboard.title')}</h1>
-            <p>{language === 'vi' ? 'Tổng quan hoạt động logistics và doanh thu đã ghi nhận.' : 'Overview of logistics activity and recorded revenue.'}</p>
+            <p>{t('dashboard.subtitle')}</p>
           </div>
-          <div className={styles.liveStatus}><span />{language === 'vi' ? 'Dữ liệu trực tiếp' : 'Live data'}</div>
+          <div className={styles.liveStatus}><span />{t('dashboard.liveData')}</div>
         </header>
 
         {error ? <Alert type="error" showIcon message={t('dashboard.loadError')} /> : null}
@@ -118,7 +118,7 @@ export default function DashboardPage() {
               <div>
                 <span className={styles.metricLabel}>{t('dashboard.totalJobs')}</span>
                 <strong className={styles.metricValue}>{Number(stats.totalJobs || 0).toLocaleString()}</strong>
-                <p>{language === 'vi' ? 'Tất cả lô hàng trên hệ thống' : 'All shipments in the system'}</p>
+                <p>{t('dashboard.allShipments')}</p>
               </div>
             </article>
 
@@ -127,7 +127,7 @@ export default function DashboardPage() {
               <div className={styles.revenueContent}>
                 <span className={styles.metricLabel}>{t('dashboard.totalRevenue')}</span>
                 <strong className={styles.metricValue}>{formatCurrency(stats.totalRevenue)}</strong>
-                <p><ArrowUpOutlined /> {language === 'vi' ? 'Doanh thu đã ghi nhận' : 'Recorded revenue'}</p>
+                <p><ArrowUpOutlined /> {t('dashboard.recordedRevenue')}</p>
               </div>
             </article>
           </section>
@@ -138,7 +138,7 @@ export default function DashboardPage() {
         ) : (
           <RevenueChart
             data={revenueChart}
-            language={language}
+            t={t}
             title={t('dashboard.totalRevenue')}
             noDataLabel={t('accounting.chart.noData')}
           />

@@ -37,7 +37,12 @@ const dictionary = {
       phone: 'Phone',
       email: 'Email',
       address: 'Address',
-      notes: 'Notes'
+      notes: 'Notes',
+      loading: 'Loading...',
+      user: 'User',
+      searchPlaceholder: 'Search...',
+      jobNo: 'Job No.',
+      selectJob: 'Select job'
     },
     dashboard: {
       title: 'Dashboard',
@@ -45,7 +50,14 @@ const dictionary = {
       totalJobs: 'Total Jobs',
       totalRevenue: 'Total Revenue',
       totalCost: 'Total Cost',
-      profit: 'Profit'
+      profit: 'Profit',
+      subtitle: 'Overview of logistics activity and recorded revenue.',
+      liveData: 'Live data',
+      allShipments: 'All shipments in the system',
+      recordedRevenue: 'Recorded revenue',
+      monthlyRevenueTrend: 'Monthly revenue trend',
+      entryCount: '{count} entries',
+      monthYear: '{month}/{year}'
     },
     jobs: {
       title: 'Jobs',
@@ -104,7 +116,8 @@ const dictionary = {
       cargoTypeRequired: 'Cargo type is required.',
       jobTypeRequired: 'Job type is required.',
       shipmentModeRequired: 'Shipment mode is required.',
-      columnSettings: 'Columns'
+      columnSettings: 'Columns',
+      refresh: 'Refresh jobs'
     },
     header: {
       language: 'Language',
@@ -125,6 +138,8 @@ const dictionary = {
       branches: 'Branches',
       audit: 'Audit Logs',
       navigation: 'Navigation',
+      navigationShort: 'NAV',
+      closeNavigation: 'Close navigation',
       advances: 'Advances & Reimbursements',
       debitNotes: 'Debit Notes',
       cob: 'COB (Charge on Behalf)',
@@ -151,7 +166,20 @@ const dictionary = {
       title: 'Your account is signed in but has no page access yet',
       subtitle: 'Please contact an administrator to assign at least one application permission.'
     },
+    authGuard: {
+      forbiddenTitle: '403 — Access denied',
+      forbiddenSubtitle: 'You do not have permission to view this page. Please contact an administrator.',
+      viewAccountStatus: 'View account status',
+      goToAuthorizedPage: 'Go to an authorized page'
+    },
     accounting: {
+      loadError: 'Unable to load accounting data.',
+      createSuccess: 'Accounting entry created.',
+      importExcel: 'Import Excel',
+      paymentAccountRef: 'Account / Reference',
+      paymentAccountRefPlaceholder: 'Bank account, transaction code, or cash receipt no.',
+      selectPaymentMethod: 'Select payment method',
+      monthYear: '{month}/{year}',
       chart: {
         revenueTitle: 'Revenue Trend (Monthly)',
         costTitle: 'Cost Trend (Monthly)',
@@ -280,6 +308,12 @@ const dictionary = {
       totalNetSalary: 'Total Net Salary',
       addEmpSuccess: 'Employee added successfully.',
       addEmpError: 'Failed to add employee.',
+      updateEmpSuccess: 'Employee updated successfully.',
+      editEmpTitle: 'Edit Employee',
+      editEmployee: 'Edit employee',
+      deactivate: 'Deactivate',
+      deactivateConfirm: 'Deactivate this employee?',
+      deactivateSuccess: 'Employee deactivated.',
       createPayrollSuccess: 'Payroll created.',
       createPayrollError: 'Failed to create payroll.',
       finalizeSuccess: 'Payroll finalized.',
@@ -368,7 +402,8 @@ const dictionary = {
       deleteError: 'Unable to delete advance.',
       updateSuccess: 'Advance updated.',
       editModalTitle: 'Edit Advance',
-      approve: 'Approve'
+      approve: 'Approve',
+      reject: 'Reject'
     },
     reports: {
       title: 'Reports',
@@ -410,7 +445,19 @@ const dictionary = {
       netProfit: 'Net Profit',
       totalInflow: 'Total Inflow',
       totalOutflow: 'Total Outflow',
-      netCashFlow: 'Net Cash Flow'
+      netCashFlow: 'Net Cash Flow',
+      filters: 'Report filters',
+      dataVisualization: 'DATA VISUALIZATION',
+      allTime: 'All time',
+      chartHoverHint: 'Hover over a bar for details',
+      shipmentCount: '{count} shipments',
+      entriesCount: '{count} entries',
+      dueDateValue: 'Due: {date}',
+      statusLabels: {
+        draft: 'Draft', confirmed: 'Confirmed', inProgress: 'In progress',
+        completed: 'Completed', closed: 'Closed', cancelled: 'Cancelled',
+        unpaid: 'Unpaid', partial: 'Partially paid', paid: 'Paid'
+      }
     },
     debtPolicies: {
       title: 'Debt Policies',
@@ -437,7 +484,13 @@ const dictionary = {
       amountPlaceholder: 'E.g., 500000000',
       daysPlaceholder: 'E.g., 30',
       notAvailable: 'N/A',
-      daysSuffix: '{count} days'
+      daysSuffix: '{count} days',
+      partnerIdFallback: 'Partner ID: {id}',
+      effectivePeriod: 'Effective period',
+      noEndDate: 'No end date',
+      startDate: 'Start date',
+      startDateRequired: 'Please select a start date.',
+      endDate: 'End date'
     },
     debts: {
       title: 'Debt Management',
@@ -694,6 +747,17 @@ const dictionary = {
       vat: 'VAT',
       internal_note_on_statement: 'Internal Note on Statement',
       lineNote: 'Note',
+      serviceTypePlaceholder: 'E.g., Customs',
+      chargeNotePlaceholder: 'E.g., 4,100,000 VND/40',
+      lineNotePlaceholder: 'Enter a line note',
+      internalNotePlaceholder: 'Internal note on the statement',
+      exportExcel: 'Export Excel',
+      exportPdf: 'Export PDF',
+      paymentTermPlaceholder: 'E.g., At sight',
+      mblNoPlaceholder: 'MBL / Bill No.',
+      movingTypePlaceholder: 'E.g., Ground',
+      directionPlaceholder: 'E.g., Logistics',
+      jobFallback: 'Job #{id}',
       cobCandidates: 'Unbilled charge-on-behalf items',
       cobCandidatesHint: 'Select charge-on-behalf items to include in this Debit Note. Source amounts cannot be edited.',
       noCobCandidates: 'No unbilled charge-on-behalf items for the selected jobs.',
@@ -865,6 +929,7 @@ const dictionary = {
       totalEvents: 'Total Events',
       openAlerts: 'Open Alerts',
       blockedLogins: 'Blocked Logins',
+      successfulLogins: 'Successful Logins',
       activeIpRules: 'Active IP Rules',
       username: 'Username',
       status: 'Status',
@@ -878,6 +943,7 @@ const dictionary = {
       actions: 'Actions',
       acknowledge: 'Acknowledge',
       resolve: 'Resolve',
+      resolved: 'Resolved',
       acknowledgeSuccess: 'Alert acknowledged.',
       acknowledgeError: 'Unable to acknowledge alert.',
       resolveSuccess: 'Alert resolved.',
@@ -910,7 +976,26 @@ const dictionary = {
       deleteRuleError: 'Unable to delete IP rule.',
       typeRequired: 'Rule type is required.',
       ipPatternRequired: 'IP pattern is required.',
-      labelRequired: 'Label is required.'
+      labelRequired: 'Label is required.',
+      deviceBrowser: 'Device / Browser',
+      location: 'Location',
+      user: 'User',
+      dateRange: 'Date range',
+      applyFilters: 'Apply',
+      blockedIpsTab: 'Blocked IPs',
+      addBlockedIp: 'Block IP',
+      blockIp: 'Block',
+      blockIpTitle: 'Block an IP address',
+      reason: 'Reason',
+      blockedBy: 'Blocked by',
+      blockedAt: 'Blocked at',
+      unblock: 'Unblock',
+      unblockConfirm: 'Unblock this IP address?',
+      blockIpSuccess: 'IP address blocked.',
+      blockIpError: 'Unable to block IP address.',
+      unblockSuccess: 'IP address unblocked.',
+      unblockError: 'Unable to unblock IP address.',
+      ipRequired: 'A valid IP address is required.'
     },
     partners: {
       title: 'Partners',
@@ -949,6 +1034,11 @@ const dictionary = {
       partnerNameRequired: 'Partner name is required.',
       contactPerson: 'Contact Person',
       address: 'Address',
+      partnerNamePlaceholder: 'Company name',
+      taxCodePlaceholder: 'Tax code',
+      contactPlaceholder: 'Primary contact',
+      phonePlaceholder: 'Phone number',
+      addressPlaceholder: 'Business address',
       phoneValidation: 'Enter a valid phone number.',
       emailValidation: 'Enter a valid email.',
       customer: 'Customer',
@@ -1094,6 +1184,15 @@ const dictionary = {
       roleNameRequired: 'Role name is required',
       description: 'Description',
       permissions: 'Permissions',
+      roleLabels: {
+        superAdmin: 'Super Administrator',
+        admin: 'Administrator',
+        manager: 'Manager',
+        accountant: 'Accountant',
+        operation: 'Operations',
+        staff: 'Staff',
+        viewer: 'Viewer'
+      },
       loadError: 'Unable to load user administration data.',
       adminAssignmentTitle: 'Admin can update user branch and roles',
       adminAssignmentDescription: 'Open Edit on any user to change their branch assignment, role set, active status, or switch them to company-wide branch access.',
@@ -1496,7 +1595,8 @@ const dictionary = {
       passwordChanged: 'Password changed successfully.',
       passwordError: 'Unable to change password. Please check your current password.',
       passwordNoticeTitle: 'Password Security',
-      passwordNoticeDesc: 'Choose a strong password with at least 6 characters. After changing your password, you will remain signed in.'
+      passwordNoticeDesc: 'Choose a strong password with at least 6 characters. After changing your password, you will remain signed in.',
+      profileAlt: 'Profile'
     },
     apiErrors: {
       JOB_CODE_DUPLICATE: 'Job code already exists.',
@@ -1583,7 +1683,10 @@ const dictionary = {
       phone: 'Số điện thoại',
       email: 'Email',
       address: 'Địa chỉ',
-      notes: 'Ghi chú'
+      notes: 'Ghi chú',
+      loading: 'Đang tải...',
+      user: 'Người dùng',
+      searchPlaceholder: 'Tìm kiếm...'
     },
     dashboard: {
       title: 'Bảng điều khiển',
@@ -1591,7 +1694,14 @@ const dictionary = {
       totalJobs: 'Tổng lô hàng',
       totalRevenue: 'Tổng doanh thu',
       totalCost: 'Tổng chi phí',
-      profit: 'Lợi nhuận'
+      profit: 'Lợi nhuận',
+      subtitle: 'Tổng quan hoạt động logistics và doanh thu đã ghi nhận.',
+      liveData: 'Dữ liệu trực tiếp',
+      allShipments: 'Tất cả lô hàng trên hệ thống',
+      recordedRevenue: 'Doanh thu đã ghi nhận',
+      monthlyRevenueTrend: 'Biến động doanh thu theo tháng',
+      entryCount: '{count} bút toán',
+      monthYear: 'T{month}/{year}'
     },
     jobs: {
       title: 'Lô hàng',
@@ -1651,7 +1761,8 @@ const dictionary = {
       cargoTypeRequired: 'Loại hàng hóa là bắt buộc.',
       jobTypeRequired: 'Loại nghiệp vụ là bắt buộc.',
       shipmentModeRequired: 'Phương thức vận chuyển là bắt buộc.',
-      columnSettings: 'Hiển thị cột'
+      columnSettings: 'Hiển thị cột',
+      refresh: 'Làm mới lô hàng'
     },
     header: {
       language: 'Ngôn ngữ',
@@ -1672,6 +1783,8 @@ const dictionary = {
       branches: 'Chi nhánh',
       audit: 'Nhật ký',
       navigation: 'Điều hướng',
+      navigationShort: 'ĐH',
+      closeNavigation: 'Đóng điều hướng',
       advances: 'Tạm ứng & Hoàn ứng',
       debitNotes: 'Bảng kê / Debit Note',
       cob: 'Chi hộ / Thu hộ',
@@ -1698,7 +1811,17 @@ const dictionary = {
       title: 'Tài khoản đã đăng nhập nhưng chưa được cấp quyền vào trang nào',
       subtitle: 'Vui lòng liên hệ quản trị viên để được gán ít nhất một quyền truy cập ứng dụng.'
     },
+    authGuard: {
+      forbiddenTitle: '403 — Không có quyền truy cập',
+      forbiddenSubtitle: 'Bạn không có quyền xem trang này. Vui lòng liên hệ quản trị viên.',
+      viewAccountStatus: 'Xem trạng thái tài khoản',
+      goToAuthorizedPage: 'Đi đến trang được cấp quyền'
+    },
     accounting: {
+      loadError: 'Không thể tải dữ liệu kế toán.',
+      createSuccess: 'Đã tạo bút toán kế toán.',
+      importExcel: 'Nhập Excel',
+      monthYear: 'T{month}/{year}',
       chart: {
         revenueTitle: 'Biến động doanh thu (Tháng)',
         costTitle: 'Biến động chi phí (Tháng)',
@@ -1833,6 +1956,12 @@ const dictionary = {
       totalNetSalary: 'Tổng thực lĩnh',
       addEmpSuccess: 'Đã thêm nhân viên thành công.',
       addEmpError: 'Không thể lưu nhân viên.',
+      updateEmpSuccess: 'Đã cập nhật nhân viên.',
+      editEmpTitle: 'Sửa nhân viên',
+      editEmployee: 'Sửa nhân viên',
+      deactivate: 'Vô hiệu hóa',
+      deactivateConfirm: 'Vô hiệu hóa nhân viên này?',
+      deactivateSuccess: 'Đã vô hiệu hóa nhân viên.',
       createPayrollSuccess: 'Đã tạo bảng lương.',
       createPayrollError: 'Không thể tạo bảng lương.',
       finalizeSuccess: 'Đã chốt bảng lương.',
@@ -1921,7 +2050,8 @@ const dictionary = {
       deleteConfirm: 'Xóa tạm ứng này?',
       edit: 'Sửa',
       delete: 'Xóa',
-      approve: 'Duyệt'
+      approve: 'Duyệt',
+      reject: 'Từ chối'
     },
     reports: {
       title: 'Báo cáo',
@@ -1963,7 +2093,19 @@ const dictionary = {
       netProfit: 'Lợi nhuận thuần',
       totalInflow: 'Tổng tiền vào',
       totalOutflow: 'Tổng tiền ra',
-      netCashFlow: 'Dòng tiền thuần'
+      netCashFlow: 'Dòng tiền thuần',
+      filters: 'Bộ lọc báo cáo',
+      dataVisualization: 'TRỰC QUAN DỮ LIỆU',
+      allTime: 'Toàn bộ thời gian',
+      chartHoverHint: 'Di chuột lên cột để xem chi tiết',
+      shipmentCount: '{count} lô hàng',
+      entriesCount: '{count} bút toán',
+      dueDateValue: 'Hạn thanh toán: {date}',
+      statusLabels: {
+        draft: 'Nháp', confirmed: 'Đã xác nhận', inProgress: 'Đang xử lý',
+        completed: 'Hoàn thành', closed: 'Đã đóng', cancelled: 'Đã hủy',
+        unpaid: 'Chưa thanh toán', partial: 'Thanh toán một phần', paid: 'Đã thanh toán'
+      }
     },
     debtPolicies: {
       title: 'Chính sách công nợ',
@@ -1990,7 +2132,13 @@ const dictionary = {
       amountPlaceholder: 'Ví dụ: 500000000',
       daysPlaceholder: 'Ví dụ: 30',
       notAvailable: 'Không áp dụng',
-      daysSuffix: '{count} ngày'
+      daysSuffix: '{count} ngày',
+      partnerIdFallback: 'Mã đối tác: {id}',
+      effectivePeriod: 'Thời gian áp dụng',
+      noEndDate: 'Vô thời hạn',
+      startDate: 'Ngày bắt đầu',
+      startDateRequired: 'Vui lòng chọn ngày bắt đầu.',
+      endDate: 'Ngày kết thúc'
     },
     debts: {
       title: 'Quản lý công nợ',
@@ -2245,6 +2393,17 @@ const dictionary = {
       vat: 'VAT',
       internal_note_on_statement: 'Ghi chú nội bộ trên bảng kê',
       lineNote: 'Ghi chú',
+      serviceTypePlaceholder: 'Ví dụ: Hải quan',
+      chargeNotePlaceholder: 'Ví dụ: 4.100.000 VND/40',
+      lineNotePlaceholder: 'Nhập ghi chú cho dòng',
+      internalNotePlaceholder: 'Ghi chú nội bộ trên bảng kê',
+      exportExcel: 'Xuất Excel',
+      exportPdf: 'Xuất PDF',
+      paymentTermPlaceholder: 'Ví dụ: Thanh toán ngay',
+      mblNoPlaceholder: 'Số MBL / vận đơn',
+      movingTypePlaceholder: 'Ví dụ: Đường bộ',
+      directionPlaceholder: 'Ví dụ: Logistics',
+      jobFallback: 'Lô hàng #{id}',
       cobCandidates: 'Khoản chi hộ chưa lập Debit',
       cobCandidatesHint: 'Chọn các khoản chi hộ cần đưa vào Debit. Số tiền nguồn không thể chỉnh sửa.',
       noCobCandidates: 'Không có khoản chi hộ chưa lập Debit cho các lô đã chọn.',
@@ -2416,6 +2575,7 @@ const dictionary = {
       totalEvents: 'Tổng sự kiện',
       openAlerts: 'Cảnh báo mở',
       blockedLogins: 'Đăng nhập bị chặn',
+      successfulLogins: 'Đăng nhập thành công',
       activeIpRules: 'Quy tắc IP đang hoạt động',
       username: 'Tên đăng nhập',
       status: 'Trạng thái',
@@ -2429,6 +2589,7 @@ const dictionary = {
       actions: 'Thao tác',
       acknowledge: 'Xác nhận',
       resolve: 'Giải quyết',
+      resolved: 'Đã giải quyết',
       acknowledgeSuccess: 'Đã xác nhận cảnh báo.',
       acknowledgeError: 'Không thể xác nhận cảnh báo.',
       resolveSuccess: 'Đã giải quyết cảnh báo.',
@@ -2461,7 +2622,26 @@ const dictionary = {
       deleteRuleError: 'Không thể xóa quy tắc IP.',
       typeRequired: 'Loại quy tắc là bắt buộc.',
       ipPatternRequired: 'IP pattern là bắt buộc.',
-      labelRequired: 'Nhãn là bắt buộc.'
+      labelRequired: 'Nhãn là bắt buộc.',
+      deviceBrowser: 'Thiết bị / Trình duyệt',
+      location: 'Vị trí',
+      user: 'Người dùng',
+      dateRange: 'Khoảng ngày',
+      applyFilters: 'Lọc',
+      blockedIpsTab: 'IP bị chặn',
+      addBlockedIp: 'Chặn IP',
+      blockIp: 'Chặn',
+      blockIpTitle: 'Chặn địa chỉ IP',
+      reason: 'Lý do',
+      blockedBy: 'Người chặn',
+      blockedAt: 'Thời gian chặn',
+      unblock: 'Bỏ chặn',
+      unblockConfirm: 'Bỏ chặn địa chỉ IP này?',
+      blockIpSuccess: 'Đã chặn địa chỉ IP.',
+      blockIpError: 'Không thể chặn địa chỉ IP.',
+      unblockSuccess: 'Đã bỏ chặn địa chỉ IP.',
+      unblockError: 'Không thể bỏ chặn địa chỉ IP.',
+      ipRequired: 'Cần nhập địa chỉ IP hợp lệ.'
     },
     partners: {
       title: 'Đối tác',
@@ -2500,6 +2680,11 @@ const dictionary = {
       partnerNameRequired: 'Tên đối tác là bắt buộc.',
       contactPerson: 'Người liên hệ',
       address: 'Địa chỉ',
+      partnerNamePlaceholder: 'Tên công ty',
+      taxCodePlaceholder: 'Mã số thuế',
+      contactPlaceholder: 'Người liên hệ chính',
+      phonePlaceholder: 'Số điện thoại',
+      addressPlaceholder: 'Địa chỉ kinh doanh',
       phoneValidation: 'Vui lòng nhập số điện thoại hợp lệ.',
       emailValidation: 'Vui lòng nhập email hợp lệ.',
       customer: 'Khách hàng',
@@ -2645,6 +2830,15 @@ const dictionary = {
       roleNameRequired: 'Tên vai trò là bắt buộc',
       description: 'Mô tả',
       permissions: 'Quyền',
+      roleLabels: {
+        superAdmin: 'Quản trị hệ thống',
+        admin: 'Quản trị viên',
+        manager: 'Quản lý',
+        accountant: 'Kế toán',
+        operation: 'Nhân viên vận hành',
+        staff: 'Nhân viên',
+        viewer: 'Chỉ xem'
+      },
       loadError: 'Không thể tải dữ liệu quản trị người dùng.',
       adminAssignmentTitle: 'Admin có thể đổi chi nhánh và vai trò người dùng',
       adminAssignmentDescription: 'Mở Sửa trên từng người dùng để đổi chi nhánh, bộ vai trò, trạng thái kích hoạt hoặc bật quyền xem toàn bộ chi nhánh cho từng người cụ thể.',
@@ -3047,7 +3241,8 @@ const dictionary = {
       passwordChanged: 'Đã đổi mật khẩu thành công.',
       passwordError: 'Không thể đổi mật khẩu. Vui lòng kiểm tra mật khẩu hiện tại.',
       passwordNoticeTitle: 'Bảo mật mật khẩu',
-      passwordNoticeDesc: 'Chọn mật khẩu mạnh với ít nhất 6 ký tự. Sau khi đổi mật khẩu, bạn vẫn giữ phiên đăng nhập.'
+      passwordNoticeDesc: 'Chọn mật khẩu mạnh với ít nhất 6 ký tự. Sau khi đổi mật khẩu, bạn vẫn giữ phiên đăng nhập.',
+      profileAlt: 'Hồ sơ cá nhân'
     },
     apiErrors: {
       JOB_CODE_DUPLICATE: 'Mã lô đã tồn tại.',

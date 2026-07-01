@@ -128,16 +128,18 @@ export default function DebtPoliciesPage() {
       width: 250,
       render: (_, record) => {
         const partner = partnersById[record.partnerId];
-        return <strong>{partner ? `${partner.code} - ${partner.name}` : `Partner ID: ${record.partnerId ?? '-'}`}</strong>;
+        return <strong>{partner
+          ? `${partner.code} - ${partner.name}`
+          : t('debtPolicies.partnerIdFallback', { id: record.partnerId ?? '-' })}</strong>;
       }
     },
     {
-      title: 'Thời gian áp dụng',
+      title: t('debtPolicies.effectivePeriod'),
       key: 'effectiveRange',
       width: 220,
       render: (_, record) => (
         <span>
-          {record.startDate || '-'} - {record.endDate || 'Vô thời hạn'}
+          {record.startDate || '-'} - {record.endDate || t('debtPolicies.noEndDate')}
         </span>
       )
     },
@@ -254,13 +256,13 @@ export default function DebtPoliciesPage() {
 
           <Form.Item
             name="startDate"
-            label="Ngày bắt đầu"
-            rules={[{ required: true, message: 'Vui lòng chọn ngày bắt đầu.' }]}
+            label={t('debtPolicies.startDate')}
+            rules={[{ required: true, message: t('debtPolicies.startDateRequired') }]}
           >
             <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
           </Form.Item>
 
-          <Form.Item name="endDate" label="Ngày kết thúc">
+          <Form.Item name="endDate" label={t('debtPolicies.endDate')}>
             <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
           </Form.Item>
 
