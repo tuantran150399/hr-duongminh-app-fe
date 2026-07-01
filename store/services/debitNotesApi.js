@@ -5,7 +5,7 @@ import { extractPaginatedItems, normalizeEntry } from '@/utils/apiMappers';
 export const debitNotesApi = createApi({
   reducerPath: 'debitNotesApi',
   baseQuery: axiosBaseQuery(),
-  tagTypes: ['DebitNote'],
+  tagTypes: ['DebitNote', 'DebitCobCandidates'],
   endpoints: (builder) => ({
     getDebitNotes: builder.query({
       query: (params = {}) => ({
@@ -32,9 +32,26 @@ export const debitNotesApi = createApi({
       providesTags: (_result, _error, id) => [{ type: 'DebitNote', id }]
     }),
 
+    getDebitCobCandidates: builder.query({
+      query: ({ partnerId, jobIds, debitNoteId }) => ({
+        url: '/debit-notes/cob-candidates',
+        method: 'GET',
+        params: {
+          partnerId,
+          jobIds: (jobIds || []).join(','),
+          debitNoteId: debitNoteId || undefined
+        }
+      }),
+      providesTags: ['DebitCobCandidates']
+    }),
+
+    previewDebitDebt: builder.mutation({
+      query: (payload) => ({ url: '/debit-notes/debt-preview', method: 'POST', data: payload })
+    }),
+
     createDebitNote: builder.mutation({
       query: (payload) => ({ url: '/debit-notes', method: 'POST', data: payload }),
-      invalidatesTags: [{ type: 'DebitNote', id: 'LIST' }]
+      invalidatesTags: [{ type: 'DebitNote', id: 'LIST' }, 'DebitCobCandidates']
     }),
 
     updateDebitNote: builder.mutation({
@@ -45,7 +62,8 @@ export const debitNotesApi = createApi({
       }),
       invalidatesTags: (_result, _error, { id }) => [
         { type: 'DebitNote', id },
-        { type: 'DebitNote', id: 'LIST' }
+        { type: 'DebitNote', id: 'LIST' },
+        'DebitCobCandidates'
       ]
     }),
 
@@ -65,7 +83,8 @@ export const debitNotesApi = createApi({
       }),
       invalidatesTags: (_result, _error, { id }) => [
         { type: 'DebitNote', id },
-        { type: 'DebitNote', id: 'LIST' }
+        { type: 'DebitNote', id: 'LIST' },
+        'DebitCobCandidates'
       ]
     }),
 
@@ -107,6 +126,9 @@ export const debitNotesApi = createApi({
 export const {
   useGetDebitNotesQuery,
   useGetDebitNoteByIdQuery,
+  useLazyGetDebitNoteByIdQuery,
+  useGetDebitCobCandidatesQuery,
+  usePreviewDebitDebtMutation,
   useCreateDebitNoteMutation,
   useUpdateDebitNoteMutation,
   usePostDebitNoteMutation,

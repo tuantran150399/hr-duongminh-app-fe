@@ -48,7 +48,10 @@ import {
   useVoidDebitNoteMutation,
   useSendDebitNoteMutation,
   useRecordDebitNotePaymentMutation,
-  useExportDebitNoteMutation
+  useExportDebitNoteMutation,
+  useGetDebitCobCandidatesQuery,
+  usePreviewDebitDebtMutation,
+  useLazyGetDebitNoteByIdQuery
 } from '@/store/services/debitNotesApi';
 import { useGetJobsQuery } from '@/store/services/jobsApi';
 import { useGetPartnersQuery } from '@/store/services/partnersApi';
@@ -146,6 +149,7 @@ function validateLineItemQuantityRanges(lineItems, allPrices, t) {
 
 function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId, selectedJobIds, jobs, t, message }) {
   const [descriptionModal, setDescriptionModal] = useState({ open: false, lineKey: null });
+  const manualLineSequence = useRef(0);
   const selectedJobs = useMemo(
     () => jobs.filter((job) => selectedJobIds?.includes(job.backendId)),
     [jobs, selectedJobIds]
@@ -214,7 +218,7 @@ function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId
       });
     });
 
-    setLineItems(newLines);
+    setLineItems([...lineItems.filter((line) => line.cobEntryId), ...newLines]);
     message.success(t('debitNotes.pricingApplied', { count: newLines.length }));
   }
 
@@ -222,7 +226,7 @@ function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId
     setLineItems([
       ...lineItems,
       {
-        key: `manual-${Date.now()}`,
+        key: `manual-${++manualLineSequence.current}`,
         jobId,
         serviceType: '',
         description: '',
@@ -245,6 +249,7 @@ function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId
     setLineItems(
       lineItems.map((line) => {
         if (line.key !== key) return line;
+        if (line.cobEntryId) return line;
         const updated = { ...line, [field]: value };
         if (field === 'quantity' || field === 'unitPrice') {
           updated.amount = Number(updated.quantity || 0) * Number(updated.unitPrice || 0);
@@ -780,6 +785,7 @@ export default function DebitNotesPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [exportingKey, setExportingKey] = useState(null);
+  const [debtPreview, setDebtPreview] = useState(null);
   const exportingRef = useRef(new Set());
 
   const statusColor = {
@@ -793,7 +799,7 @@ export default function DebitNotesPage() {
     status: statusFilter !== 'all' ? statusFilter : undefined
   });
   const { data: jobsData } = useGetJobsQuery();
-  const { data: partnersData } = useGetPartnersQuery();
+  const { data: partnersData, refetch: refetchPartners } = useGetPartnersQuery();
   const { data: pricingData } = useGetServicePricesQuery();
   const [createDebitNote] = useCreateDebitNoteMutation();
   const [updateDebitNote] = useUpdateDebitNoteMutation();
@@ -803,6 +809,16 @@ export default function DebitNotesPage() {
   const [sendDebitNote] = useSendDebitNoteMutation();
   const [recordDebitNotePayment] = useRecordDebitNotePaymentMutation();
   const [exportDebitNote] = useExportDebitNoteMutation();
+  const [previewDebitDebt, { isLoading: previewingDebt }] = usePreviewDebitDebtMutation();
+  const [getDebitNoteDetail] = useLazyGetDebitNoteByIdQuery();
+  const { data: cobCandidates = [], isFetching: loadingCobCandidates } = useGetDebitCobCandidatesQuery(
+    {
+      partnerId: selectedPartnerId,
+      jobIds: selectedJobIds,
+      debitNoteId: editingRecord?.backendId
+    },
+    { skip: !modalOpen || !selectedPartnerId || !selectedJobIds.length }
+  );
 
   const notes = useMemo(() => notesData?.items || [], [notesData]);
   const jobs = useMemo(() => jobsData?.items || [], [jobsData]);
@@ -873,6 +889,7 @@ export default function DebitNotesPage() {
     setSelectedPartnerId(partnerId || null);
     setSelectedJobIds([]);
     setLineItems([]);
+    setDebtPreview(null);
     form.setFieldsValue({ jobIds: [] });
   }
 
@@ -880,6 +897,8 @@ export default function DebitNotesPage() {
   const handleJobChange = useCallback(
     (jobIds = []) => {
       setSelectedJobIds(jobIds);
+      setDebtPreview(null);
+      setLineItems((current) => current.filter((line) => !line.cobEntryId || jobIds.includes(line.jobId)));
       if (!jobIds.length) return;
       const job = jobs.find((j) => j.backendId === jobIds[0]);
       if (job?.raw?.partnerId) {
@@ -897,34 +916,42 @@ export default function DebitNotesPage() {
     setLineItems([]);
     setSelectedPartnerId(null);
     setSelectedJobIds([]);
+    setDebtPreview(null);
     setModalOpen(true);
   }
 
-  function openEditModal(record) {
-    const jobIds = record.raw?.jobIds?.length ? record.raw.jobIds : [record.jobId].filter(Boolean);
-    setEditingRecord(record);
+  async function openEditModal(record) {
+    let source = record;
+    try {
+      source = await getDebitNoteDetail(record.backendId).unwrap();
+    } catch (error) {
+      message.error(getApiError(error, t, 'debitNotes.loadError'));
+      return;
+    }
+    const jobIds = source.raw?.jobIds?.length ? source.raw.jobIds : [source.jobId].filter(Boolean);
+    setEditingRecord(source);
     form.setFieldsValue({
-      partnerId: record.raw?.partnerId,
+      partnerId: source.raw?.partnerId,
       jobIds,
-      currency: record.currency || 'VND',
-      referenceNo: record.raw?.referenceNo,
-      groupCode: record.raw?.groupCode,
-      paymentTerm: record.raw?.paymentTerm,
-      movingType: record.raw?.movingType,
-      direction: record.raw?.direction,
-      mblNo: record.raw?.mblNo,
-      exportNote: record.raw?.exportNote,
-      bankName: record.raw?.bankName,
-      bankAccountNo: record.raw?.bankAccountNo,
-      paymentMethod: record.raw?.paymentMethod,
-      paymentAccountRef: record.raw?.paymentAccountRef,
-      description: record.raw?.description || ''
+      currency: source.currency || 'VND',
+      referenceNo: source.raw?.referenceNo,
+      groupCode: source.raw?.groupCode,
+      paymentTerm: source.raw?.paymentTerm,
+      movingType: source.raw?.movingType,
+      direction: source.raw?.direction,
+      mblNo: source.raw?.mblNo,
+      exportNote: source.raw?.exportNote,
+      bankName: source.raw?.bankName,
+      bankAccountNo: source.raw?.bankAccountNo,
+      paymentMethod: source.raw?.paymentMethod,
+      paymentAccountRef: source.raw?.paymentAccountRef,
+      description: source.raw?.description || ''
     });
-    setSelectedPartnerId(record.raw?.partnerId);
+    setSelectedPartnerId(source.raw?.partnerId);
     setSelectedJobIds(jobIds);
-    const existingLines = (record.raw?.lineItems || []).map((line, idx) => ({
+    const existingLines = (source.raw?.lineItems || []).map((line, idx) => ({
       key: `edit-${Date.now()}-${idx}`,
-      jobId: line.jobId || record.jobId,
+      jobId: line.jobId || source.jobId,
       serviceType: line.serviceType || '',
       description: line.description || '',
       chargeNote: line.chargeNote || '',
@@ -937,15 +964,84 @@ export default function DebitNotesPage() {
       vatAmount: Number(line.vatAmount || 0),
       currency: line.currency || 'VND',
       pricingId: line.pricingId || null,
+      cobEntryId: line.cobEntryId || null,
       isAutoFilled: false
     }));
     setLineItems(existingLines);
+    setDebtPreview(null);
     setModalOpen(true);
   }
+
+  const selectedCobIds = useMemo(
+    () => lineItems.filter((line) => line.cobEntryId).map((line) => line.cobEntryId),
+    [lineItems]
+  );
+
+  const serviceTotal = useMemo(
+    () => lineItems.filter((line) => !line.cobEntryId).reduce((sum, line) => sum + Number(line.amount || 0) - Number(line.creditAmount || 0) + Number(line.vatAmount || 0), 0),
+    [lineItems]
+  );
+  const cobTotal = useMemo(
+    () => lineItems.filter((line) => line.cobEntryId).reduce((sum, line) => sum + Number(line.amount || 0), 0),
+    [lineItems]
+  );
+  const formTotal = serviceTotal + cobTotal;
+
+  function handleCobSelection(cobIds) {
+    const selected = new Set(cobIds);
+    const serviceLines = lineItems.filter((line) => !line.cobEntryId);
+    const cobLines = cobCandidates
+      .filter((cob) => selected.has(cob.id))
+      .map((cob) => ({
+        key: `cob-${cob.id}`,
+        cobEntryId: cob.id,
+        jobId: cob.jobId,
+        serviceType: 'CHARGE_ON_BEHALF',
+        description: cob.description || `Chi hộ #${cob.id}`,
+        chargeNote: `Chi hộ #${cob.id}`,
+        lineNote: '',
+        quantity: 1,
+        unitPrice: Number(cob.amount || 0),
+        amount: Number(cob.amount || 0),
+        creditAmount: 0,
+        vatRate: 0,
+        vatAmount: 0,
+        currency: cob.currency || 'VND',
+        pricingId: null,
+        isAutoFilled: true
+      }));
+    setLineItems([...serviceLines, ...cobLines]);
+  }
+
+  useEffect(() => {
+    if (!modalOpen || !selectedPartnerId || !selectedJobIds.length || !lineItems.length) {
+      return undefined;
+    }
+    const timeout = setTimeout(async () => {
+      try {
+        const result = await previewDebitDebt({
+          partnerId: selectedPartnerId,
+          jobId: selectedJobIds[0],
+          jobIds: selectedJobIds,
+          debitNoteId: editingRecord?.backendId,
+          amount: formTotal,
+          lineItems: lineItems.map(({ key, isAutoFilled, ...line }) => line)
+        }).unwrap();
+        setDebtPreview(result);
+      } catch {
+        setDebtPreview(null);
+      }
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [modalOpen, selectedPartnerId, selectedJobIds, lineItems, editingRecord?.backendId, formTotal, previewDebitDebt]);
 
   async function submitEntry(values) {
     if (!lineItems.length) {
       message.warning(t('debitNotes.noLineItems'));
+      return;
+    }
+    if (debtPreview?.exceedsLimit) {
+      message.error(t('debitNotes.debtLimitExceeded'));
       return;
     }
 
@@ -993,7 +1089,8 @@ export default function DebitNotesPage() {
           vatRate: Number(line.vatRate || 0),
           vatAmount: Number(line.vatAmount || 0),
           currency: line.currency,
-          pricingId: line.pricingId || undefined
+          pricingId: line.pricingId || undefined,
+          cobEntryId: line.cobEntryId || undefined
         }))
       };
 
@@ -1006,6 +1103,7 @@ export default function DebitNotesPage() {
       }
       setModalOpen(false);
       setEditingRecord(null);
+      refetchPartners();
     } catch (err) {
       message.error(getApiError(err, t, 'debitNotes.createError'));
     } finally {
@@ -1061,6 +1159,7 @@ export default function DebitNotesPage() {
       message.success(t('debitNotes.paymentRecorded'));
       setPaymentModalOpen(false);
       setSelectedRecord(null);
+      refetchPartners();
     } catch (err) {
       message.error(getApiError(err, t, 'debitNotes.paymentRecordError'));
     } finally {
@@ -1075,6 +1174,7 @@ export default function DebitNotesPage() {
       message.success(t('debitNotes.voidSuccess'));
       setVoidModalOpen(false);
       setSelectedRecord(null);
+      refetchPartners();
     } catch (err) {
       message.error(getApiError(err, t, 'debitNotes.voidError'));
     } finally {
@@ -1496,6 +1596,41 @@ export default function DebitNotesPage() {
           </Form.Item>
         </Form>
 
+        {selectedJobIds.length ? (
+          <Card
+            size="small"
+            title={t('debitNotes.cobCandidates')}
+            style={{ marginBottom: 16 }}
+          >
+            <Typography.Paragraph type="secondary">
+              {t('debitNotes.cobCandidatesHint')}
+            </Typography.Paragraph>
+            <Table
+              size="small"
+              rowKey="id"
+              loading={loadingCobCandidates}
+              dataSource={cobCandidates}
+              pagination={false}
+              locale={{ emptyText: t('debitNotes.noCobCandidates') }}
+              rowSelection={{ selectedRowKeys: selectedCobIds, onChange: handleCobSelection }}
+              columns={[
+                {
+                  title: t('debitNotes.jobNo'),
+                  dataIndex: 'jobId',
+                  render: (jobId) => jobs.find((job) => job.backendId === jobId)?.job_no || `Job #${jobId}`
+                },
+                { title: t('debitNotes.description'), dataIndex: 'description' },
+                {
+                  title: t('debitNotes.amount'),
+                  dataIndex: 'amount',
+                  align: 'right',
+                  render: (amount, record) => `${formatCurrency(amount)} ${record.currency || 'VND'}`
+                }
+              ]}
+            />
+          </Card>
+        ) : null}
+
         {/* Line Items with Auto-Pricing */}
         <LineItemsEditor
           lineItems={lineItems}
@@ -1507,6 +1642,27 @@ export default function DebitNotesPage() {
           t={t}
           message={message}
         />
+
+        <Card size="small" title={t('debitNotes.debtPreview')} style={{ marginTop: 16 }} loading={previewingDebt}>
+          <Row gutter={[12, 12]}>
+            <Col xs={12} md={6}><Statistic title={t('debitNotes.serviceTotal')} value={serviceTotal} formatter={formatCurrency} /></Col>
+            <Col xs={12} md={6}><Statistic title={t('debitNotes.cobTotal')} value={cobTotal} formatter={formatCurrency} /></Col>
+            <Col xs={12} md={6}><Statistic title={t('debitNotes.currentDebt')} value={debtPreview?.currentDebt || 0} formatter={formatCurrency} /></Col>
+            <Col xs={12} md={6}><Statistic title={t('debitNotes.projectedDebt')} value={debtPreview?.projectedDebt || formTotal} formatter={formatCurrency} /></Col>
+          </Row>
+          {debtPreview?.hasPolicy ? (
+            <Alert
+              style={{ marginTop: 12 }}
+              type={debtPreview.exceedsLimit ? 'error' : 'success'}
+              showIcon
+              message={debtPreview.exceedsLimit
+                ? t('debitNotes.debtExceededBy', { amount: formatCurrency(debtPreview.exceededBy) })
+                : t('debitNotes.availableLimit', { amount: formatCurrency(Math.max(debtPreview.availableLimit || 0, 0)) })}
+            />
+          ) : (
+            <Alert style={{ marginTop: 12 }} type="info" showIcon message={t('debitNotes.noDebtPolicy')} />
+          )}
+        </Card>
         </div>
       </Modal>
 

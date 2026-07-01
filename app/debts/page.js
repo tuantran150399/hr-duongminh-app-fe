@@ -27,7 +27,7 @@ import {
 import { formatCurrency, formatDate } from '@/utils/format';
 
 export default function DebtsPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   const [statusFilter, setStatusFilter] = useState('all');
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
@@ -41,6 +41,12 @@ export default function DebtsPage() {
   const summary = useMemo(() => summaryData || {}, [summaryData]);
   const customers = useMemo(() => customersData?.items || [], [customersData]);
   const details = useMemo(() => detailData?.items || [], [detailData]);
+  const debtStatusLabels = {
+    normal: t('debts.statusNormal'),
+    near_limit: t('debts.statusNearLimit'),
+    over_limit: t('debts.statusOverLimit'),
+    overdue: t('debts.statusOverdue')
+  };
 
   // Table columns (Customers)
   const customerColumns = [
@@ -78,13 +84,31 @@ export default function DebtsPage() {
       dataIndex: 'status',
       key: 'status',
       align: 'center',
-      render: (v) => <StatusTag value={v} />
+      render: (v) => (
+        <StatusTag
+          value={debtStatusLabels[v] || v}
+          colorMap={{
+            [t('debts.statusNormal')]: 'success',
+            [t('debts.statusNearLimit')]: 'gold',
+            [t('debts.statusOverLimit')]: 'error',
+            [t('debts.statusOverdue')]: 'magenta'
+          }}
+        />
+      )
     }
   ];
 
   // Table columns (Items Detail)
   const detailColumns = [
+    {
+      title: t('debts.itemType'),
+      dataIndex: 'itemType',
+      key: 'itemType',
+      render: (v) => v === 'DEBIT_NOTE' ? t('debts.debitNote') : t('debts.receivable')
+    },
     { title: t('debts.invoiceCode'), dataIndex: 'invoiceCode', key: 'invoiceCode' },
+    { title: t('debts.jobCode'), dataIndex: 'jobCode', key: 'jobCode' },
+    { title: t('debts.description'), dataIndex: 'description', key: 'description', ellipsis: true },
     {
       title: t('debts.amount'),
       dataIndex: 'amount',
@@ -96,14 +120,22 @@ export default function DebtsPage() {
       title: t('debts.dueDate'),
       dataIndex: 'dueDate',
       key: 'dueDate',
-      render: (v) => formatDate(v)
+      render: (v) => formatDate(v, language)
     },
     {
       title: t('debts.isOverdue'),
       dataIndex: 'isOverdue',
       key: 'isOverdue',
       align: 'center',
-      render: (v) => v ? <StatusTag value="overdue" /> : <StatusTag value="normal" />
+      render: (v) => (
+        <StatusTag
+          value={v ? t('debts.statusOverdue') : t('debts.statusNormal')}
+          colorMap={{
+            [t('debts.statusOverdue')]: 'magenta',
+            [t('debts.statusNormal')]: 'success'
+          }}
+        />
+      )
     }
   ];
 
@@ -207,6 +239,7 @@ export default function DebtsPage() {
           columns={detailColumns}
           dataSource={details}
           pagination={{ pageSize: 10 }}
+          scroll={{ x: 900 }}
         />
       </Drawer>
     </DashboardLayout>
