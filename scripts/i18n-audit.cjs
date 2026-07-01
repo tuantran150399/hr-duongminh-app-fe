@@ -6,6 +6,7 @@ const parser = require('@babel/parser');
 const traverse = require('@babel/traverse').default;
 
 const projectRoot = path.resolve(__dirname, '..');
+const backendSourceRoot = path.resolve(projectRoot, '..', 'hr-app-localsetup', 'src', 'business');
 const sourceRoots = ['app', 'components', 'layouts', 'config', 'utils', 'services', 'store'];
 const dictionaryPath = path.join(projectRoot, 'components', 'AppProviders.js');
 const displayProps = new Set([
@@ -34,7 +35,7 @@ function parse(source, file) {
   try {
     return parser.parse(source, {
       sourceType: 'module',
-      plugins: ['jsx', 'typescript', 'optionalChaining']
+      plugins: ['decorators-legacy', 'jsx', 'typescript', 'optionalChaining']
     });
   } catch (error) {
     throw new Error(`${path.relative(projectRoot, file)}: ${error.message}`);
@@ -183,6 +184,39 @@ const viOnly = [...viKeys].filter((key) => !enKeys.has(key)).sort();
 const missingUsed = [...usedKeys.entries()]
   .filter(([key]) => !enKeys.has(key) || !viKeys.has(key))
   .sort(([a], [b]) => a.localeCompare(b));
+const emittedNotificationTypes = new Map();
+
+if (fs.existsSync(backendSourceRoot)) {
+  for (const file of listFiles(backendSourceRoot)) {
+    const source = fs.readFileSync(file, 'utf8');
+    const ast = parse(source, file);
+    traverse(ast, {
+      CallExpression(nodePath) {
+        const { callee, arguments: args } = nodePath.node;
+        const method = callee.type === 'Identifier'
+          ? callee.name
+          : callee.type === 'MemberExpression'
+            ? propertyName(callee.property)
+            : null;
+        if (!['notify', 'notifyMany', 'notifyUsers'].includes(method)) return;
+
+        const data = args.at(-1);
+        const typeNode = objectChild(data, 'type');
+        if (typeNode?.type !== 'StringLiteral') return;
+
+        const relativeFile = path.relative(path.resolve(projectRoot, '..'), file).replace(/\\/g, '/');
+        emittedNotificationTypes.set(typeNode.value, `${relativeFile}:${typeNode.loc.start.line}`);
+      }
+    });
+  }
+}
+
+const missingNotificationTypes = [...emittedNotificationTypes.entries()]
+  .filter(([type]) => {
+    const key = `notifications.types.${type}`;
+    return !enKeys.has(key) || !viKeys.has(key);
+  })
+  .sort(([a], [b]) => a.localeCompare(b));
 
 if (findings.length) {
   console.error(`\nHardcoded UI findings (${findings.length}):`);
@@ -199,8 +233,15 @@ if (missingUsed.length) {
     console.error(`- ${key} (en=${enKeys.has(key)}, vi=${viKeys.has(key)}) at ${locations.join(', ')}`);
   }
 }
+if (missingNotificationTypes.length) {
+  console.error(`\nBackend notification types missing from a locale (${missingNotificationTypes.length}):`);
+  for (const [type, location] of missingNotificationTypes) {
+    const key = `notifications.types.${type}`;
+    console.error(`- ${key} (en=${enKeys.has(key)}, vi=${viKeys.has(key)}) emitted at ${location}`);
+  }
+}
 
-const issueCount = findings.length + enOnly.length + viOnly.length + missingUsed.length;
+const issueCount = findings.length + enOnly.length + viOnly.length + missingUsed.length + missingNotificationTypes.length;
 if (issueCount) {
   console.error(`\ni18n audit failed with ${issueCount} issue(s).`);
   process.exitCode = 1;

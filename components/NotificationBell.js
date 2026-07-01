@@ -23,6 +23,7 @@ import {
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/components/AppProviders';
+import { translateNotificationType } from '@/utils/notificationI18n';
 import {
   useGetNotificationsQuery,
   useGetUnreadCountQuery,
@@ -39,6 +40,11 @@ const typeConfig = {
   ADVANCE_REJECTED: { color: 'red', icon: <CloseCircleOutlined /> },
   COB_CREATED: { color: 'blue', icon: <InfoCircleOutlined /> },
   DEBIT_NOTE_POSTED: { color: 'blue', icon: <InfoCircleOutlined /> },
+  PAYMENT_REQUEST_PENDING_DEPARTMENT: { color: 'orange', icon: <WarningOutlined /> },
+  PAYMENT_REQUEST_PENDING_FINAL: { color: 'orange', icon: <WarningOutlined /> },
+  PAYMENT_REQUEST_FINAL_APPROVED: { color: 'green', icon: <CheckCircleOutlined /> },
+  PAYMENT_REQUEST_REJECTED: { color: 'red', icon: <CloseCircleOutlined /> },
+  PAYMENT_REQUEST_PAID: { color: 'green', icon: <CheckCircleOutlined /> },
   INFO: { color: 'default', icon: <InfoCircleOutlined /> },
   WARNING: { color: 'orange', icon: <WarningOutlined /> },
   ERROR: { color: 'red', icon: <CloseCircleOutlined /> }
@@ -213,7 +219,7 @@ export default function NotificationBell() {
                           {item.title}
                         </Typography.Text>
                         <Tag color={config.color} style={{ fontSize: 10, lineHeight: '16px', padding: '0 4px', margin: 0 }}>
-                          {item.type ? t(`notifications.types.${item.type}`) || item.type.replace(/_/g, ' ') : null}
+                          {translateNotificationType(item.type, t)}
                         </Tag>
                       </div>
                     }

@@ -24,15 +24,26 @@ import {
   useDeleteNotificationMutation
 } from '@/store/services/notificationsApi';
 import { getApiError } from '@/utils/getApiError';
+import { translateNotificationType } from '@/utils/notificationI18n';
 
 const TYPE_ICON = {
   WARNING: <WarningOutlined style={{ color: '#fa8c16' }} />,
   ERROR: <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />,
   SUCCESS: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
   INFO: <InfoCircleOutlined style={{ color: '#1677ff' }} />,
+  PAYMENT_REQUEST_PENDING_DEPARTMENT: <WarningOutlined style={{ color: '#fa8c16' }} />,
+  PAYMENT_REQUEST_PENDING_FINAL: <WarningOutlined style={{ color: '#fa8c16' }} />,
+  PAYMENT_REQUEST_FINAL_APPROVED: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+  PAYMENT_REQUEST_REJECTED: <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />,
+  PAYMENT_REQUEST_PAID: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
 };
 const TYPE_COLOR = {
-  WARNING: 'orange', ERROR: 'red', SUCCESS: 'green', INFO: 'blue'
+  WARNING: 'orange', ERROR: 'red', SUCCESS: 'green', INFO: 'blue',
+  PAYMENT_REQUEST_PENDING_DEPARTMENT: 'orange',
+  PAYMENT_REQUEST_PENDING_FINAL: 'orange',
+  PAYMENT_REQUEST_FINAL_APPROVED: 'green',
+  PAYMENT_REQUEST_REJECTED: 'red',
+  PAYMENT_REQUEST_PAID: 'green'
 };
 
 function timeAgo(dateStr, t) {
@@ -235,7 +246,7 @@ export default function NotificationsPage() {
                         color={TYPE_COLOR[item.type] ?? 'default'}
                         style={{ marginLeft: 4, fontSize: 11 }}
                       >
-                        {item.type ? t(`notifications.types.${item.type}`) || item.type.replace(/_/g, ' ') : null}
+                        {translateNotificationType(item.type, t)}
                       </Tag>
                     </span>
                   }
