@@ -32,6 +32,7 @@ export default function DebtsPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState(null);
+  const [search, setSearch] = useState('');
 
   // Queries
   const { data: summaryData, isLoading: summaryLoading, error: summaryError, refetch: refetchSummary } = useGetDebtSummaryQuery();
@@ -41,6 +42,14 @@ export default function DebtsPage() {
   const summary = useMemo(() => summaryData || {}, [summaryData]);
   const customers = useMemo(() => customersData?.items || [], [customersData]);
   const details = useMemo(() => detailData?.items || [], [detailData]);
+
+  const filteredCustomers = useMemo(() => {
+    const keyword = search.trim().toLowerCase();
+    if (!keyword) return customers;
+    return customers.filter((c) => {
+      return [c.name].filter(Boolean).some(v => String(v).toLowerCase().includes(keyword));
+    });
+  }, [customers, search]);
   const debtStatusLabels = {
     normal: t('debts.statusNormal'),
     near_limit: t('debts.statusNearLimit'),
@@ -165,9 +174,8 @@ export default function DebtsPage() {
           { value: 'overdue', label: t('debts.statusOverdue') }
         ]}
         showDateRange={false}
-        searchValue=""
-        onSearchChange={() => {}}
-        searchPlaceholder=" "
+        searchValue={search}
+        onSearchChange={(e) => setSearch(e.target.value)}
       />
 
       {(summaryError || customersError) && (
@@ -212,7 +220,7 @@ export default function DebtsPage() {
           rowKey="backendId"
           loading={customersLoading}
           columns={customerColumns}
-          dataSource={customers}
+          dataSource={filteredCustomers}
           scroll={{ x: 800 }}
           pagination={{ pageSize: 10, showSizeChanger: true }}
           onRow={(record) => ({

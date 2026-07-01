@@ -25,6 +25,7 @@ import {
 import { useMemo, useState } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { useLanguage } from '@/components/AppProviders';
+import FilterCard from '@/components/FilterCard';
 import { useGetDebtPoliciesQuery, useUpsertDebtPolicyMutation } from '@/store/services/debtPoliciesApi';
 import { useGetPartnersQuery } from '@/store/services/partnersApi';
 import { formatCurrency } from '@/utils/format';
@@ -38,14 +39,15 @@ export default function DebtPoliciesPage() {
   const [saving, setSaving] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingPolicy, setEditingPolicy] = useState(null);
+  const [search, setSearch] = useState('');
 
   const { data: policiesData, isLoading: loading, error: loadErrorObj } = useGetDebtPoliciesQuery();
   const { data: partnersData } = useGetPartnersQuery();
   const [upsertDebtPolicy] = useUpsertDebtPolicyMutation();
 
-  const policies = policiesData?.items || [];
-  const allPartners = partnersData?.items || [];
-  const partners = allPartners.filter((partner) => partner.isActive);
+  const policies = useMemo(() => policiesData?.items || [], [policiesData]);
+  const allPartners = useMemo(() => partnersData?.items || [], [partnersData]);
+  const partners = useMemo(() => allPartners.filter((partner) => partner.isActive), [allPartners]);
   const loadError = loadErrorObj ? t('debtPolicies.loadError') : '';
 
   const partnersById = useMemo(
@@ -55,6 +57,23 @@ export default function DebtPoliciesPage() {
     }, {}),
     [allPartners]
   );
+
+  const filteredPolicies = useMemo(() => {
+    const keyword = search.trim().toLowerCase();
+    if (!keyword) return policies;
+
+    return policies.filter((policy) => {
+      const partner = partnersById[policy.partnerId];
+      const searchable = [
+        partner?.name,
+        partner?.code,
+        policy.maxDebtAmount,
+        policy.maxDebtAgeDays
+      ].filter(Boolean).join(' ').toLowerCase();
+
+      return searchable.includes(keyword);
+    });
+  }, [policies, search, partnersById]);
 
   const partnerOptions = useMemo(
     () => {
@@ -217,12 +236,18 @@ export default function DebtPoliciesPage() {
         </Col>
       </Row>
 
-      <Card className="table-card">
+      <FilterCard
+        searchValue={search}
+        onSearchChange={(e) => setSearch(e.target.value)}
+        showDateRange={false}
+      />
+
+      <Card className="table-card" style={{ marginTop: 16 }}>
         <Table
           rowKey="backendId"
           loading={loading}
           columns={columns}
-          dataSource={policies}
+          dataSource={filteredPolicies}
           pagination={{ pageSize: 10, showSizeChanger: true }}
         />
       </Card>

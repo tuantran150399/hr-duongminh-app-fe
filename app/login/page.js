@@ -95,9 +95,9 @@ export default function LoginPage() {
           form={form}
           className="login-form"
           layout="vertical"
-          initialValues={{ username: 'api.tester', password: 'ApiTest@123' }}
           onFinish={handleSubmit}
           onChange={() => setErrorMsg('')}
+          autoComplete="off"
         >
           <Form.Item
             name="username"
@@ -108,7 +108,7 @@ export default function LoginPage() {
               size="large"
               prefix={<MailOutlined style={{ color: '#727786', marginRight: 8 }} />}
               placeholder={t('login.usernamePlaceholder')}
-              autoComplete="username"
+              autoComplete="off"
             />
           </Form.Item>
 
@@ -121,7 +121,7 @@ export default function LoginPage() {
               size="large"
               prefix={<LockOutlined style={{ color: '#727786', marginRight: 8 }} />}
               placeholder={t('login.passwordPlaceholder')}
-              autoComplete="current-password"
+              autoComplete="new-password"
             />
           </Form.Item>
 
