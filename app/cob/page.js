@@ -129,6 +129,7 @@ export default function CobPage() {
     setSaving(true);
     try {
       await createCobEntry({ ...values, amount: Number(values.amount), paymentMethod: values.paymentMethod || undefined }).unwrap();
+      await Promise.all([refetchCob(), refetchCollect()]);
       message.success(t('cob.createCobSuccess'));
       setCobModalOpen(false);
     } catch (err) {
