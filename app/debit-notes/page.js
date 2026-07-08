@@ -630,9 +630,11 @@ function LineItemsEditor({ lineItems, setLineItems, allPrices, selectedPartnerId
             minHeight: 34
           }}
         >
-          <Tag color="blue" style={{ marginInlineEnd: 0, textAlign: 'center' }}>
-            {record.serviceType || t('debitNotes.serviceType')}
-          </Tag>
+          <Tooltip title={record.serviceType}>
+            <Tag color="blue" style={{ marginInlineEnd: 0, textAlign: 'center', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
+              {record.serviceType || t('debitNotes.serviceType')}
+            </Tag>
+          </Tooltip>
           <Tooltip title={[value, record.chargeNote, record.lineNote].filter(Boolean).join('\n')}>
             <Typography.Text ellipsis style={{ maxWidth: 170 }}>
               {value || record.chargeNote || record.lineNote || t('debitNotes.descriptionPlaceholder')}
