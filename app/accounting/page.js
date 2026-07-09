@@ -467,7 +467,8 @@ export default function AccountingPage() {
     paymentForm.resetFields();
     paymentForm.setFieldsValue({
       paymentMethod: record.paymentMethod || 'CASH',
-      accountRef: record.paymentAccountRef || ''
+      accountRef: record.paymentAccountRef || '',
+      paidAmount: paymentStatus === 'PARTIAL' ? Number(record.paidAmount || 0) || undefined : undefined
     });
     setPaymentModalOpen(true);
   }
@@ -477,7 +478,8 @@ export default function AccountingPage() {
     await savePaymentStatus(pendingPaymentChange.record, {
       paymentStatus: pendingPaymentChange.paymentStatus,
       paymentMethod: values.paymentMethod,
-      accountRef: values.accountRef
+      accountRef: values.accountRef,
+      paidAmount: pendingPaymentChange.paymentStatus === 'PARTIAL' ? Number(values.paidAmount) : undefined
     });
     setPaymentModalOpen(false);
     setPendingPaymentChange(null);
@@ -549,7 +551,17 @@ export default function AccountingPage() {
       align: 'right',
       width: 160,
       sorter: (a, b) => safeNumber(a.amount) - safeNumber(b.amount),
-      render: (value) => <strong>{formatCurrency(value)}</strong>
+      render: (value, record) => {
+        const paidAmount = Number(record.paidAmount || 0);
+        const remainingAmount = Math.max(Number(value || 0) - paidAmount, 0);
+        return (
+          <Space direction="vertical" size={1} style={{ textAlign: 'right' }}>
+            <strong>{formatCurrency(value)}</strong>
+            {paidAmount > 0 ? <small>{t('accounting.paidAmount')}: {formatCurrency(paidAmount)}</small> : null}
+            {paidAmount > 0 ? <small>{t('accounting.remainingAmount')}: {formatCurrency(remainingAmount)}</small> : null}
+          </Space>
+        );
+      }
     },
     {
       title: t('accountingForm.currency'),
@@ -569,23 +581,26 @@ export default function AccountingPage() {
       dataIndex: 'paymentStatus',
       key: 'paymentStatus',
       width: 180,
-      render: (value, record) => (
-        <Space direction="vertical" size={4}>
-          <Select
-            value={value === '-' ? 'UNPAID' : String(value).toUpperCase()}
-            options={paymentOptions}
-            size="small"
-            disabled={record.status !== 'Posted'}
-            onChange={(nextValue) => handlePaymentStatus(record, nextValue)}
-            style={{ width: 130 }}
-          />
-          {record.paymentMethod ? (
-            <Tag color={record.paymentMethod === 'BANK' ? 'blue' : 'green'}>
-              {paymentMethodLabelMap[record.paymentMethod] || record.paymentMethod}
-            </Tag>
-          ) : null}
-        </Space>
-      )
+      render: (value, record) => {
+        const isSynthetic = record.raw?.sourceType && !['REVENUE_ENTRY', 'COST_ENTRY'].includes(record.raw.sourceType);
+        return (
+          <Space direction="vertical" size={4}>
+            <Select
+              value={value === '-' ? 'UNPAID' : String(value).toUpperCase()}
+              options={paymentOptions}
+              size="small"
+              disabled={record.status !== 'Posted' || isSynthetic}
+              onChange={(nextValue) => handlePaymentStatus(record, nextValue)}
+              style={{ width: 130 }}
+            />
+            {record.paymentMethod ? (
+              <Tag color={record.paymentMethod === 'BANK' ? 'blue' : 'green'}>
+                {paymentMethodLabelMap[record.paymentMethod] || record.paymentMethod}
+              </Tag>
+            ) : null}
+          </Space>
+        );
+      }
     },
     {
       title: t('accountingForm.docDate'),
@@ -605,40 +620,46 @@ export default function AccountingPage() {
       title: t('accounting.actions'),
       key: 'actions',
       width: activeTab === 'cost' ? 210 : 160,
-      render: (_, record) => (
-        <Space>
-          <Popconfirm title={t('accountingForm.postConfirm')} okText={t('accountingForm.postOk')} onConfirm={() => handlePost(record)}>
-            <Button
-              icon={<UploadOutlined />}
-              disabled={record.status !== 'Draft'}
-              title={t('accountingForm.postOk')}
-            />
-          </Popconfirm>
-          {activeTab === 'cost' && record.status === 'Posted' && (
-            <Tooltip title={t('accountingForm.cobTooltip')}>
+      render: (_, record) => {
+        const isSynthetic = record.raw?.sourceType && !['REVENUE_ENTRY', 'COST_ENTRY'].includes(record.raw.sourceType);
+        if (isSynthetic) {
+          return <Tag>{record.raw?.sourceType}</Tag>;
+        }
+        return (
+          <Space>
+            <Popconfirm title={t('accountingForm.postConfirm')} okText={t('accountingForm.postOk')} onConfirm={() => handlePost(record)}>
               <Button
-                icon={<SwapOutlined />}
-                onClick={() => openCobModal(record)}
-                style={{ color: '#1677ff' }}
-                title={t('accountingForm.markCob')}
+                icon={<UploadOutlined />}
+                disabled={record.status !== 'Draft'}
+                title={t('accountingForm.postOk')}
               />
-            </Tooltip>
-          )}
-          <Popconfirm
-            title={t('accountingForm.voidConfirm')}
-            okText={t('accountingForm.voidOk')}
-            okButtonProps={{ danger: true }}
-            onConfirm={() => handleVoid(record)}
-          >
-            <Button
-              danger
-              icon={<StopOutlined />}
-              disabled={record.status === 'Voided'}
-              title={t('accountingForm.voidOk')}
-            />
-          </Popconfirm>
-        </Space>
-      )
+            </Popconfirm>
+            {activeTab === 'cost' && record.status === 'Posted' && (
+              <Tooltip title={t('accountingForm.cobTooltip')}>
+                <Button
+                  icon={<SwapOutlined />}
+                  onClick={() => openCobModal(record)}
+                  style={{ color: '#1677ff' }}
+                  title={t('accountingForm.markCob')}
+                />
+              </Tooltip>
+            )}
+            <Popconfirm
+              title={t('accountingForm.voidConfirm')}
+              okText={t('accountingForm.voidOk')}
+              okButtonProps={{ danger: true }}
+              onConfirm={() => handleVoid(record)}
+            >
+              <Button
+                danger
+                icon={<StopOutlined />}
+                disabled={record.status === 'Voided'}
+                title={t('accountingForm.voidOk')}
+              />
+            </Popconfirm>
+          </Space>
+        );
+      }
     }
   ];
 
@@ -838,6 +859,15 @@ export default function AccountingPage() {
           width={460}
         >
           <Form form={paymentForm} layout="vertical" onFinish={submitPaymentMethod}>
+            {pendingPaymentChange?.paymentStatus === 'PARTIAL' ? (
+              <Form.Item
+                name="paidAmount"
+                label={t('accounting.paidAmount')}
+                rules={[{ required: true, message: t('accounting.paidAmountRequired') }]}
+              >
+                <InputNumber {...decimalInputProps} min={0.01} style={{ width: '100%' }} />
+              </Form.Item>
+            ) : null}
             <Form.Item
               name="paymentMethod"
               label={t('accounting.paymentMethod')}

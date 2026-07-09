@@ -41,10 +41,10 @@ export const accountingApi = createApi({
     }),
 
     updateRevenuePaymentStatus: builder.mutation({
-      query: ({ id, paymentStatus, paymentMethod, accountRef }) => ({
+      query: ({ id, paymentStatus, paymentMethod, accountRef, paidAmount }) => ({
         url: `/accounting/revenue/${id}/payment-status`,
         method: 'PATCH',
-        data: { paymentStatus, paymentMethod, accountRef }
+        data: { paymentStatus, paymentMethod, accountRef, paidAmount }
       }),
       invalidatesTags: ['Revenue']
     }),
@@ -92,10 +92,10 @@ export const accountingApi = createApi({
     }),
 
     updateCostPaymentStatus: builder.mutation({
-      query: ({ id, paymentStatus, paymentMethod, accountRef }) => ({
+      query: ({ id, paymentStatus, paymentMethod, accountRef, paidAmount }) => ({
         url: `/accounting/cost/${id}/payment-status`,
         method: 'PATCH',
-        data: { paymentStatus, paymentMethod, accountRef }
+        data: { paymentStatus, paymentMethod, accountRef, paidAmount }
       }),
       invalidatesTags: ['Cost']
     }),

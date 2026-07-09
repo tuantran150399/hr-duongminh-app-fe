@@ -79,6 +79,7 @@ export function normalizeEntry(entry) {
     exchangeRate     : Number(entry.exchangeRate ?? 1),
     status           : formatStatus(entry.status),
     paymentStatus    : formatStatus(entry.paymentStatus),
+    paidAmount       : Number(entry.paidAmount ?? 0),
     paymentMethod    : entry.paymentMethod || null,
     paymentAccountRef: entry.paymentAccountRef || null,
     date             : entry.docDate || entry.createdAt || null,
